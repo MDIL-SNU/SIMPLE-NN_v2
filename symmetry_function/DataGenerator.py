@@ -100,7 +100,7 @@ class DataGenerator:
         return snapshots
 
     def save_to_pickle(self, data, idx, save_dir='./data'):
-        # If pickle_list not opened, open pickle_list first
+        # ...If pickle_list not opened, open pickle_list first...
 
 
         if not os.path.exists(save_dir):
@@ -116,6 +116,8 @@ class DataGenerator:
         train_dir.write('{}:{}\n'.format(idx, tmp_filename))
         tmp_endfile = tmp_filename
         self.data_idx += 1
+
+        # ...After finish iterative save, close pickle_list finally...
 
     def check_exist_data(self):
         pass

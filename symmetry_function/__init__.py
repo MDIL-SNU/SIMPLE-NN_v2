@@ -73,11 +73,11 @@ class Symmetry_function(object):
         self.inputs = self.parent.inputs['symmetry_function']
 
     def generate(self):
-        # Create DataGenerator and initialize
         # DataGenerator object handles [str_list], OUTCAR files, pickle files
         data_generator = DataGenerator(self.structure_list, self.pickle_list)
 
         # Get structure list from [str_list] file
+        # ...Need more information of each values...
         structures, structure_idx, structure_names, structure_weights = data_generator.parse_structure_list()
 
 
@@ -118,7 +118,8 @@ class Symmetry_function(object):
 
 
 
-            
+            # Load structure information using ase module
+            # snapshots format : ase.io.read()
             snapshots = data_generator.load_snapshots(self.inputs, item, index)
 
 
@@ -258,7 +259,9 @@ class Symmetry_function(object):
 
 
                 # Save "res" data to pickle file
-                data_generator.save_to_pickle(res, idx)
+                # ...Need append option for continue generate...
+                # ...Need append option for select directory...
+                data_generator.save_to_pickle(res, idx, save_dir='./data')
 
 
 
