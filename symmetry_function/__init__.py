@@ -99,6 +99,8 @@ class Symmetry_function(object):
             
         for item, idx in zip(structures, structure_idx):
             # FIXME: add another input type
+
+
             if len(item) == 1:
                 index = 0
                 if comm.rank == 0:
@@ -120,7 +122,7 @@ class Symmetry_function(object):
 
             # Load structure information using ase module
             # snapshots format : ase.io.read()
-            snapshots = data_generator.load_snapshots(self.inputs, item, index)
+            snapshots = data_generator.load_snapshots(item)
 
 
 
