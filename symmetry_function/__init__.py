@@ -73,11 +73,74 @@ class Symmetry_function(object):
         self.inputs = self.parent.inputs['symmetry_function']
 
 
+    # Genreate Method 
+    def generate(self):
+        # DataGenerator object handles [str_list], OUTCAR files, pickle files
+        data_generator = DataGenerator(self.structure_list, self.pickle_list)
+
+        # Get structure list from [str_list] file
+        # ...Need more information of each values...
+        structures, structure_idx, structure_names, structure_weights = data_generator.parse_structure_list()
+
+        # Get symmetry function parameter list for each atom types
+        symf_params_set = self._parsing_symf_params()
+            
+        for item, idx in zip(structures, structure_idx):
+            
+            #Get index from item and write logfile of MPI
+            #index  = self._set_index(item)
+            index  = None
+
+            # Load structure information using ase module
+            # snapshots format : ase.io.read()
+            snapshots = data_generator.load_snapshots(self.inputs, item, index)
+            for atoms in snapshots:
+                # Create Values, Parameters , Dictionary from atoms , structure_names , structure_weights
+                cart_p , scale_p , cell_p , atom_num , atom_i_p , type_num , type_idx , res = self._init_variables(\
+                    atoms , structure_names , structure_weights , idx)
+
+                for _ ,jtem in enumerate(self.parent.inputs['atom_types']):
+                    
+                    # Set number of MPI 
+                    #begin , end = self._set_mpi(type_num , jtem)
+                    #cal_num , cal_atoms_p , x , dx , da , x_p , dx_p , da_p = self._get_sf_input(type_idx ,\
+                    # jtem  , symf_params_set , atom_num , [begin , end] )
+
+                    # For Serial Calculations
+                    cal_num , cal_atoms_p , x , dx , da , x_p , dx_p , da_p = self._get_sf_input(type_idx ,\
+                     jtem , symf_params_set , atom_num)
+
+                    #Calculate symmetry functon using C type datas
+                    errno = lib.calculate_sf(cell_p, cart_p, scale_p, \
+                                     atom_i_p, atom_num, cal_atoms_p, cal_num, \
+                                     symf_params_set[jtem]['ip'], symf_params_set[jtem]['dp'], symf_params_set[jtem]['num'], \
+                                     x_p, dx_p, da_p)
+                    
+                    #comm.barrier()
+                    #errnos = comm.gather(errno)
+                    #errnos = comm.bcast(errnos)
+                    # Check error occurs
+                    #self._check_error(errnos)
+
+                    # Set res Dictionary from calculated value
+                    res = self._set_result( res , x  , dx , da ,  type_num , jtem , symf_params_set , atom_num)
+                # End of for loop
+                
+                # E, F, S extract from snapshot
+                res =  self._extract_data(res , atoms)
+
+                # Save "res" data to pickle file
+                # ...Need append option for continue generate...
+                # ...Need append option for select directory...
+                data_generator.save_to_pickle(res, idx, save_dir='./data')
+
+            self.parent.logfile.write(': ~{}\n'.format(tmp_endfile))
+
     # Refactory  functions as
     # _parsing_params , _set_index , _adjust_variables , _set_mpi , _get_sf_input 
     # _extract_data , _check_error , _set_res , _extract_data
     # Set symf_params_set from self.parent.inputs
-    def _parsing_params(self):
+    def _parsing_symf_params(self):
         symf_params_set = dict()
         for element in self.parent.inputs['atom_types']:
             symf_params_set[element] = dict()
@@ -94,19 +157,19 @@ class Symmetry_function(object):
         # FIXME: add another input type
         if len(item) == 1:
             index = 0 
-            if comm.rank == 0:
-                self.parent.logfile.write('{} 0'.format(item[0]))
+            #if comm.rank == 0:
+            self.parent.logfile.write('{} 0'.format(item[0]))
         else:
             if ':' in item[1]:
                 index = item[1]
             else:
                 index = int(item[1])
-        if comm.rank == 0:
-            self.parent.logfile.write('{} {}'.format(item[0], item[1]))        
+        #if comm.rank == 0:
+        self.parent.logfile.write('{} {}'.format(item[0], item[1]))        
         return index
 
     # Calculate and adjust varialbes 
-    def _adjust_variables(self, atoms , structure_names , structure_weights):
+    def _init_variables(self, atoms , structure_names , structure_weights , ind):
         cart = np.copy(atoms.get_positions(wrap=True), order='C')
         scale = np.copy(atoms.get_scaled_positions(), order='C')
         cell = np.copy(atoms.cell, order='C')
@@ -146,7 +209,7 @@ class Symmetry_function(object):
         return cart_p , scale_p , cell_p , atom_num , atom_i_p , type_num , type_idx , res
 
     # Set mpi number
-    def _set_mpi(self , type_num , jtem):
+    def _set_mpi(self , type_num , jtem , comm):
         q = type_num[jtem] // comm.size
         r = type_num[jtem] %  comm.size
 
@@ -157,8 +220,11 @@ class Symmetry_function(object):
         return begin , end
         
     # Get C type data to calculate symmetry function with C 
-    def _get_sf_input(self , type_idx , jtem  , mpi_range , symf_params_set , atom_num):
-        cal_atoms = np.asarray(type_idx[jtem][mpi_range[0]:mpi_range[1]], dtype=np.intc, order='C')
+    def _get_sf_input(self , type_idx , jtem , symf_params_set , atom_num, mpi_range = None ):
+        if mpi_range != None: # MPI calculation
+            cal_atoms = np.asarray(type_idx[jtem][mpi_range[0]:mpi_range[1]], dtype=np.intc, order='C')
+        elif mpi_range == None: # Serial calculation
+            cal_atoms = np.asarray(type_idx[jtem], dtype=np.intc, order='C')
         cal_num = len(cal_atoms)
         cal_atoms_p = ffi.cast("int *", cal_atoms.ctypes.data)
 
@@ -171,36 +237,41 @@ class Symmetry_function(object):
         da_p = _gen_2Darray_for_ffi(da, ffi)        
         return cal_num , cal_atoms_p , x , dx , da , x_p , dx_p , da_p
 
-    # Check error occurs in errnos
+    # Check error occurs in errnos at MPI environment
     def _check_error(self , errnos):   
         for errno in errnos:
             if errno == 1:
                 err = "Not implemented symmetry function type."
-                if comm.rank == 0:
-                    self.parent.logfile.write("\nError: {:}\n".format(err))
+                #if comm.rank == 0:
+                self.parent.logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)
             elif errno == 2:
                 err = "Zeta in G4/G5 must be greater or equal to 1.0."
-                if comm.rank == 0:
-                    self.parent.logfile.write("\nError: {:}\n".format(err))
+                #if comm.rank == 0:
+                self.parent.logfile.write("\nError: {:}\n".format(err))
                 raise ValueError(err)
             else:
                 assert errno == 0    
     
-    # Set res Dictionary
-    def _set_res(self , res , x  , dx , da ,  type_num , jtem , symf_params_set , atom_num):
+    # Set resulatant Dictionary
+    def _set_result(self , res , x  , dx , da ,  type_num , jtem , symf_params_set , atom_num):
         if type_num[jtem] != 0:
-            res['x'][jtem] = np.array(comm.gather(x, root=0))
-            res['dx'][jtem] = np.array(comm.gather(dx, root=0))
-            res['da'][jtem] = np.array(comm.gather(da, root=0))
-            if comm.rank == 0:
-                res['x'][jtem] = np.concatenate(res['x'][jtem], axis=0).\
-                                    reshape([type_num[jtem], symf_params_set[jtem]['num']])
-                res['dx'][jtem] = np.concatenate(res['dx'][jtem], axis=0).\
-                                    reshape([type_num[jtem], symf_params_set[jtem]['num'], atom_num, 3])
-                res['da'][jtem] = np.concatenate(res['da'][jtem], axis=0).\
-                                    reshape([type_num[jtem], symf_params_set[jtem]['num'], 3, 6])
-                res['partition_'+jtem] = np.ones([type_num[jtem]]).astype(np.int32)
+            # IF MPI available
+            #res['x'][jtem] = np.array(comm.gather(x, root=0))
+            #res['dx'][jtem] = np.array(comm.gather(dx, root=0))
+            #res['da'][jtem] = np.array(comm.gather(da, root=0))
+            # For Serial
+            res['x'][jtem] = np.array(x)
+            res['dx'][jtem] = np.array(dx)
+            res['da'][jtem] = np.array(da)
+            #if comm.rank == 0:
+            res['x'][jtem] = np.concatenate(res['x'][jtem], axis=0).\
+                                reshape([type_num[jtem], symf_params_set[jtem]['num']])
+            res['dx'][jtem] = np.concatenate(res['dx'][jtem], axis=0).\
+                                reshape([type_num[jtem], symf_params_set[jtem]['num'], atom_num, 3])
+            res['da'][jtem] = np.concatenate(res['da'][jtem], axis=0).\
+                                reshape([type_num[jtem], symf_params_set[jtem]['num'], 3, 6])
+            res['partition_'+jtem] = np.ones([type_num[jtem]]).astype(np.int32)
         else:
             res['x'][jtem] = np.zeros([0, symf_params_set[jtem]['num']])
             res['dx'][jtem] = np.zeros([0, symf_params_set[jtem]['num'], atom_num, 3])
@@ -221,8 +292,8 @@ class Symmetry_function(object):
             except:
                 if self.parent.inputs['neural_network']['use_force']:
                     err = "There is not force information! Set 'use_force' = false"
-                    if comm.rank == 0:
-                        self.parent.logfile.write("\nError: {:}\n".format(err))
+                    #if comm.rank == 0:
+                    self.parent.logfile.write("\nError: {:}\n".format(err))
                     raise NotImplementedError(err)
             try:
                 res['S'] = -atoms.get_stress()/units.GPa*10
@@ -231,67 +302,9 @@ class Symmetry_function(object):
             except:
                 if self.parent.inputs['neural_network']['use_stress']:
                     err = "There is not stress information! Set 'use_stress' = false"
-                    if comm.rank == 0:
-                        self.parent.logfile.write("\nError: {:}\n".format(err))
+                    #if comm.rank == 0:
+                    self.parent.logfile.write("\nError: {:}\n".format(err))
                     raise NotImplementedError(err)
         return res
-
-    def generate(self):
-        # DataGenerator object handles [str_list], OUTCAR files, pickle files
-        data_generator = DataGenerator(self.structure_list, self.pickle_list)
-
-        # Get structure list from [str_list] file
-        # ...Need more information of each values...
-        structures, structure_idx, structure_names, structure_weights = data_generator.parse_structure_list()
-
-        # Get symmetry function parameter list for each atom types
-        symf_params_set = self._parsing_params()
-            
-        for item, idx in zip(structures, structure_idx):
-            
-            #Get index from item and write logfile of MPI
-            index  = self._set_index(item)
-
-            # Load structure information using ase module
-            # snapshots format : ase.io.read()
-            snapshots = data_generator.load_snapshots(self.inputs, item, index)
-            for atoms in snapshots:
-                # Create Values, Parameters , Dictionary from atoms , structure_names , structure_weights
-                cart_p , scale_p , cell_p , atom_num , atom_i_p , type_num , type_idx , res = self._adjust_variables(\
-                    atoms , structure_names , structure_weights)
-
-                for j,jtem in enumerate(self.parent.inputs['atom_types']):
-                    
-                    # Set number of MPI 
-                    begin , end = self._set_mpi(type_num , jtem)
-
-                    cal_num , cal_atoms_p , x , dx , da , x_p , dx_p , da_p = self._get_sf_input(type_idx ,\
-                     jtem  , [begin , end] , symf_params_set , atom_num)
-
-                    #Calculate symmetry functon using C type datas
-                    errno = lib.calculate_sf(cell_p, cart_p, scale_p, \
-                                     atom_i_p, atom_num, cal_atoms_p, cal_num, \
-                                     symf_params_set[jtem]['ip'], symf_params_set[jtem]['dp'], symf_params_set[jtem]['num'], \
-                                     x_p, dx_p, da_p)
-                    
-                    comm.barrier()
-                    errnos = comm.gather(errno)
-                    errnos = comm.bcast(errnos)
-                    # Check error occurs
-                    self._check_error(errnos)
-
-                    # Set res Dictionary from calculated value
-                    res = self._set_res( res , x  , dx , da ,  type_num , jtem , symf_params_set , atom_num)
-                # End of for loop
-                
-                # E, F, S extract from snapshot
-                res =  self._extract_data(res , atoms)
-
-                # Save "res" data to pickle file
-                # ...Need append option for continue generate...
-                # ...Need append option for select directory...
-                data_generator.save_to_pickle(res, idx, save_dir='./data')
-
-            self.parent.logfile.write(': ~{}\n'.format(tmp_endfile))
    
     
