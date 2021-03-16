@@ -75,35 +75,35 @@ class Symmetry_function(object):
 
     # Genreate Method 
     def generate(self):
-        # DataGenerator object handles [str_list], OUTCAR files, pickle files
-        data_generator = DataGenerator(self.structure_list, self.pickle_list)
+        # DataGenerator object for handling [str_list], OUTCAR files, pickle files
+        data_generator = DataGenerator(self.inputs, self.structure_list, self.pickle_list)
 
-        # Get structure list from [str_list] file
-        # ...Need more information of each values...
-        structures, structure_idx, structure_names, structure_weights = data_generator.parse_structure_list()
+        # Get structure list from "structure_list" file
+        #structures: list of [STRUCTURE_PATH, INDEX_EXP]  ex) [["/PATH/OUTCAR1", "::10"], ["/PATH/OUTCAR2", "::"], ["/PATH/OUTCAR3", "::"]]
+        #structure_tag_idx(int list): list of structure tag index of each STRUCTURE_PATH    ex) [1, 2, 2]
+        #structure_tags(str list): list of structure tags     ex) ["None", "TAG1", "TAG2"]
+        #structure_weights(float list): list of structure weights
+        structures, structure_tag_idx, structure_tags, structure_weights = data_generator.parse_structure_list()
 
         # Get symmetry function parameter list for each atom types
         symf_params_set = self._parsing_symf_params()
             
-        for item, idx in zip(structures, structure_idx):
-            
-            #Get index from item and write logfile of MPI
-            #index  = self._set_index(item)
-            index  = None
-
+        for item, tag_idx in zip(structures, structure_tag_idx):
             # Load structure information using ase module
-            # snapshots format : ase.io.read()
-            snapshots = data_generator.load_snapshots(self.inputs, item, index)
-            for atoms in snapshots:
-                # Create Values, Parameters , Dictionary from atoms , structure_names , structure_weights
-                cart_p , scale_p , cell_p , atom_num , atom_i , atom_i_p , type_num , type_idx  = self._get_structrue_info(\
-                    atoms , structure_names , structure_weights)
-                
-                # Initialize result dictionary with inputs
-                res = self._init_result( type_num , structure_names , structure_weights , idx , atom_i)
+            # snapshots format : ase.atoms.Atoms object iterator
+            snapshots = data_generator.load_snapshots(item)
 
-                for _ ,jtem in enumerate(self.parent.inputs['atom_types']):
-                    
+            for snapshot in snapshots:
+                # Create Values, Parameters , Dictionary from snapshot , structure_tags , structure_weights
+                # ...need more info...
+                cart_p , scale_p , cell_p , atom_num , atom_i , atom_i_p , type_num , type_idx  = self._get_structrue_info(\
+                    snapshot , structure_tags , structure_weights)
+                
+                # Initialize result dictionary
+                # dictionary keys: "x", "dx", "da", "params", "N", "tot_num", "partition", "struct_type", "struct_weight", "atom_idx"
+                result = self._init_result(type_num , structure_tags , structure_weights , tag_idx , atom_i)
+
+                for _ ,jtem in enumerate(self.parent.inputs['atom_types']):    
                     # Set number of MPI 
                     #begin , end = self._set_mpi(type_num , jtem)
                     #cal_num , cal_atoms_p , x , dx , da , x_p , dx_p , da_p = self._get_sf_input(type_idx ,\
@@ -122,20 +122,21 @@ class Symmetry_function(object):
                     #comm.barrier()
                     #errnos = comm.gather(errno)
                     #errnos = comm.bcast(errnos)
-                    # Check error occurs
-                    #self._check_error(errnos)
 
-                    # Set res Dictionary from calculated value
-                    res = self._set_result( res , x  , dx , da ,  type_num , jtem , symf_params_set , atom_num)
+                    # Check error occurs
+                    self._check_error(errno)
+
+                    # Set result Dictionary from calculated value
+                    result = self._set_result(result , x  , dx , da , type_num , jtem , symf_params_set , atom_num)
                 # End of for loop
                 
-                # E, F, S extract from snapshot
-                res =  self._set_EFS(res , atoms)
+                # extract E, F, S from snapshot
+                result =  self._set_EFS(result , snapshot)
 
-                # Save "res" data to pickle file
+                # Save "result" data to pickle file
                 # ...Need append option for continue generate...
                 # ...Need append option for select directory...
-                data_generator.save_to_pickle(res, idx, save_dir='./data')
+                tmp_endfile = data_generator.save_to_pickle(result, tag_idx, save_dir='./data')
 
             self.parent.logfile.write(': ~{}\n'.format(tmp_endfile))
 
@@ -155,29 +156,13 @@ class Symmetry_function(object):
             symf_params_set[element]['num'] = len(symf_params_set[element]['total'])            
         return symf_params_set
 
-    # Set index using item and write logfile using item
-    def _set_index(self,item):
-        # FIXME: add another input type
-        if len(item) == 1:
-            index = 0 
-            #if comm.rank == 0:
-            self.parent.logfile.write('{} 0'.format(item[0]))
-        else:
-            if ':' in item[1]:
-                index = item[1]
-            else:
-                index = int(item[1])
-        #if comm.rank == 0:
-        self.parent.logfile.write('{} {}'.format(item[0], item[1]))        
-        return index
-
     # Calculate and adjust varialbes 
-    def _get_structrue_info(self, atoms , structure_names , structure_weights , ind):
-        cart = np.copy(atoms.get_positions(wrap=True), order='C')
-        scale = np.copy(atoms.get_scaled_positions(), order='C')
-        cell = np.copy(atoms.cell, order='C')
+    def _get_structrue_info(self, snapshot , structure_tags , structure_weights):
+        cart = np.copy(snapshot.get_positions(wrap=True), order='C')
+        scale = np.copy(snapshot.get_scaled_positions(), order='C')
+        cell = np.copy(snapshot.cell, order='C')
 
-        symbols = np.array(atoms.get_chemical_symbols())
+        symbols = np.array(snapshot.get_chemical_symbols())
         atom_num = len(symbols)
         atom_i = np.zeros([len(symbols)], dtype=np.intc, order='C')
         type_num = dict()
@@ -200,20 +185,20 @@ class Symmetry_function(object):
 
         return cart_p , scale_p , cell_p , atom_num , atom_i ,atom_i_p , type_num , type_idx 
 
-    def _init_result(self , type_num , structure_names , structure_weights , idx , atom_i):
-        # Init res Dictionary 
-        res = dict()
-        res['x'] = dict()
-        res['dx'] = dict()
-        res['da'] = dict()
-        res['params'] = dict()
-        res['N'] = type_num
-        res['tot_num'] = np.sum(list(type_num.values()))
-        res['partition'] = np.ones([res['tot_num']]).astype(np.int32)
-        res['struct_type'] = structure_names[idx]
-        res['struct_weight'] = structure_weights[idx]
-        res['atom_idx'] = atom_i
-        return res
+    def _init_result(self , type_num , structure_tags , structure_weights , idx , atom_i):
+        # Init result Dictionary 
+        result = dict()
+        result['x'] = dict()
+        result['dx'] = dict()
+        result['da'] = dict()
+        result['params'] = dict()
+        result['N'] = type_num
+        result['tot_num'] = np.sum(list(type_num.values()))
+        result['partition'] = np.ones([result['tot_num']]).astype(np.int32)
+        result['struct_type'] = structure_tags[idx]
+        result['struct_weight'] = structure_weights[idx]
+        result['atom_idx'] = atom_i
+        return result
 
 
 
@@ -263,41 +248,41 @@ class Symmetry_function(object):
                 assert errno == 0    
     
     # Set resulatant Dictionary
-    def _set_result(self , res , x  , dx , da ,  type_num , jtem , symf_params_set , atom_num):
+    def _set_result(self , result , x  , dx , da ,  type_num , jtem , symf_params_set , atom_num):
         if type_num[jtem] != 0:
             # IF MPI available
-            #res['x'][jtem] = np.array(comm.gather(x, root=0))
-            #res['dx'][jtem] = np.array(comm.gather(dx, root=0))
-            #res['da'][jtem] = np.array(comm.gather(da, root=0))
+            #result['x'][jtem] = np.array(comm.gather(x, root=0))
+            #result['dx'][jtem] = np.array(comm.gather(dx, root=0))
+            #result['da'][jtem] = np.array(comm.gather(da, root=0))
             # For Serial
-            res['x'][jtem] = np.array(x)
-            res['dx'][jtem] = np.array(dx)
-            res['da'][jtem] = np.array(da)
+            result['x'][jtem] = np.array(x)
+            result['dx'][jtem] = np.array(dx)
+            result['da'][jtem] = np.array(da)
             #if comm.rank == 0:
-            res['x'][jtem] = np.concatenate(res['x'][jtem], axis=0).\
+            result['x'][jtem] = np.concatenate(result['x'][jtem], axis=0).\
                                 reshape([type_num[jtem], symf_params_set[jtem]['num']])
-            res['dx'][jtem] = np.concatenate(res['dx'][jtem], axis=0).\
+            result['dx'][jtem] = np.concatenate(result['dx'][jtem], axis=0).\
                                 reshape([type_num[jtem], symf_params_set[jtem]['num'], atom_num, 3])
-            res['da'][jtem] = np.concatenate(res['da'][jtem], axis=0).\
+            result['da'][jtem] = np.concatenate(result['da'][jtem], axis=0).\
                                 reshape([type_num[jtem], symf_params_set[jtem]['num'], 3, 6])
-            res['partition_'+jtem] = np.ones([type_num[jtem]]).astype(np.int32)
+            result['partition_'+jtem] = np.ones([type_num[jtem]]).astype(np.int32)
         else:
-            res['x'][jtem] = np.zeros([0, symf_params_set[jtem]['num']])
-            res['dx'][jtem] = np.zeros([0, symf_params_set[jtem]['num'], atom_num, 3])
-            res['da'][jtem] = np.zeros([0, symf_params_set[jtem]['num'], 3, 6])
-            res['partition_'+jtem] = np.ones([0]).astype(np.int32)
-        res['params'][jtem] = symf_params_set[jtem]['total']
-        return res
+            result['x'][jtem] = np.zeros([0, symf_params_set[jtem]['num']])
+            result['dx'][jtem] = np.zeros([0, symf_params_set[jtem]['num'], atom_num, 3])
+            result['da'][jtem] = np.zeros([0, symf_params_set[jtem]['num'], 3, 6])
+            result['partition_'+jtem] = np.ones([0]).astype(np.int32)
+        result['params'][jtem] = symf_params_set[jtem]['total']
+        return result
     
     # Check ase version , E, F, S extract from snapshot , Raise Error 
-    def _set_EFS(self , res  , atoms):
+    def _set_EFS(self , result  , snapshot):
         if not (self.inputs['refdata_format']=='vasp' or self.inputs['refdata_format']=='vasp-xdatcar'):
             if ase.__version__ >= '3.18.0':
-                res['E'] = atoms.get_potential_energy(force_consistent=True)
+                result['E'] = snapshot.get_potential_energy(force_consistent=True)
             else:
-                res['E'] = atoms.get_total_energy()
+                result['E'] = snapshot.get_total_energy()
             try:
-                res['F'] = atoms.get_forces()
+                result['F'] = snapshot.get_forces()
             except:
                 if self.parent.inputs['neural_network']['use_force']:
                     err = "There is not force information! Set 'use_force' = false"
@@ -305,15 +290,15 @@ class Symmetry_function(object):
                     self.parent.logfile.write("\nError: {:}\n".format(err))
                     raise NotImplementedError(err)
             try:
-                res['S'] = -atoms.get_stress()/units.GPa*10
+                result['S'] = -snapshot.get_stress()/units.GPa*10
                 # ASE returns the stress tensor by voigt order xx yy zz yz zx xy
-                res['S'] = res['S'][[0, 1, 2, 5, 3, 4]]
+                result['S'] = result['S'][[0, 1, 2, 5, 3, 4]]
             except:
                 if self.parent.inputs['neural_network']['use_stress']:
                     err = "There is not stress information! Set 'use_stress' = false"
                     #if comm.rank == 0:
                     self.parent.logfile.write("\nError: {:}\n".format(err))
                     raise NotImplementedError(err)
-        return res
+        return result
    
     
