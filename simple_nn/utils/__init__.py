@@ -2,7 +2,7 @@ from __future__ import print_function
 import six
 from six.moves import cPickle as pickle
 import numpy as np
-from ._libgdf import lib, ffi
+#from ._libgdf import lib, ffi
 import os, sys, psutil, shutil
 import types
 import re

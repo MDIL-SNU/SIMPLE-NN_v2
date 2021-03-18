@@ -1,7 +1,0 @@
-[OUTCAR1]
-/home/hswoo369/toy-model/nnp/outcar/OUTCAR_1 ::3
-[OUTCAR2:3]
-/home/hswoo369/toy-model/nnp/outcar/OUTCAR_2 ::
-[OUTCAR3 : 3]
-/home/hswoo369/toy-model/nnp/outcar/OUTCAR_3 ::
-
