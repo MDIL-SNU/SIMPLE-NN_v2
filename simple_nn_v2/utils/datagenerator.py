@@ -4,9 +4,9 @@ import numpy as np
 import ase
 from ase import io
 import os
-from ...utils import compress_outcar
+from . import compress_outcar
 
-class DataGenerator:
+class Datagenerator:
     """ This class handles structure list file, OUTCAR files for making data set(format: pickle or torch)
 
     1. Parsing structure list file
@@ -27,14 +27,15 @@ class DataGenerator:
         add_data():
     """
 
-    def __init__(self, inputs, structure_list='./str_list', pickle_list='./pickle_list'):
+    def __init__(self, inputs, structure_list='./str_list', pickle_list='./pickle_list', parent = None):
         self.inputs = inputs
         self.structure_list = structure_list
         self.pickle_list = pickle_list
         self.data_dir = './data'
         self._is_pickle_list_open = False
         self._data_idx = 0
-        
+        self.parent = parent
+
         #if inputs['add_data']:
         #    self.check_exist_data(self.inputs['add_data'])
 
@@ -124,7 +125,8 @@ class DataGenerator:
     
     # Structure tag is in front of ":" and weight is back of ":" ex) [structur_tag : weight]
     # If no explicit weight(no ":"), default weight=1.0  ex) [structure_tag]
-    def _get_tag_and_weight(self, text):
+    @staticmethod
+    def _get_tag_and_weight(text):
         if ':' in text:
             splited_text = text.rsplit(':', 1)
             try:
@@ -152,7 +154,6 @@ class DataGenerator:
             snapshots(ase.atoms.Atoms object): Atoms object from ase module that contain structure information, E, F, S ...
         """
         file_path = item[0]
-
         if len(item) == 1:
             index = 0
             self.parent.logfile.write('{} 0'.format(file_path))
@@ -162,11 +163,11 @@ class DataGenerator:
             else:
                 index = int(item[1])
             self.parent.logfile.write('{} {}'.format(file_path, item[1]))
-         
+
         if self.inputs['refdata_format'] == 'vasp-out':
             if self.inputs['compress_outcar']:
                 tmp_name = compress_outcar(file_path)
-
+                print(tmp_name)
                 if ase.__version__ >= '3.18.0':
                     snapshots = io.read(tmp_name, index=index, format=self.inputs['refdata_format'])
                 else:
@@ -202,7 +203,11 @@ class DataGenerator:
             self._is_pickle_list_open = True
             self._pickle_fil = open(self.pickle_list, 'w')
 
-        self._check_exist_data(save_dir)
+        ### Error occur during this functon
+        #self._check_exist_data(save_dir)
+        # ADDED temprary
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
 
         self._data_idx += 1
         try:

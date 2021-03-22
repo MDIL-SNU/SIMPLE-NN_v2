@@ -16,7 +16,8 @@ from ...utils import graph as grp
 from braceexpand import braceexpand
 from sklearn.decomposition import PCA
 
-from DataGenerator import DataGenerator
+from ...utils.datagenerator import Datagenerator
+
 
 def _read_params(filename):
     params_i = list()
@@ -73,9 +74,11 @@ class Symmetry_function(object):
         self.inputs = self.parent.inputs['symmetry_function']
 
     # Genreate Method 
-    def generate(self):
+    def generate(self , debug = False):
         # DataGenerator object for handling [str_list], OUTCAR files, pickle files
-        data_generator = DataGenerator(self.inputs, self.structure_list, self.pickle_list)
+
+        data_generator = Datagenerator(self.inputs, self.structure_list, self.pickle_list)
+        data_generator.parent = self.parent
 
         # Get structure list from "structure_list" file
         #structures: list of [STRUCTURE_PATH, INDEX_EXP]  ex) [["/PATH/OUTCAR1", "::10"], ["/PATH/OUTCAR2", "::"], ["/PATH/OUTCAR3", "::"]]
@@ -86,7 +89,12 @@ class Symmetry_function(object):
 
         # Get symmetry function parameter list for each atom types
         symf_params_set = self._parsing_symf_params()
-            
+
+        # C type parameter parsing to symf_params_set dictionary
+        for element in self.parent.inputs['atom_types']:
+            symf_params_set[element]['ip'] = _gen_2Darray_for_ffi(symf_params_set[element]['i'], ffi, "int")
+            symf_params_set[element]['dp'] = _gen_2Darray_for_ffi(symf_params_set[element]['d'], ffi)
+
         for item, tag_idx in zip(structures, structure_tag_idx):
             # Load structure information using ase module
             # snapshots format : ase.atoms.Atoms object iterator
@@ -95,9 +103,15 @@ class Symmetry_function(object):
             for snapshot in snapshots:
                 # Create Values, Parameters , Dictionary from snapshot , structure_tags , structure_weights
                 # ...need more info...
-                cart_p, scale_p, cell_p, atom_num, atom_i, atom_i_p, type_num, type_idx = self._get_structrue_info(\
-                    snapshot , structure_tags , structure_weights)
-                
+                atom_num, atom_i, type_num, type_idx, cart, scale, cell = self._get_structrue_info(\
+                                              snapshot , structure_tags , structure_weights)
+
+                # Make C type data & 2D array from atom_i, cart, scale, cell
+                atom_i_p = ffi.cast("int *", atom_i.ctypes.data)
+                cart_p  = _gen_2Darray_for_ffi(cart, ffi)
+                scale_p = _gen_2Darray_for_ffi(scale, ffi)
+                cell_p  = _gen_2Darray_for_ffi(cell, ffi)
+
                 # Initialize result dictionary
                 # dictionary keys: "x", "dx", "da", "params", "N", "tot_num", "partition", "struct_type", "struct_weight", "atom_idx"
                 result = self._init_result(type_num, structure_tags, structure_weights, tag_idx, atom_i)
@@ -109,21 +123,26 @@ class Symmetry_function(object):
                     # jtem  , symf_params_set , atom_num , [begin , end] )
 
                     # For Serial Calculations
-                    cal_num, cal_atoms_p, x, dx, da, x_p, dx_p, da_p = self._init_sf_variables(type_idx,\
+                    cal_atoms, cal_num,  x, dx, da = self._init_sf_variables(type_idx,\
                      jtem, symf_params_set, atom_num)
+                   
+                    # Make C array from x, dx, da
+                    cal_atoms_p = ffi.cast("int *", cal_atoms.ctypes.data)
+                    x_p = _gen_2Darray_for_ffi(x, ffi)
+                    dx_p = _gen_2Darray_for_ffi(dx, ffi)
+                    da_p = _gen_2Darray_for_ffi(da, ffi)        
 
                     #Calculate symmetry functon using C type datas
                     errno = lib.calculate_sf(cell_p, cart_p, scale_p, \
                                      atom_i_p, atom_num, cal_atoms_p, cal_num, \
                                      symf_params_set[jtem]['ip'], symf_params_set[jtem]['dp'], symf_params_set[jtem]['num'], \
                                      x_p, dx_p, da_p)
-                    
                     #comm.barrier()
                     #errnos = comm.gather(errno)
                     #errnos = comm.bcast(errnos)
 
                     # Check error occurs
-                    self._check_error(errno)
+                    #self._check_error(errno)
 
                     # Set result Dictionary from calculated value
                     result = self._set_result(result, x , dx, da, type_num, jtem, symf_params_set, atom_num)
@@ -139,9 +158,6 @@ class Symmetry_function(object):
 
             self.parent.logfile.write(': ~{}\n'.format(tmp_endfile))
 
-    # Refactory  functions as
-    # _parsing_params , _set_index , _adjust_variables , _set_mpi , _get_sf_input 
-    # _extract_data , _check_error , _set_res , _extract_data
     # Set symf_params_set from self.parent.inputs
     def _parsing_symf_params(self):
         symf_params_set = dict()
@@ -149,13 +165,11 @@ class Symmetry_function(object):
             symf_params_set[element] = dict()
             symf_params_set[element]['i'], symf_params_set[element]['d'] = \
                 _read_params(self.inputs['params'][element])
-            symf_params_set[element]['ip'] = _gen_2Darray_for_ffi(symf_params_set[element]['i'], ffi, "int")
-            symf_params_set[element]['dp'] = _gen_2Darray_for_ffi(symf_params_set[element]['d'], ffi)
             symf_params_set[element]['total'] = np.concatenate((symf_params_set[element]['i'], symf_params_set[element]['d']), axis=1)
             symf_params_set[element]['num'] = len(symf_params_set[element]['total'])            
         return symf_params_set
 
-    # Calculate and adjust varialbes 
+    # Get information from structure
     def _get_structrue_info(self, snapshot, structure_tags, structure_weights):
         cart = np.copy(snapshot.get_positions(wrap=True), order='C')
         scale = np.copy(snapshot.get_scaled_positions(), order='C')
@@ -174,18 +188,11 @@ class Symmetry_function(object):
             # indexs are sorted in this part.
             # if not, it could generate bug in training process for force training
             type_idx[jtem] = np.arange(atom_num)[tmp]
-        atom_i_p = ffi.cast("int *", atom_i.ctypes.data)
 
-        # Get C type variable
-        cart_p  = _gen_2Darray_for_ffi(cart, ffi)
-        scale_p = _gen_2Darray_for_ffi(scale, ffi)
-        cell_p  = _gen_2Darray_for_ffi(cell, ffi)
+        return  atom_num, atom_i, type_num, type_idx , cart , scale , cell
 
-
-        return cart_p, scale_p, cell_p, atom_num, atom_i, atom_i_p, type_num, type_idx 
-
+    # Init result Dictionary 
     def _init_result(self, type_num, structure_tags, structure_weights, idx, atom_i):
-        # Init result Dictionary 
         result = dict()
         result['x'] = dict()
         result['dx'] = dict()
@@ -210,25 +217,21 @@ class Symmetry_function(object):
             end += 1
         return begin, end
         
-    # Get C type data to calculate symmetry function with C 
+    # Get data to make C array from variables
     def _init_sf_variables(self, type_idx, jtem, symf_params_set, atom_num, mpi_range = None ):
         if mpi_range != None: # MPI calculation
             cal_atoms = np.asarray(type_idx[jtem][mpi_range[0]:mpi_range[1]], dtype=np.intc, order='C')
         elif mpi_range == None: # Serial calculation
             cal_atoms = np.asarray(type_idx[jtem], dtype=np.intc, order='C')
         cal_num = len(cal_atoms)
-        cal_atoms_p = ffi.cast("int *", cal_atoms.ctypes.data)
 
         x = np.zeros([cal_num, symf_params_set[jtem]['num']], dtype=np.float64, order='C')
         dx = np.zeros([cal_num, symf_params_set[jtem]['num'] * atom_num * 3], dtype=np.float64, order='C')
         da = np.zeros([cal_num, symf_params_set[jtem]['num'] * 3 * 6], dtype=np.float64, order='C')
 
-        x_p = _gen_2Darray_for_ffi(x, ffi)
-        dx_p = _gen_2Darray_for_ffi(dx, ffi)
-        da_p = _gen_2Darray_for_ffi(da, ffi)        
-        return cal_num, cal_atoms_p, x, dx, da, x_p, dx_p, da_p
+        da = np.zeros([cal_num, symf_params_set[jtem]['num'] * 3 * 6], dtype=np.float64, order='C')
 
-    # Check error occurs in errnos at MPI environment
+        return cal_atoms, cal_num, x, dx, da
     def _check_error(self, errnos):   
         for errno in errnos:
             if errno == 1:
