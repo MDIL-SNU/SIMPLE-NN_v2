@@ -6,7 +6,7 @@ from ase import io
 import os
 from . import compress_outcar
 
-class Datagenerator:
+class Data_generator:
     """ This class handles structure list file, OUTCAR files for making data set(format: pickle or torch)
 
     1. Parsing structure list file
@@ -27,7 +27,7 @@ class Datagenerator:
         add_data():
     """
 
-    def __init__(self, inputs, structure_list='./str_list', pickle_list='./pickle_list', parent = None):
+    def __init__(self, inputs, structure_list='./str_list', pickle_list='./pickle_list', parent=None):
         self.inputs = inputs
         self.structure_list = structure_list
         self.pickle_list = pickle_list
@@ -125,8 +125,7 @@ class Datagenerator:
     
     # Structure tag is in front of ":" and weight is back of ":" ex) [structur_tag : weight]
     # If no explicit weight(no ":"), default weight=1.0  ex) [structure_tag]
-    @staticmethod
-    def _get_tag_and_weight(text):
+    def _get_tag_and_weight(self, text):
         if ':' in text:
             splited_text = text.rsplit(':', 1)
             try:
@@ -200,14 +199,10 @@ class Datagenerator:
         """
 
         if self._is_pickle_list_open == False:
-            self._is_pickle_list_open = True
             self._pickle_fil = open(self.pickle_list, 'w')
+            self._is_pickle_list_open = True
 
-        ### Error occur during this functon
-        #self._check_exist_data(save_dir)
-        # ADDED temprary
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+        self._check_exist_data(save_dir)
 
         self._data_idx += 1
         try:
@@ -228,6 +223,15 @@ class Datagenerator:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         else:
+            last_idx=0
             for fil in os.listdir(save_dir):
-                last_idx = fil.split('.')[0][4:]
+                try:
+                    if 'data' in fil:
+                        idx = int(fil.split('.')[0][4:])
+                except ValueError:
+                    idx = 0
+
+                if idx > last_idx:
+                    last_idx = idx
+                    
             self._data_idx = last_idx
