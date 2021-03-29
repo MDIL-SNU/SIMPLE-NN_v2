@@ -46,6 +46,8 @@ class Symmetry_function(object):
                                       'scale_type': 'minmax',
                                       'scale_scale': 1.0,
                                       'scale_rho': None,
+                                      'save_to_pickle':False,
+                                      'save_directory':'./data'
                                   }
                               }
         self.structure_list = './str_list'
@@ -58,7 +60,7 @@ class Symmetry_function(object):
         self.inputs = self.parent.inputs['symmetry_function']
 
     # Genreate Method 
-    def generate(self , debug = False):
+    def generate(self):
         """ Generate structure data files(format: pickle/pt) that listed in "structure_list" file
 
         1. Get structure list from "structure_list" file from parsing "structure_list" file
@@ -88,10 +90,11 @@ class Symmetry_function(object):
         6. Save to data file (format: pickle or pt)
 
         """
-
+        
         # Data_generator object for handling [str_list], OUTCAR files, pickle/pt files
-        data_generator = Data_generator(self.inputs, self.structure_list, self.pickle_list, self.parent)
-
+        #data_generator = Data_generator(self.inputs, self.structure_list, self.pickle_list, self.parent)
+        data_generator = Data_generator(self.inputs, self.parent.logfile, self.structure_list, self.pickle_list)
+        
         # 1. Get structure list from "structure_list" file
         # structures: list of [STRUCTURE_PATH, INDEX_EXP]  ex) [["/PATH/OUTCAR1", "::10"], ["/PATH/OUTCAR2", "::"], ["/PATH/OUTCAR3", "::"]]
         # structure_tag_idx(int list): list of structure tag index of each STRUCTURE_PATH    ex) [1, 2, 2]
@@ -123,7 +126,7 @@ class Symmetry_function(object):
 
                 # Initialize result dictionary
                 result = self._init_result(type_num, structure_tags, structure_weights, tag_idx, atom_type_idx)
-
+                
                 for _ ,jtem in enumerate(self.parent.inputs['atom_types']):    
                     # Set number of MPI 
                     #begin , end = self._set_mpi(type_num , jtem)
@@ -152,19 +155,24 @@ class Symmetry_function(object):
                     #errnos = comm.bcast(errnos)
 
                     # Check error occurs
-                    self._check_error(errno)
+                    #self._check_error(errno)
 
                     # Set result to dictionary format from calculated value
-                    result = self._set_result(result, x , dx, da, type_num, jtem, symf_params_set, atom_num)
+                    self._set_result(result, x , dx, da, type_num, jtem, symf_params_set, atom_num)
                 # End of for loop
                 
                 # Extract E, F, S from snapshot and append to result dictionary
-                result =  self._set_EFS(result, snapshot)
+                E, F, S = self._extract_EFS(result, snapshot)
+                # Set result from _extract_EFS
+                result['E'] = E
+                result['F'] = F
+                result['S'] = S
 
                 # 6. Save "result" data to pickle file
                 # ...Need append option for continue generate...
                 # ...Need append option for select directory...
-                tmp_endfile = data_generator.save_to_pickle(result, tag_idx, save_dir='./data')
+                #tmp_endfile = data_generator.save_to_pickle(result, tag_idx, save_dir='./data')
+                tmp_endfile = data_generator.save_to_pickle(result, tag_idx)
 
             self.parent.logfile.write(': ~{}\n'.format(tmp_endfile))
 
@@ -298,17 +306,16 @@ class Symmetry_function(object):
             result['da'][jtem] = np.zeros([0, symf_params_set[jtem]['num'], 3, 6])
             result['partition_'+jtem] = np.ones([0]).astype(np.int32)
         result['params'][jtem] = symf_params_set[jtem]['total']
-        return result
     
     # Check ase version, E, F, S extract from snapshot, Raise Error 
-    def _set_EFS(self, result, snapshot):
+    def _extract_EFS(self, result, snapshot):
         if not (self.inputs['refdata_format']=='vasp' or self.inputs['refdata_format']=='vasp-xdatcar'):
             if ase.__version__ >= '3.18.0':
-                result['E'] = snapshot.get_potential_energy(force_consistent=True)
+                E = snapshot.get_potential_energy(force_consistent=True)
             else:
-                result['E'] = snapshot.get_total_energy()
+                E = snapshot.get_total_energy()
             try:
-                result['F'] = snapshot.get_forces()
+                F = snapshot.get_forces()
             except:
                 if self.parent.inputs['neural_network']['use_force']:
                     err = "There is not force information! Set 'use_force' = false"
@@ -316,15 +323,15 @@ class Symmetry_function(object):
                     self.parent.logfile.write("\nError: {:}\n".format(err))
                     raise NotImplementedError(err)
             try:
-                result['S'] = -snapshot.get_stress()/units.GPa*10
+                S = -snapshot.get_stress()/units.GPa*10
                 # ASE returns the stress tensor by voigt order xx yy zz yz zx xy
-                result['S'] = result['S'][[0, 1, 2, 5, 3, 4]]
+                S = S[[0, 1, 2, 5, 3, 4]]
             except:
                 if self.parent.inputs['neural_network']['use_stress']:
                     err = "There is not stress information! Set 'use_stress' = false"
                     #if comm.rank == 0:
                     self.parent.logfile.write("\nError: {:}\n".format(err))
                     raise NotImplementedError(err)
-        return result
+        return E, F, S
    
     

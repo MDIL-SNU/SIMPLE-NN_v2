@@ -317,6 +317,8 @@ def compress_outcar(filename):
         for line in fil:
             if 'POTCAR:' in line:
                 res.write(line)
+            if 'POSCAR:' in line:
+                res.write(line)
             elif 'ions per type' in line:
                 res.write(line)
             elif 'direct lattice vectors' in line:
