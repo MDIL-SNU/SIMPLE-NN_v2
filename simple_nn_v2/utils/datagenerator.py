@@ -5,46 +5,49 @@ import ase
 from ase import io
 import os
 from . import compress_outcar
+import torch
 
 class Data_generator:
     """ This class handles structure list file, OUTCAR files for making data set(format: pickle or torch)
 
     1. Parsing structure list file
     2. Loading structure snapshots in structure list
-    3. After preprocess structure snapshots in Symmetry_function class, save results to pickle or torch files
+    3. After preprocess structure snapshots in Symmetry_function class, save results to pickle or pt files
 
     Attributes:
         inputs(dic): parsed dictionary form of [input.yaml] file
         structure_list(str): path of structure list file (default='./str_list') 
-        pickle_list(str): path of file that contains every pickle file path (default='./pickle_list')
-        data_dir(str): path of directory that contains pickle files
+        data_list(str): path of file that contains every structure data file path (default='./pickle_list')
+        _is_data_list_open(bool): check if data_list file is open
         _data_idx(int): index of current final pickle data (total number of pickle files in "data_dir")
+        logfile(file stream): log file stream
+        data_dir(str): directory path for saving data
     Methods:
         parse_structure_list(): Parsing "structure_list" file (default="./str_list")
         load_snapshots(): Read structure file and load snapshots using ase.io.read() method
-        save_to_pickle(): 
-        check_exist_data():
-        add_data():
+        save_to_datafile(): 
     """
 
-    def __init__(self, inputs, structure_list='./str_list', pickle_list='./pickle_list', parent=None):
+    def __init__(self, inputs, logfile, structure_list='./str_list', data_list='./pickle_list'):
         self.inputs = inputs
         self.structure_list = structure_list
-        self.pickle_list = pickle_list
-        self.data_dir = './data'
-        self._is_pickle_list_open = False
+        self.data_list = data_list
+        self._is_data_list_open = False
         self._data_idx = 0
-        self.parent = parent
+        self.logfile = logfile
+        self.data_dir = inputs['save_directory']
 
-        #if inputs['add_data']:
-        #    self.check_exist_data(self.inputs['add_data'])
+        # check if data_dir is exist
+        if os.path.exists(self.data_dir):
+            err = "Directory {:} is already exist, remove directory or set another path in 'save_directory' option".format(self.data_dir)
+            self.logfile.write("\nError: {:}\n".format(err))
+            raise NotImplementedError(err)
 
     def __del__(self):
-        if self._is_pickle_list_open == True:
-            self._pickle_fil.close()
-            self._is_pickle_list_open = False
+        if self._is_data_list_open == True:
+            self._data_list_fil.close()
+            self._is_data_list_open = False
 
-    
     def parse_structure_list(self):
         """ Parsing "structure_list" file (default="./str_list")
 
@@ -90,10 +93,10 @@ class Data_generator:
                     
                     if weight < 0:
                         err = "Structure weight must be greater than or equal to zero."
-                        self.parent.logfile.write("Error: {:}\n".format(err))
+                        self.logfile.write("Error: {:}\n".format(err))
                         raise ValueError(err)
                     elif np.isclose(weight, 0):
-                        self.parent.logfile.write("Warning: Structure weight for '{:}' is set to zero.\n".format(tag))
+                        self.logfile.write("Warning: Structure weight for '{:}' is set to zero.\n".format(tag))
 
                     # If the same structure tags are given multiple times with different weights,
                     # other than first value will be ignored!
@@ -104,7 +107,7 @@ class Data_generator:
                     else:                   
                         existent_weight = structure_weights[structure_tags.index(tag)]
                         if not np.isclose(existent_weight - weight, 0):
-                            self.parent.logfile.write("Warning: Structure weight for '{:}' is set to {:} (previously set to {:}). New value will be ignored\n"\
+                            self.logfile.write("Warning: Structure weight for '{:}' is set to {:} (previously set to {:}). New value will be ignored\n"\
                                                         .format(tag, weight, existent_weight))
                     continue
                 # 2. Extract STRUCTURE_PATH and INDEX, then set structure tag index
@@ -117,9 +120,10 @@ class Data_generator:
                             structures.append([structure_path, index_exp])
                             structure_tag_idx.append(structure_tags.index(tag))
                     except:
-                        print('Unexpected line format in [str_list]')
-                        print('ERROR LINE: {}'.format(line))
-                        exit()
+                        err = "Unexpected line format in [str_list]"
+                        self.logfile.write("\nError: {:}\n".format(err))
+                        self.logfile.write("ERROR LINE: {:}\n".format(line))
+                        raise NotImplementedError(err)
 
         return structures, structure_tag_idx, structure_tags, structure_weights
     
@@ -155,13 +159,13 @@ class Data_generator:
         file_path = item[0]
         if len(item) == 1:
             index = 0
-            self.parent.logfile.write('{} 0'.format(file_path))
+            self.logfile.write('{} 0'.format(file_path))
         else:
             if ':' in item[1]:
                 index = item[1]
             else:
                 index = int(item[1])
-            self.parent.logfile.write('{} {}'.format(file_path, item[1]))
+            self.logfile.write('{} {}'.format(file_path, item[1]))
 
         if self.inputs['refdata_format'] == 'vasp-out':
             if self.inputs['compress_outcar']:
@@ -177,61 +181,51 @@ class Data_generator:
                 else:
                     snapshots = io.read(file_path, index=index, format=self.inputs['refdata_format'], force_consistent=True)
         else:
+            self.logfile.write("Warning: Structure format is not OUTCAR(['refdata_format'] : {:}). Unexpected error can occur.\n"\
+                                                        .format(self.inputs['refdata_format']))
             snapshots = io.read(file_path, index=index, format=self.inputs['refdata_format'])
         
         return snapshots
 
-    def save_to_pickle(self, data, tag_idx, save_dir='./data'):
-        # ... make input option : input['generate_features']['add_data'] ='./data'...
+    def save_to_datafile(self, data, tag_idx):
         """ Write result data to pickle file
 
         Check if pickle list file is open
-        Check if previous data exist
         Save data as data{index}.pickle ({index}: +1 of last index in save directory)
         Write pickle file path in pickle list
 
         Args:
             data(dic): result data that created after preprocessing in Symmetry_function class
             tag_idx(int): structure tag index of snapshot
-            save_dir(str): save directory for pickle file
         Returns:
             tmp_filename(str): saved pickle file path
         """
 
-        if self._is_pickle_list_open == False:
-            self._pickle_fil = open(self.pickle_list, 'w')
-            self._is_pickle_list_open = True
+        if self._is_data_list_open == False:
+            self._data_list_fil = open(self.data_list, 'w')
+            self._is_data_list_open = True
 
-        self._check_exist_data(save_dir)
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
 
         self._data_idx += 1
         try:
-            tmp_filename = os.path.join(save_dir, "data{}.pickle".format(self._data_idx))
-            with open(tmp_filename, "wb") as fil:
-                pickle.dump(data, fil, protocol=2)
+            if self.inputs['save_to_pickle'] == False:
+                tmp_filename = os.path.join(self.data_dir, "data{}.pt".format(self._data_idx))
+                torch.save(data, tmp_filename)
+            elif self.inputs['save_to_pickle'] == True:
+                tmp_filename = os.path.join(self.data_dir, "data{}.pickle".format(self._data_idx))
+                with open(tmp_filename, "wb") as fil:
+                    pickle.dump(data, fil, protocol=2)
         except:
             self._data_idx -= 1
-            # ...Raise error...
+            if self.inputs['save_to_pickle'] == False:
+                err = "Unexpected error during save data to .pt file"
+            else:
+                err = "Unexpected error during save data to .pickle file"
+            self.logfile.write("\nError: {:}\n".format(err))
+            raise NotImplementedError(err)
 
-        self._pickle_fil.write('{}:{}\n'.format(tag_idx, tmp_filename))
+        self._data_list_fil.write('{}:{}\n'.format(tag_idx, tmp_filename))
 
         return tmp_filename
-
-    # Check is "save_dir" exist
-    # If previous pickle file exist, set _data_idx to last index of pickle for continue save
-    def _check_exist_data(self, save_dir):
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        else:
-            last_idx=0
-            for fil in os.listdir(save_dir):
-                try:
-                    if 'data' in fil:
-                        idx = int(fil.split('.')[0][4:])
-                except ValueError:
-                    idx = 0
-
-                if idx > last_idx:
-                    last_idx = idx
-                    
-            self._data_idx = last_idx

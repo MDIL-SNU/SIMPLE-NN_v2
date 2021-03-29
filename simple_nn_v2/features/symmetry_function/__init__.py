@@ -68,10 +68,10 @@ class Symmetry_function(object):
             symf_params_set[element] keys:
                 'num': total number of symmetry functions
                 'total': full parameters in file
-                'i': int value parameters in file
-                'd': double value parameters in file
-                'ip': convert int value parameters to c type array
-                'dp': convert dobule value parameters to c type array
+                'int': int value parameters in file
+                'double': double value parameters in file
+                'int_p': convert int value parameters to c type array
+                'double_p': convert dobule value parameters to c type array
         3. Load structure information using ase module (format: ase.atoms.Atoms object iterator)
         4. Extract structure information from snapshot
         5. Calculate symmetry functon values using C implemented code
@@ -107,8 +107,8 @@ class Symmetry_function(object):
 
         # Parsing C type symmetry function parameter to symf_params_set dictionary
         for element in self.parent.inputs['atom_types']:
-            symf_params_set[element]['ip'] = _gen_2Darray_for_ffi(symf_params_set[element]['i'], ffi, "int")
-            symf_params_set[element]['dp'] = _gen_2Darray_for_ffi(symf_params_set[element]['d'], ffi)
+            symf_params_set[element]['int_p'] = _gen_2Darray_for_ffi(symf_params_set[element]['int'], ffi, "int")
+            symf_params_set[element]['dobule_p'] = _gen_2Darray_for_ffi(symf_params_set[element]['double'], ffi)
 
         for item, tag_idx in zip(structures, structure_tag_idx):
             # 3. Load structure information using ase module (format: ase.atoms.Atoms object iterator)
@@ -116,7 +116,10 @@ class Symmetry_function(object):
 
             for snapshot in snapshots:
                 # 4. Extract structure information from snapshot (atom_num, cart, scale, cell)
-                atom_num, atom_type_idx, type_num, type_idx, cart, scale, cell = self._get_structure_info(snapshot)
+                # atom_type_idx(int list): list of type index for each atoms                    ex) [1,1,2,2,2,2]
+                # type_num(int dic): number of atoms for each types                             ex) {'Si': 2, 'O': 4}
+                # type_atom_idx(int list dic): list of atoms index that for each atom types     ex) {'Si': [0,1], 'O': [2,3,4,5]}
+                atom_num, atom_type_idx, type_num, type_atom_idx, cart, scale, cell = self._get_structure_info(snapshot)
 
                 # Make C type data & 2D array from atom_type_idx, cart, scale, cell
                 atom_type_idx_p = ffi.cast("int *", atom_type_idx.ctypes.data)
@@ -130,13 +133,13 @@ class Symmetry_function(object):
                 for _ ,jtem in enumerate(self.parent.inputs['atom_types']):    
                     # Set number of MPI 
                     #begin , end = self._set_mpi(type_num , jtem)
-                    #cal_atom_num , cal_atom_idx_p , x , dx , da , x_p , dx_p , da_p = self._get_sf_input(type_idx ,\
+                    #cal_atom_num , cal_atom_idx_p , x , dx , da , x_p , dx_p , da_p = self._get_sf_input(type_atom_idx ,\
                     # jtem  , symf_params_set , atom_num , [begin , end] )
 
                     # Initialize variables for calculation
                     # cal_atom_idx(int list): atom index for calculation    ex) [2,3,4]
                     # cal_atom_num(int): atom numbers for calculation       ex) 3
-                    cal_atom_idx, cal_atom_num,  x, dx, da = self._init_sf_variables(type_idx,\
+                    cal_atom_idx, cal_atom_num,  x, dx, da = self._init_sf_variables(type_atom_idx,\
                      jtem, symf_params_set, atom_num)
                    
                     # Make C array from x, dx, da
@@ -148,7 +151,7 @@ class Symmetry_function(object):
                     # 5. Calculate symmetry functon using C type data
                     errno = lib.calculate_sf(cell_p, cart_p, scale_p, \
                                      atom_type_idx_p, atom_num, cal_atom_idx_p, cal_atom_num, \
-                                     symf_params_set[jtem]['ip'], symf_params_set[jtem]['dp'], symf_params_set[jtem]['num'], \
+                                     symf_params_set[jtem]['int_p'], symf_params_set[jtem]['double_p'], symf_params_set[jtem]['num'], \
                                      x_p, dx_p, da_p)
                     #comm.barrier()
                     #errnos = comm.gather(errno)
@@ -162,17 +165,14 @@ class Symmetry_function(object):
                 # End of for loop
                 
                 # Extract E, F, S from snapshot and append to result dictionary
-                E, F, S = self._extract_EFS(result, snapshot)
+                E, F, S = self._extract_EFS(snapshot)
                 # Set result from _extract_EFS
                 result['E'] = E
                 result['F'] = F
                 result['S'] = S
 
                 # 6. Save "result" data to pickle file
-                # ...Need append option for continue generate...
-                # ...Need append option for select directory...
-                #tmp_endfile = data_generator.save_to_pickle(result, tag_idx, save_dir='./data')
-                tmp_endfile = data_generator.save_to_pickle(result, tag_idx)
+                tmp_endfile = data_generator.save_to_datafile(result, tag_idx)
 
             self.parent.logfile.write(': ~{}\n'.format(tmp_endfile))
 
@@ -181,9 +181,9 @@ class Symmetry_function(object):
         symf_params_set = dict()
         for element in self.parent.inputs['atom_types']:
             symf_params_set[element] = dict()
-            symf_params_set[element]['i'], symf_params_set[element]['d'] = \
+            symf_params_set[element]['int'], symf_params_set[element]['double'] = \
                 self.__read_params(self.inputs['params'][element])
-            symf_params_set[element]['total'] = np.concatenate((symf_params_set[element]['i'], symf_params_set[element]['d']), axis=1)
+            symf_params_set[element]['total'] = np.concatenate((symf_params_set[element]['int'], symf_params_set[element]['double']), axis=1)
             symf_params_set[element]['num'] = len(symf_params_set[element]['total'])            
         return symf_params_set
     
@@ -202,7 +202,7 @@ class Symmetry_function(object):
         return params_i, params_d
 
     # Extract structure information from snapshot (atom numbers, cart, scale, cell)
-    # Return variables related to structure information (atom_type_idx, type_num, type_idx)
+    # Return variables related to structure information (atom_type_idx, type_num, type_atom_idx)
     def _get_structure_info(self, snapshot):
         cart = np.copy(snapshot.get_positions(wrap=True), order='C')
         scale = np.copy(snapshot.get_scaled_positions(), order='C')
@@ -212,7 +212,7 @@ class Symmetry_function(object):
         atom_num = len(symbols)
         atom_type_idx = np.zeros([len(symbols)], dtype=np.intc, order='C')
         type_num = dict()
-        type_idx = dict()
+        type_atom_idx = dict()
         for j,jtem in enumerate(self.parent.inputs['atom_types']):
             tmp = symbols==jtem
             atom_type_idx[tmp] = j+1
@@ -220,9 +220,9 @@ class Symmetry_function(object):
             # if atom indexs are sorted by atom type,
             # indexs are sorted in this part.
             # if not, it could generate bug in training process for force training
-            type_idx[jtem] = np.arange(atom_num)[tmp]
+            type_atom_idx[jtem] = np.arange(atom_num)[tmp]
 
-        return  atom_num, atom_type_idx, type_num, type_idx , cart , scale , cell
+        return  atom_num, atom_type_idx, type_num, type_atom_idx , cart , scale , cell
 
     # Init result Dictionary 
     def _init_result(self, type_num, structure_tags, structure_weights, idx, atom_type_idx):
@@ -251,11 +251,11 @@ class Symmetry_function(object):
         return begin, end
         
     # Get data to make C array from variables
-    def _init_sf_variables(self, type_idx, jtem, symf_params_set, atom_num, mpi_range = None ):
+    def _init_sf_variables(self, type_atom_idx, jtem, symf_params_set, atom_num, mpi_range = None ):
         if mpi_range != None: # MPI calculation
-            cal_atom_idx = np.asarray(type_idx[jtem][mpi_range[0]:mpi_range[1]], dtype=np.intc, order='C')
+            cal_atom_idx = np.asarray(type_atom_idx[jtem][mpi_range[0]:mpi_range[1]], dtype=np.intc, order='C')
         elif mpi_range == None: # Serial calculation
-            cal_atom_idx = np.asarray(type_idx[jtem], dtype=np.intc, order='C')
+            cal_atom_idx = np.asarray(type_atom_idx[jtem], dtype=np.intc, order='C')
         cal_atom_num = len(cal_atom_idx)
 
         x = np.zeros([cal_atom_num, symf_params_set[jtem]['num']], dtype=np.float64, order='C')
@@ -308,7 +308,7 @@ class Symmetry_function(object):
         result['params'][jtem] = symf_params_set[jtem]['total']
     
     # Check ase version, E, F, S extract from snapshot, Raise Error 
-    def _extract_EFS(self, result, snapshot):
+    def _extract_EFS(self, snapshot):
         if not (self.inputs['refdata_format']=='vasp' or self.inputs['refdata_format']=='vasp-xdatcar'):
             if ase.__version__ >= '3.18.0':
                 E = snapshot.get_potential_energy(force_consistent=True)
