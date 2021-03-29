@@ -108,7 +108,7 @@ class Symmetry_function(object):
         # Parsing C type symmetry function parameter to symf_params_set dictionary
         for element in self.parent.inputs['atom_types']:
             symf_params_set[element]['int_p'] = _gen_2Darray_for_ffi(symf_params_set[element]['int'], ffi, "int")
-            symf_params_set[element]['dobule_p'] = _gen_2Darray_for_ffi(symf_params_set[element]['double'], ffi)
+            symf_params_set[element]['double_p'] = _gen_2Darray_for_ffi(symf_params_set[element]['double'], ffi)
 
         for item, tag_idx in zip(structures, structure_tag_idx):
             # 3. Load structure information using ase module (format: ase.atoms.Atoms object iterator)
