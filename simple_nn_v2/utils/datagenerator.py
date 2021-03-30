@@ -38,10 +38,10 @@ class Data_generator:
         self.data_dir = inputs['save_directory']
 
         # check if data_dir is exist
-        if os.path.exists(self.data_dir):
-            err = "Directory {:} is already exist, remove directory or set another path in 'save_directory' option".format(self.data_dir)
-            self.logfile.write("\nError: {:}\n".format(err))
-            raise NotImplementedError(err)
+        #if os.path.exists(self.data_dir):
+        #    err = "Directory {:} is already exist, remove directory or set another path in 'save_directory' option".format(self.data_dir)
+        #    self.logfile.write("\nError: {:}\n".format(err))
+        #    raise NotImplementedError(err)
 
     def __del__(self):
         if self._is_data_list_open == True:
