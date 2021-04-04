@@ -73,11 +73,12 @@ class Data_generator:
             structure_tags(str list): list of structure tag
             structure_weights(float list): list of structure weight
         """
+
         structures = []
         structure_tag_idx = []
-        structure_tags = ["None"]
+        structure_tags = ['None']
         structure_weights = [1.0]
-        tag = "None"
+        tag = 'None'
         weight = 1.0
 
         with open(self.structure_list, 'r') as fil:
@@ -87,7 +88,7 @@ class Data_generator:
                 if len(line) == 0 or line.isspace():
                     continue
                 # 1. Extract structure tag and weight in between "[ ]"
-                elif line[0] == "[" and line[-1] == "]":
+                elif line[0] == '[' and line[-1] == ']':
                     tag_line = line[1:-1]
                     tag, weight = self._get_tag_and_weight(tag_line)
                     
@@ -159,18 +160,18 @@ class Data_generator:
         file_path = item[0]
         if len(item) == 1:
             index = 0
-            self.logfile.write('{} 0'.format(file_path))
+            self.logfile.write("{} 0".format(file_path))
         else:
             if ':' in item[1]:
                 index = item[1]
             else:
                 index = int(item[1])
-            self.logfile.write('{} {}'.format(file_path, item[1]))
+            self.logfile.write("{} {}".format(file_path, item[1]))
 
         if self.inputs['refdata_format'] == 'vasp-out':
             if self.inputs['compress_outcar']:
                 tmp_name = compress_outcar(file_path)
-                print(tmp_name)
+
                 if ase.__version__ >= '3.18.0':
                     snapshots = io.read(tmp_name, index=index, format=self.inputs['refdata_format'])
                 else:
@@ -211,11 +212,11 @@ class Data_generator:
         self._data_idx += 1
         try:
             if self.inputs['save_to_pickle'] == False:
-                tmp_filename = os.path.join(self.data_dir, "data{}.pt".format(self._data_idx))
+                tmp_filename = os.path.join(self.data_dir, 'data{}.pt'.format(self._data_idx))
                 torch.save(data, tmp_filename)
             elif self.inputs['save_to_pickle'] == True:
-                tmp_filename = os.path.join(self.data_dir, "data{}.pickle".format(self._data_idx))
-                with open(tmp_filename, "wb") as fil:
+                tmp_filename = os.path.join(self.data_dir, 'data{}.pickle'.format(self._data_idx))
+                with open(tmp_filename, 'wb') as fil:
                     pickle.dump(data, fil, protocol=2)
         except:
             self._data_idx -= 1
@@ -226,6 +227,6 @@ class Data_generator:
             self.logfile.write("\nError: {:}\n".format(err))
             raise NotImplementedError(err)
 
-        self._data_list_fil.write('{}:{}\n'.format(tag_idx, tmp_filename))
+        self._data_list_fil.write("{}:{}\n".format(tag_idx, tmp_filename))
 
         return tmp_filename
