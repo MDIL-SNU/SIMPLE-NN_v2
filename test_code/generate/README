@@ -1,0 +1,7 @@
+* Setting
+    - Set save_to_pickle (True/False) in [input.yaml] file
+    - Set save_directory (default: data/) in [input.yaml] file
+    - command "python run.py"
+* Output
+    If code runs correctly, show "COMPLET" message
+    If created data file has wrong value, show "ERROR" message
