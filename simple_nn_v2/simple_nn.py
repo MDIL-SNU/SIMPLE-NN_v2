@@ -10,10 +10,10 @@ from .utils.mpiclass import DummyMPI, MPI4PY
 import tensorflow as tf
 import numpy as np
 
-import .features.symmetry_function
-import .model.neural_network
+from features import symmetry_function
+from models import neural_network
     
-def run(input_file_name, descriptor='symmetry_funciton', model='neural_network'):
+def run(input_file_name, descriptor=symmetry_funciton, model=neural_network):
     # Set log file
     logfile = sys.stdout
     logfile = open('LOG', 'w', 10)
@@ -42,25 +42,13 @@ def run(input_file_name, descriptor='symmetry_funciton', model='neural_network')
 
     # main running part
     if inputs['generate_features']:
-        if descriptor == 'symmetry_function':
-            symmetry_function.generate()
-        else:
-            logfile.write("Warning: Other descriptors except Symmetry function are not implemented now")
+        symmetry_function.generate(inputs, logfile)
     
     if inputs['preprocess']:
-        if descriptor == 'symmetry_function':
-            symmetry_function.preprocess(use_force=self.inputs['neural_network']['use_force'], 
-                                    use_stress=self.inputs['neural_network']['use_stress'],
-                                    get_atomic_weights=get_atomic_weights, 
-                                    **self.descriptor.inputs['atomic_weights']['params'])
-        else:
-            logfile.write("Warning: Other descriptors except Symmetry function are not implemented now")
+        symmetry_function.preprocess(inputs, logfile, get_atomic_weights=get_atomic_weights)
 
     if inputs['train_model']:
-        if descriptor == 'neural_network':
-            neural_network.train(user_optimizer=user_optimizer, aw_modifier=modifier)
-        else:
-            logfile.write("Warning: Other models except Neural network are not implemented now")
+        neural_network.train(user_optimizer=user_optimizer, aw_modifier=modifier)
 
 
 # init
