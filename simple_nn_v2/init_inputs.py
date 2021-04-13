@@ -2,57 +2,12 @@ import sys
 import os
 import yaml
 import collections
-import functools
-import atexit
-from .utils import modified_sigmoid, _generate_gdf_file
-from ._version import __version__, __git_sha__
-from .utils.mpiclass import DummyMPI, MPI4PY
 import tensorflow as tf
 import numpy as np
-
-from features import symmetry_function
-from models import neural_network
-    
-def run(input_file_name, descriptor=symmetry_funciton, model=neural_network):
-    # Set log file
-    logfile = sys.stdout
-    logfile = open('LOG', 'w', 10)
-    atexit.register(_close_log)
-    _log_header()
-
-    # Initialize inputs
-    inputs = initialize_inputs(input_file_name, logfile, descriptor, model)
-
-    # Set modifier, atomic weights
-    modifier = None
-    if inputs[descriptor]['weight_modifier']['type'] == 'modified sigmoid':
-        modifier = dict()
-        #modifier = functools.partial(modified_sigmoid, **self.descriptor.inputs['weight_modifier']['params'])
-        for item in inputs['atom_types']:
-            modifier[item] = functools.partial(modified_sigmoid, **inputs[descriptor]['weight_modifier']['params'][item])
-    if inputs[descriptor]['atomic_weights']['type'] == 'gdf':
-        #get_atomic_weights = functools.partial(_generate_gdf_file)#, modifier=modifier)
-        get_atomic_weights = _generate_gdf_file
-    elif inputs[descriptor]['atomic_weights']['type'] == 'user':
-        get_atomic_weights = user_atomic_weights_function
-    elif inputs[descriptor]['atomic_weights']['type'] == 'file':
-        get_atomic_weights = './atomic_weights'
-    else:
-        get_atomic_weights = None
-
-    # main running part
-    if inputs['generate_features']:
-        symmetry_function.generate(inputs, logfile)
-    
-    if inputs['preprocess']:
-        symmetry_function.preprocess(inputs, logfile, get_atomic_weights=get_atomic_weights)
-
-    if inputs['train_model']:
-        neural_network.train(user_optimizer=user_optimizer, aw_modifier=modifier)
-
-
+from .utils import DummyMPI
+   
 # init
-def initialize_inputs(input_file_name, logfile, descriptor=None, model=None):
+def initialize_inputs(input_file_name, logfile):
     default_inputs = {
         'generate_features': True,
         'preprocess': False,
@@ -89,7 +44,7 @@ def initialize_inputs(input_file_name, logfile, descriptor=None, model=None):
                 'save_directory': './data' # directory of data files
             }
         }
-    model_default_inputs = default_inputs = \
+    model_default_inputs = \
         {'neural_network':
             {
                 # Function related
@@ -197,11 +152,11 @@ def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, p
 
     for key in overrides.keys():
         if isinstance(source, collections.Mapping):
-            if warn_new_key and depth < 2 and key not in source and comm.rank == 0:
+            if warn_new_key and depth < 2 and key not in source:
                 logfile.write("Warning: Unidentified option in {:}: {:}\n".format(parent, key))
             if isinstance(overrides[key], collections.Mapping) and overrides[key]:
                 returned = _deep_update(source.get(key, {}), overrides[key],
-                                       warn_new_key=warn_new_key, logfile=logfile, comm=comm,
+                                       warn_new_key=warn_new_key, logfile=logfile,
                                        depth=depth+1, parent=key)
                 source[key] = returned
             # Need list append?
