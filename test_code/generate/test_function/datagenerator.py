@@ -2,13 +2,8 @@ import sys
 import os
 sys.path.append('../../../')
 
-#DataGenerator.py -> datagenerator.py in utils
-#DataGenerator Class -> Datagenerator
-
-
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
 
 #os.system('python libsymf_builder.py')
 

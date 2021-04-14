@@ -1,14 +1,16 @@
 import sys
 sys.path.append('../../../')
-from simple_nn_v2 import Simple_nn
-from simple_nn_v2.features.symmetry_function import Symmetry_function
+from simple_nn_v2 import simple_nn
+from simple_nn_v2.init_inputs import initialize_inputs
+from simple_nn_v2.features.symmetry_function import generating
 
 # Minimum Setting for Testing Symmetry_function methods
 # Initialize input file, set Simple_nn object as parent of Symmetry_function object
-model = Simple_nn('input.yaml', descriptor=Symmetry_function())
-descriptor = Symmetry_function()
-descriptor.parent = model
-descriptor.set_inputs()
+
+logfile = open('LOG', 'w', 10)
+inputs = initialize_inputs('./input.yaml', logfile)
+atom_types = inputs['atom_types']
+inputs = inputs['symmetry_function']
 
 """ Main test code
 
@@ -17,8 +19,7 @@ Test _parsing_symf_params()
 2. Check key 'total', 'int', 'double' values for each elements
 
 """
-
-symf_params_set = descriptor._parsing_symf_params()
+symf_params_set = generating._parsing_symf_params(inputs, atom_types)
 print("Check symf_params_set keys")
 print(symf_params_set.keys())
 print

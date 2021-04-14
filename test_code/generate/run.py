@@ -1,17 +1,16 @@
 import sys
 sys.path.append('../../')
 
-from simple_nn_v2 import Simple_nn
-from simple_nn_v2.features.symmetry_function import Symmetry_function
+from simple_nn_v2 import simple_nn
+from simple_nn_v2.init_inputs import initialize_inputs
+from simple_nn_v2.features.symmetry_function import generating
+
+logfile = open('LOG', 'w', 10)
+inputs = initialize_inputs('./input.yaml', logfile)
 
 # 1. Make data files
-model = Simple_nn('input.yaml', descriptor=Symmetry_function())
-descriptor = Symmetry_function()
-descriptor.parent = model
-descriptor.set_inputs()
-
 print("Making data files...")
-descriptor.generate()
+generating.generate(inputs, logfile)
 print("Done!")
 
 # 2. Check if values are same as SIMPLE-NN ver.1
@@ -22,8 +21,8 @@ f=open('../test_data/SiO2/data1.pickle', 'rb')
 d1=pickle.load(f)
 f.close()
 
-DIR = descriptor.inputs['save_directory']
-if descriptor.inputs['save_to_pickle'] == True:
+DIR = inputs['symmetry_function']['save_directory']
+if inputs['symmetry_function']['save_to_pickle'] == True:
     f=open(DIR+'/data1.pickle', 'rb')
     d2=pickle.load(f)
     f.close()

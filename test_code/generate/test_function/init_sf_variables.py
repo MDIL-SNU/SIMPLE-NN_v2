@@ -1,16 +1,17 @@
 import sys
 sys.path.append('../../../')
 
-from simple_nn_v2 import Simple_nn
-from simple_nn_v2.features.symmetry_function import Symmetry_function
+from simple_nn_v2 import simple_nn
+from simple_nn_v2.init_inputs import initialize_inputs
+from simple_nn_v2.features.symmetry_function import generating
 
 # Minimum Setting for Testing Symmetry_function methods
 # Initialize input file, set Simple_nn object as parent of Symmetry_function object
 
-model = Simple_nn('input.yaml', descriptor=Symmetry_function())
-descriptor = Symmetry_function()
-descriptor.parent = model
-descriptor.set_inputs()
+logfile = open('LOG', 'w', 10)
+inputs = initialize_inputs('./input.yaml', logfile)
+atom_types = inputs['atom_types']
+inputs = inputs['symmetry_function']
 
 """ Previous setting before test code
 
@@ -19,7 +20,7 @@ descriptor.set_inputs()
     3. extract type_idx, atom_num from _get_structure_info()
 
 """
-symf_params_set = descriptor._parsing_symf_params()
+symf_params_set = generating._parsing_symf_params(inputs, atom_types)
 
 from ase import io
 FILE = '../../test_data/SiO2/OUTCAR_comp'
@@ -27,7 +28,7 @@ snapshots = io.read(FILE, index=':2:', format='vasp-out')
 snapshot = snapshots[0]
 structure_tags = ['Data1', 'Data2', 'Data3']
 structure_weights = [1, 3, 3]
-atom_num, atom_type_idx, type_num, type_atom_idx, cart, scale, cell = descriptor._get_structure_info(snapshot)
+atom_num, atom_type_idx, type_num, type_atom_idx, cart, scale, cell = generating._get_structure_info(snapshot, atom_types)
 
 
 """ Main test code
@@ -39,7 +40,7 @@ atom_num, atom_type_idx, type_num, type_atom_idx, cart, scale, cell = descriptor
 
 """
 jtem = 'Si'
-cal_atom_idx, cal_atom_num, x, dx, da = descriptor._init_sf_variables(type_atom_idx, jtem, symf_params_set, atom_num, mpi_range = None )
+cal_atom_idx, cal_atom_num, x, dx, da = generating._init_sf_variables(type_atom_idx, jtem, symf_params_set, atom_num, mpi_range = None )
 
 print('1. check if "jtem" atom number is correct')
 print 'cal_num: ', cal_atom_num

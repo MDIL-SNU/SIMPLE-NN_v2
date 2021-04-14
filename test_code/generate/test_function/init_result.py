@@ -1,15 +1,17 @@
 import sys
 sys.path.append('../../../')
 
-from simple_nn_v2 import Simple_nn
-from simple_nn_v2.features.symmetry_function import Symmetry_function
+from simple_nn_v2 import simple_nn
+from simple_nn_v2.init_inputs import initialize_inputs
+from simple_nn_v2.features.symmetry_function import generating
 
 # Minimum Setting for Testing Symmetry_function methods
 # Initialize input file, set Simple_nn object as parent of Symmetry_function object
-model = Simple_nn('input.yaml', descriptor=Symmetry_function())
-descriptor = Symmetry_function()
-descriptor.parent = model
-descriptor.set_inputs()
+
+logfile = open('LOG', 'w', 10)
+inputs = initialize_inputs('./input.yaml', logfile)
+atom_types = inputs['atom_types']
+inputs = inputs['symmetry_function']
 
 """ Previous setting before test code
 
@@ -25,7 +27,7 @@ snapshots = io.read(FILE, index=':2:', format='vasp-out')
 snapshot = snapshots[0]
 
 # 2. extract from _get_structure_info()
-atom_num, atom_type_idx, type_num, type_atom_idx, cart, scale, cell = descriptor._get_structure_info(snapshot)
+atom_num, atom_type_idx, type_num, type_atom_idx, cart, scale, cell = generating._get_structure_info(snapshot, atom_types)
 
 # 3. set example variables
 structure_tags = ['None', 'Data1', 'Data2', 'Data3']
@@ -42,7 +44,7 @@ idx=2
    5. check if 'atom_idx' set correctly
 
 """
-result = descriptor._init_result(type_num, structure_tags, structure_weights, idx, atom_type_idx)
+result = generating._init_result(type_num, structure_tags, structure_weights, idx, atom_type_idx)
 
 print("1. chcek if 'x', 'dx', 'da', 'params' is empty dictionary")
 print 'x: ',result['x']

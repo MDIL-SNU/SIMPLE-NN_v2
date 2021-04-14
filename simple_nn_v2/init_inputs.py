@@ -165,20 +165,3 @@ def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, p
         else:
             source = {key: overrides[key]}
     return source
-
-def _close_log():
-    logfile.flush()
-    os.fsync(logfile.fileno())
-    logfile.close()
-
-def _log_header():
-    # TODO: make the log header (low priority)
-    logfile.write("SIMPLE_NN v{0:} ({1:})\n".format(__version__, __git_sha__))
-
-def write_inputs(self):
-    """
-    Write current input parameters to the 'input_cont.yaml' file
-    """
-    with open('input_cont.yaml', 'w') as fil:
-        yaml.dump(self.inputs, fil, default_flow_style=False)
-
