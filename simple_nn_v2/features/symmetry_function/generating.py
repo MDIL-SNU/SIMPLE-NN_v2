@@ -79,11 +79,6 @@ def generate(inputs_full, logfile):
             result = _init_result(type_num, structure_tags, structure_weights, tag_idx, atom_type_idx)
             
             for _, jtem in enumerate(atom_types):    
-                # Set number of MPI 
-                #begin , end = self._set_mpi(type_num , jtem)
-                #cal_atom_num , cal_atom_idx_p , x , dx , da , x_p , dx_p , da_p = self._get_sf_input(type_atom_idx ,\
-                # jtem  , symf_params_set , atom_num , [begin , end] )
-
                 # Initialize variables for calculation
                 # cal_atom_idx(int list): atom index for calculation    ex) [2,3,4]
                 # cal_atom_num(int): atom numbers for calculation       ex) 3
@@ -101,9 +96,6 @@ def generate(inputs_full, logfile):
                                     atom_type_idx_p, atom_num, cal_atom_idx_p, cal_atom_num, \
                                     symf_params_set[jtem]['int_p'], symf_params_set[jtem]['double_p'], symf_params_set[jtem]['num'], \
                                     x_p, dx_p, da_p)
-                #comm.barrier()
-                #errnos = comm.gather(errno)
-                #errnos = comm.bcast(errnos)
 
                 # Check error occurs
                 #self._check_error(errno, logfile)
@@ -212,12 +204,10 @@ def _check_error(errnos, logfile):
     for errno in errnos:
         if errno == 1:
             err = "Not implemented symmetry function type."
-            #if comm.rank == 0:
             logfile.write("\nError: {:}\n".format(err))
             raise NotImplementedError(err)
         elif errno == 2:
             err = "Zeta in G4/G5 must be greater or equal to 1.0."
-            #if comm.rank == 0:
             logfile.write("\nError: {:}\n".format(err))
             raise ValueError(err)
         else:
@@ -226,15 +216,9 @@ def _check_error(errnos, logfile):
 # Set resulatant Dictionary
 def _set_result(result, x, dx, da, type_num, jtem, symf_params_set, atom_num):
     if type_num[jtem] != 0:
-        # IF MPI available
-        #result['x'][jtem] = np.array(comm.gather(x, root=0))
-        #result['dx'][jtem] = np.array(comm.gather(dx, root=0))
-        #result['da'][jtem] = np.array(comm.gather(da, root=0))
-        # For Serial
         result['x'][jtem] = np.array(x)
         result['dx'][jtem] = np.array(dx)
         result['da'][jtem] = np.array(da)
-        #if comm.rank == 0:
         result['x'][jtem] = np.concatenate(result['x'][jtem], axis=0).\
                             reshape([type_num[jtem], symf_params_set[jtem]['num']])
         result['dx'][jtem] = np.concatenate(result['dx'][jtem], axis=0).\
@@ -261,7 +245,6 @@ def _extract_EFS(inputs_full, inputs, snapshot, logfile):
         except:
             if inputs_full['neural_network']['use_force']:
                 err = "There is not force information! Set 'use_force' = false"
-                #if comm.rank == 0:
                 logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)
         try:
@@ -271,7 +254,6 @@ def _extract_EFS(inputs_full, inputs, snapshot, logfile):
         except:
             if inputs_full['neural_network']['use_stress']:
                 err = "There is not stress information! Set 'use_stress' = false"
-                #if comm.rank == 0:
                 logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)
     return E, F, S
