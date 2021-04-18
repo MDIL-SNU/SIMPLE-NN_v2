@@ -37,11 +37,18 @@ def initialize_inputs(input_file_name, logfile):
                     'type': None,
                     'params': dict(),
                 },
+                'calc_scale': True, # calculation scale factor (ADDED)
                 'scale_type': 'minmax',
                 'scale_scale': 1.0,
                 'scale_rho': None,
-                'save_to_pickle': False, # default format is .pt / if True, format is .pickle
-                'save_directory': './data' # directory of data files
+
+                'save_to_pickle': False, # default format is .pt / if True, format is .pickle (ADDED)
+                'save_directory': './data', # directory of data files (ADDED)
+
+                'read_force': True, #Read force in non-vasp files(ex. LAMMPS) (ADDED)
+                'read_stress': True, #Read stress in non-vasp files(ex. LAMMPS) (ADDED)
+                'dx_save_sparse': True,  # Save derivative tensor as sparse tensor (ADDED)
+                'single_file': False   # Save all data into single file (ADDED)
             }
         }
     model_default_inputs = \
@@ -74,13 +81,18 @@ def initialize_inputs(input_file_name, logfile):
                 'method': 'Adam',
                 'batch_size': 64,
                 'full_batch': False,
-                'total_iteration': 10000,
+                'total_iteration': 10000,   #Epochs
                 'learning_rate': 0.0001,
                 'stress_coeff': 0.000001,
                 'force_coeff': 0.1, 
                 'energy_coeff': 1.,
                 'loss_scale': 1.,
                 'optimizer': dict(),
+
+                #Temporary by pytorch 
+                'weight_decay': 1.e-8, # (ADDED)
+                'workers': 4, # (ADDED)
+                'force_diffscale':False,  #True # if true, force error is |F-F'|*(F-F')^2 instead of *(F-F')^2 (ADDED)
 
                 # Loss function related
                 'E_loss': 0,
@@ -103,6 +115,16 @@ def initialize_inputs(input_file_name, logfile):
 
                 # Write atomic energies to pickle
                 'NNP_to_pickle': False,
+
+                'evaluate': False, # Evaluate NN instead of traning it (ADDED)
+
+                #RESUME parameters (Temporary)
+                'resume': None, #This should be directory of pytorch.save model file!! (ADDED)
+                'clear_prev_status': False,  #Erase status before traning (ADDED)
+                'clear_prev_network': False, #Erase network informateion  brfore training (ADDED)
+                'start_epoch': 0 # if resume is not null(None), start_epoch is automatically set from checkpoint file
+
+
             }
         }
     
@@ -165,3 +187,11 @@ def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, p
         else:
             source = {key: overrides[key]}
     return source
+
+def write_inputs(self):
+    """
+    Write current input parameters to the 'input_cont.yaml' file
+    """
+    with open('input_cont.yaml', 'w') as fil:
+        yaml.dump(self.inputs, fil, default_flow_style=False)
+

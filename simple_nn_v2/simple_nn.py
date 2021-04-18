@@ -10,6 +10,7 @@ from .utils.mpiclass import DummyMPI, MPI4PY
 import tensorflow as tf
 import numpy as np
 
+from features import preprocess
 from features.symmetry_function import generating
 #from models import neural_network
 from init_inputs import initialize_inputs

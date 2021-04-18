@@ -3,3 +3,4 @@
 # TODO: make atomic symmetry function feature generator(use C)
 
 #from features import *
+from .preprocessing  import preprocess

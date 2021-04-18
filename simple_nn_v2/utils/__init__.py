@@ -13,6 +13,7 @@ from tensorflow.python.ops import array_ops, control_flow_ops, tensor_array_ops
 from .mpiclass import DummyMPI, MPI4PY
 from scipy.integrate import nquad
 import ase
+import torch
 from ase.geometry import get_distances
 
 def _gen_2Darray_for_ffi(arr, ffi, cdata="double"):
@@ -62,7 +63,7 @@ def _make_str_data_list(filename):
     return data_list.values()
 
 
-def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False):
+def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False, is_ptdata=True):
     """
     atom_types
     - None: atom type is not considered
@@ -75,7 +76,10 @@ def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False
         idx_list = list()
 
         for i,item in enumerate(data_list):
-            tmp_data = pickle_load(item)
+            if is_ptdata:
+                tmp_data = torch.load(item) 
+            else:
+                tmp_data = pickle_load(item)
             feature_list.append(tmp_data[feature_tag])
 
         feature_list = np.concatenate(feature_list, axis=0)
@@ -88,7 +92,10 @@ def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False
             tmp_feature_list = list()
             tmp_atom_idx_list = list()
             for i,item in enumerate(data_list):
-                tmp_data = pickle_load(item)
+                if is_ptdata:
+                    tmp_data = torch.load(item)
+                else:
+                    tmp_data = pickle_load(item)
                 tmp_feature_list.append(tmp_data[feature_tag])
                 tmp_atom_idx_list.append(tmp_data['atom_idx'])
 
@@ -107,7 +114,10 @@ def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False
                 idx_list[item] = list()
 
             for i,item in enumerate(data_list):
-                tmp_data = pickle_load(item)
+                if is_ptdata:
+                    tmp_data = torch.load(item)
+                else:
+                    tmp_data = pickle_load(item)
                 for jtem in atom_types:
                     if jtem in tmp_data[feature_tag]:
                         feature_list[jtem].append(tmp_data[feature_tag][jtem])
@@ -214,9 +224,7 @@ def _generate_scale_file(feature_list, atom_types, filename='scale_factor', scal
     if log is not None and comm.rank == 0:
         log.write("{:-^70}\n".format(""))
 
-    if comm.rank == 0:
-        with open(filename, 'wb') as fil:
-            pickle.dump(scale, fil, protocol=2)
+    torch.save(scale, 'scale_factor')
 
     return scale
 

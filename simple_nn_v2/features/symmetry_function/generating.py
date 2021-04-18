@@ -1,19 +1,14 @@
 from __future__ import print_function
 from __future__ import division
 import os, sys
+import torch
 import tensorflow as tf
 import numpy as np
-import six
-from six.moves import cPickle as pickle
 from ase import io
 from ase import units
 import ase
 from ._libsymf import lib, ffi
-from ...utils import _gen_2Darray_for_ffi, compress_outcar, _generate_scale_file, \
-                     _make_full_featurelist, _make_data_list, _make_str_data_list, pickle_load
-from ...utils import graph as grp
-from braceexpand import braceexpand
-from sklearn.decomposition import PCA
+from ...utils import _gen_2Darray_for_ffi, compress_outcar
 from ...utils import data_generator
 
 
@@ -107,9 +102,9 @@ def generate(inputs_full, logfile):
             # Extract E, F, S from snapshot and append to result dictionary
             E, F, S = _extract_EFS(inputs_full, inputs, snapshot, logfile)
             # Set result from _extract_EFS
-            result['E'] = E
-            result['F'] = F
-            result['S'] = S
+            result['E'] = torch.tensor(E)
+            result['F'] = torch.tensor(F)
+            result['S'] = torch.tensor(S)
 
             # 6. Save "result" data to pickle file
             tmp_filename = data_generator.save_to_datafile(inputs, result, data_idx, tag_idx, logfile)
@@ -225,12 +220,14 @@ def _set_result(result, x, dx, da, type_num, jtem, symf_params_set, atom_num):
                             reshape([type_num[jtem], symf_params_set[jtem]['num'], atom_num, 3])
         result['da'][jtem] = np.concatenate(result['da'][jtem], axis=0).\
                             reshape([type_num[jtem], symf_params_set[jtem]['num'], 3, 6])
-        result['partition_'+jtem] = np.ones([type_num[jtem]]).astype(np.int32)
     else:
         result['x'][jtem] = np.zeros([0, symf_params_set[jtem]['num']])
         result['dx'][jtem] = np.zeros([0, symf_params_set[jtem]['num'], atom_num, 3])
         result['da'][jtem] = np.zeros([0, symf_params_set[jtem]['num'], 3, 6])
-        result['partition_'+jtem] = np.ones([0]).astype(np.int32)
+        #For sparse tensor torch.tensor mappling need
+    result['x'][jtem] = torch.tensor(result['x'][jtem])
+    result['dx'][jtem] = torch.tensor(result['dx'][jtem])
+    result['da'][jtem] = torch.tensor(result['da'][jtem])
     result['params'][jtem] = symf_params_set[jtem]['total']
 
 # Check ase version, E, F, S extract from snapshot, Raise Error 

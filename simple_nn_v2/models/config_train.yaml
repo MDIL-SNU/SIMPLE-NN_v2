@@ -1,0 +1,43 @@
+# Training set
+atom_types:
+  - 'Ge'
+  - 'Sb'
+  - 'Te'
+params:
+   Ge: '../params_Ge'
+   Sb: '../params_Sb'
+   Te: '../params_Te'
+train_dataset: 'train_list'
+valid_dataset: 'valid_list'
+feature_list: 'feature_list'
+
+# Scaling
+scale_factor: True
+pca: True
+pca_min_whiten_level: 1.e-8
+
+# Network
+network:
+  Ge: '132-30-30'
+  Sb: '132-30-30'
+  Te: '132-30-30'
+acti_func: 'swish'
+
+# Training
+resume: null #'checkpoint.pth.tar'
+clear_prev_status: False
+clear_prev_network: False
+evaluate: False
+start_epoch: 0 # if resume is not null(None), start_epoch is automatically set from checkpoint file
+epochs: 5000
+lr: 0.0003
+weight_decay: 1.e-8
+batch_size: 4
+workers: 4 # worker parameter for pytorch dataloader
+use_force: True
+use_stress: True
+print_freq: 100
+force_coefficient: 0.005
+energy_coefficient: 1.0
+stress_coefficient: 1.e-4
+force_diffscale: False #True # if true, force error is |F-F'|*(F-F')^2 instead of *(F-F')^2
