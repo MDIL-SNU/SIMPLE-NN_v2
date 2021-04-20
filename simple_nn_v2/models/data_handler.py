@@ -80,9 +80,8 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
             tmp_dx = item['dx'][atype]
             if use_stress:
                 tmp_da = item['da'][atype]
-
             if tmp_dx.is_sparse:
-                tmp_dx = tmp_dx.to_dense().reshape(item['dx_size'][atype])
+                tmp_dx = tmp_dx.to_dense().reshape(item['dx_size'][atype]) ###??? No in pt file
             if scale_factor is not None:
                 tmp_dx /= scale_factor[atype][1].view(1,-1,1,1)
                 if use_stress:

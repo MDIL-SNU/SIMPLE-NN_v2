@@ -18,6 +18,8 @@ def initialize_inputs(input_file_name, logfile):
     descriptor_default_inputs = \
         {'symmetry_function': 
             {
+                'train_list':'./train_list', # (ADDED)
+                'valid_list':'./valid_list', # (ADDED)
                 'params': dict(),
                 'refdata_format': 'vasp-out',
                 'compress_outcar': True,

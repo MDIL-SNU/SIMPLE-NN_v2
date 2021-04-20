@@ -170,6 +170,9 @@ def _init_result(type_num, structure_tags, structure_weights, idx, atom_type_idx
     result['x'] = dict()
     result['dx'] = dict()
     result['da'] = dict()
+    result['dx_size'] = dict() ## ADDED
+    result['total'] = None ## ADDED
+    result['num'] = None ## ADDED
     result['params'] = dict()
     result['N'] = type_num
     result['tot_num'] = np.sum(list(type_num.values()))
@@ -209,7 +212,7 @@ def _check_error(errnos, logfile):
             assert errno == 0    
 
 # Set resulatant Dictionary
-def _set_result(result, x, dx, da, type_num, jtem, symf_params_set, atom_num):
+def _set_result(inputs_full,result, x, dx, da, type_num, jtem, symf_params_set, atom_num):
     if type_num[jtem] != 0:
         result['x'][jtem] = np.array(x)
         result['dx'][jtem] = np.array(dx)

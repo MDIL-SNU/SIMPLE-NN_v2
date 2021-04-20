@@ -39,6 +39,7 @@ def _init_model(inputs, logfile):
         with open(inputs['symmetry_function']['params'][item],'r') as f:
             tmp_symf = f.readlines()
             sym_num = len(tmp_symf)
+        
         model[item] = FCN(sym_num, temp_nodes[0:], acti_func=\
         inputs['neural_network']['acti_func']) #Make nodes per elements
     model = FCNDict(model) #Macle full model with elementized dictionary model
@@ -140,12 +141,16 @@ def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_datas
 
 
 def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion):
+
+    #Check GPU (CUDA) available
+    CUDA = torch.cuda.is_available()
+    
     # Run training process
     if inputs['neural_network']['evaluate']:
-        loss = train(train_loader, model, criterion=criterion, valid=True, inputs=inputs)
+        loss = train(train_loader, model, criterion=criterion, valid=True, inputs=inputs, cuda=CUDA)
     else:
         for epoch in range(inputs['neural_network']['start_epoch'], inputs['neural_network']['total_iteration']):
-            train(train_loader, model, optimizer=optimizer, criterion=criterion, epoch=epoch, inputs=inputs)
+            train(train_loader, model, optimizer=optimizer, criterion=criterion, epoch=epoch, inputs=inputs, cuda=CUDA)
             loss = train(valid_loader, model, criterion=criterion, valid=True, inputs=inputs)
             is_best = loss < best_loss
             best_loss = min(best_loss, loss)
