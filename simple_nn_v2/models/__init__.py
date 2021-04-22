@@ -8,8 +8,11 @@ from .data_handler import TorchStyleDataset, FilelistDataset, my_collate
 from .train import train, save_checkpoint
 
 #Global call
-best_loss = float('inf')
 torch.set_default_dtype(torch.float64)
+
+
+
+
 
 def run_model(inputs, logfile):
     # Initialize model
@@ -25,8 +28,10 @@ def run_model(inputs, logfile):
     # Load data loader
     train_loader, valid_loader = _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset)
     
+    #Global variables
+    best_loss = float('inf')
     # Run training
-    _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion) 
+    best_loss = _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion, scale_factor, pca, best_loss) 
 
 
 def _init_model(inputs, logfile):
@@ -140,7 +145,7 @@ def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_datas
 
 
 
-def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion):
+def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion, scale_factor, pca, best_loss):
 
     #Check GPU (CUDA) available
     CUDA = torch.cuda.is_available()
@@ -174,4 +179,4 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
             if epoch % inputs['neural_network']['save_interval'] == 0:
                 model.write_lammps_potential(filename ='./potential_saved_epoch_{0}'.format(epoch), inputs=inputs, scale_factor=scale_factor, pca=pca)
                 logfile.write('Lammps potential written at {0} epoch'.format(epoch))
-
+    return best_loss

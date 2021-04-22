@@ -34,14 +34,12 @@ def preprocess(inputs, logfile, get_atomic_weights=None, **kwargs):
         :param boolean get_atomic_weights: flag to return atomic_weight
         """ 
         #Extract save directory information from save_dir
-        structure_list = './str_list' 
         pickle_list = './pickle_list'
-
 
         is_ptdata = not inputs['symmetry_function']['save_to_pickle']
 
         #Split Test, Valid data of str_list
-        _split_data(inputs)        
+        _split_data(inputs, pickle_list)        
         # generate full symmetry function vector
         feature_list_train, idx_list_train = \
             _make_full_featurelist(inputs['symmetry_function']['train_list'], 'x', inputs['atom_types'], is_ptdata=is_ptdata)
@@ -73,7 +71,6 @@ def _split_data(inputs, pickle_list='./pickle_list'):
                    tmp_pickle_valid_open.write(item + '\n')
                else:
                    tmp_pickle_train_open.write(item + '\n')
-   
        tmp_pickle_train_open.close()
        tmp_pickle_valid_open.close()
 
@@ -103,10 +100,12 @@ def _calculate_scale(inputs, logfile, feature_list_train):
 def _generate_pca(inputs, logfile ,feature_list_train, scale):
     if inputs['neural_network']['pca']:
         pca = dict()
+        scale_process = None
         for item in inputs['atom_types']:
             pca_temp = PCA()
-            pca_temp.fit((feature_list_train[item] - scale[item][0:1,:]) / scale[item][1:2,:])
-            min_level = inputs['neural_network']['pca_min_whiten_level']
+            scale_process = (feature_list_train[item] - scale[item][0].reshape(1,-1) )  / scale[item][1].reshape(1,-1)
+            pca_temp.fit(scale_process)
+            min_level = inputs['neural_network']['pca_min_whiten_level'] if inputs['neural_network']['pca_min_whiten_level'] else 0.0
             # PCA transformation = x * pca[0] - pca[2] (divide by pca[1] if whiten)
             pca[item] = [pca_temp.components_.T,
                          np.sqrt(pca_temp.explained_variance_ + min_level),

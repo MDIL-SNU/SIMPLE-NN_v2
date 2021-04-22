@@ -92,7 +92,6 @@ def train(data_loader, model, optimizer=None, criterion=None, scheduler=None, ep
         else: #CPU
             for atype in inputs['atom_types']:
                 x[atype] = item['x'][atype].requires_grad_(True)
-                print(item['sp_idx'][atype].long())
                 if x[atype].size(0) != 0:
                     E_ += torch.sum(torch.sparse.DoubleTensor(
                         item['sp_idx'][atype].long(), 

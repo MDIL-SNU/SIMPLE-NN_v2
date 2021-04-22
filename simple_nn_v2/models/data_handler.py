@@ -72,7 +72,6 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
     E = list()
     F = list()
     S = list()
-
     # add scale, pca
     for item in batch:
         for atype in atom_types:
@@ -81,7 +80,7 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
             if use_stress:
                 tmp_da = item['da'][atype]
             if tmp_dx.is_sparse:
-                tmp_dx = tmp_dx.to_dense().reshape(item['dx_size'][atype]) ###??? No in pt file
+                tmp_dx = tmp_dx.to_dense().reshape(item['dx_size'][atype]) 
             if scale_factor is not None:
                 tmp_dx /= scale_factor[atype][1].view(1,-1,1,1)
                 if use_stress:
@@ -103,24 +102,24 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
         F.append(item['F'])
         if use_stress:
             S.append(item['S'])
-
     for atype in atom_types:
         x[atype] = torch.cat(x[atype], axis=0)
         if scale_factor is not None:
             x[atype] -= scale_factor[atype][0].view(1,-1)
             x[atype] /= scale_factor[atype][1].view(1,-1)
+        #print('Before PCA',atype,x[atype].size() , pca[atype][0].size())
         if pca is not None:
             if x[atype].size(0) != 0:
                 x[atype] = torch.einsum('ij,jm->im', x[atype], pca[atype][0]) - pca[atype][2].reshape(1,-1) #reshape?
             if pca_min_whiten_level is not None:
                 x[atype] /= pca[atype][1].view(1,-1)
+        #print('After PCA',atype,x[atype].size() , pca[atype][0].size())
         sparse_index[atype] = gen_sparse_index(n[atype])
         n[atype] = torch.tensor(n[atype])
     E = torch.tensor(E)
     F = torch.cat(F, axis=0)
     if use_stress:
         S = torch.cat(S, axis=0)
-
     return {'x': x, 'dx': dx, 'da': da, 'n': n, 'E': E, 'F': F, 'S': S, 'sp_idx': sparse_index}
 
 def gen_sparse_index(nlist):
