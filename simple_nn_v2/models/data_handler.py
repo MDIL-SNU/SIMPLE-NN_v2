@@ -78,9 +78,9 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
 
     # add scale, pca
     for item in batch:
-        for atype in atom_types:
+        for atype in atom_types: 
             x[atype].append(item['x'][atype])
-            tmp_dx = item['dx'][atype]
+            tmp_dx = item['dx'][atype] #Make dx to sparse_tensor
             if use_stress:
                 tmp_da = item['da'][atype]
             if tmp_dx.is_sparse:
@@ -98,7 +98,7 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
                     tmp_dx /= pca[atype][1].view(1,-1,1,1)
                     if use_stress:
                         tmp_da /= pca[atype][1].view(1,-1,1,1)
-            dx[atype].append(tmp_dx)
+            dx[atype].append(tmp_dx) #sparse_tensor dx
             if use_stress:
                 da[atype].append(tmp_da)
             n[atype].append(item['x'][atype].size(0))
@@ -114,7 +114,10 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
             x[atype] /= scale_factor[atype][1].view(1,-1)
         if pca is not None: #PCA part
             if x[atype].size(0) != 0:
-                x[atype] = torch.einsum('ij,jm->im', x[atype], pca[atype][0]) - pca[atype][2].reshape(1,-1) #reshape?
+                #Important note 
+                #tmp_dx mkatrix size should exceed number of symmetryfunction
+                #If less than number of symmetry funtion -> n * n < # of SF matrix return
+                x[atype] = torch.einsum('ij,jm->im', x[atype], pca[atype][0]) - pca[atype][2].reshape(1,-1) 
             if pca_min_whiten_level is not None:
                 x[atype] /= pca[atype][1].view(1,-1)
         sparse_index[atype] = gen_sparse_index(n[atype])

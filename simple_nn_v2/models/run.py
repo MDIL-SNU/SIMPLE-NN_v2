@@ -166,19 +166,24 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
 
     #Check GPU (CUDA) available
     CUDA = torch.cuda.is_available()
+    #Calculate total epoch
+    max_len = len(train_loader)
+    total_iter  = int(inputs['neural_network']['total_iteration'])
+    total_epoch = int(inputs['neural_network']['total_iteration']/max_len)
+    logfile.write('Total iteration {0} , Total epoch {1}\n'.format(total_iter, total_epoch))
 
     #Check use validation
     if float(inputs['symmetry_function']['valid_rate']) < 1E-6:
         valid = False
-        logfile.write('Not use validation\n')
+        logfile.write('No validation set\n')
     else:
         valid = True
-        logfile.write('Use validation\n')
+        logfile.write('Use validation set\n')
 
     if inputs['neural_network']['evaluate']: #Evalutaion model
         loss = train(inputs, logfile, train_loader, model, criterion=criterion, valid=valid, cuda=CUDA)
     else: #Training model
-        for epoch in range(inputs['neural_network']['start_epoch'], inputs['neural_network']['total_iteration']):
+        for epoch in range(inputs['neural_network']['start_epoch'], total_epoch):
             #Train model with train loader 
             train(inputs, logfile, train_loader, model, optimizer=optimizer, criterion=criterion, epoch=epoch, cuda=CUDA)
             #Calculate valid loss with valid loader
@@ -202,7 +207,7 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
             if is_best: #Save best lammps potential
                 model.write_lammps_potential(filename ='./potential_saved_best_loss', inputs=inputs, scale_factor=scale_factor, pca=pca)
                 best_epoch = epoch 
-            if epoch % inputs['neural_network']['save_interval'] == 0:
+            if (epoch * max_len) % inputs['neural_network']['save_interval'] == 0:
                 model.write_lammps_potential(filename ='./potential_saved_epoch_{0}'.format(epoch), inputs=inputs, scale_factor=scale_factor, pca=pca)
                 logfile.write('Lammps potential written at {0} epoch\n'.format(epoch))
     return best_loss, best_epoch

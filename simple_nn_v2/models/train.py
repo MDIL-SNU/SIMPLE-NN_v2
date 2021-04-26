@@ -160,7 +160,7 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
         
         # max_len -> total size / batch size & i -> batch step in traning set
         # TODO: choose LOG file method
-        if epoch % inputs['neural_network']['show_interval'] == 0 or i == max_len-1:
+        if (epoch * max_len + i) % inputs['neural_network']['show_interval'] == 0 or i == max_len-1:
             progress.display(i)
             logfile.write(progress.log(i))
 
