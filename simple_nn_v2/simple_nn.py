@@ -73,24 +73,22 @@ def run(input_file_name, descriptor=None, preprocess=None, model=None):
     # Initialize inputs
     inputs = initialize_inputs(input_file_name, logfile)
     
-    '''
     # Set modifier, atomic weights
     modifier = None
-    if inputs[descriptor]['weight_modifier']['type'] == 'modified sigmoid':
+    if inputs['symmetry_function']['weight_modifier']['type'] == 'modified sigmoid':
         modifier = dict()
         #modifier = functools.partial(modified_sigmoid, **self.descriptor.inputs['weight_modifier']['params'])
         for item in inputs['atom_types']:
-            modifier[item] = functools.partial(modified_sigmoid, **inputs[descriptor]['weight_modifier']['params'][item])
-    if inputs[descriptor]['atomic_weights']['type'] == 'gdf':
+            modifier[item] = functools.partial(modified_sigmoid, **inputs['symmetry_function']['weight_modifier']['params'][item])
+    if inputs['symmetry_function']['atomic_weights']['type'] == 'gdf':
         #get_atomic_weights = functools.partial(_generate_gdf_file)#, modifier=modifier)
         get_atomic_weights = _generate_gdf_file
-    elif inputs[descriptor]['atomic_weights']['type'] == 'user':
+    elif inputs['symmetry_function']['atomic_weights']['type'] == 'user':
         get_atomic_weights = user_atomic_weights_function
-    elif inputs[descriptor]['atomic_weights']['type'] == 'file':
+    elif inputs['symmetry_function']['atomic_weights']['type'] == 'file':
         get_atomic_weights = './atomic_weights'
     else:
         get_atomic_weights = None
-    '''
 
     get_atomic_weights = None
     if not descriptor:
@@ -104,7 +102,7 @@ def run(input_file_name, descriptor=None, preprocess=None, model=None):
 
     preprocess(inputs, logfile, get_atomic_weights=get_atomic_weights)
     
-    #TODO: Make model can use user optimizer 
+    #TODO: Make model can use user optimizer & should add atomic weight modifier 
     model(inputs, logfile) 
 
 
