@@ -1,3 +1,4 @@
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self, name, fmt=':6.4e', sqrt=False):
@@ -44,7 +45,14 @@ class ProgressMeter(object):
         entries += [self.suffix]
         print('\t'.join(entries), flush=True)
 
+
+    def log(self, batch):
+        entries = [self.prefix + self.batch_fmtstr.format(batch)]
+        entries += [str(meter) for meter in self.meters]
+        entries += [self.suffix]
+        return '\t'.join(entries)+'\n'
+
     def _get_batch_fmtstr(self, num_batches):
         num_digits = len(str(num_batches // 1))
         fmt = '{:' + str(num_digits) + 'd}'
-        return '[' + fmt + '/' + fmt.format(num_batches) + ']'
+        return ' Batch [' + fmt + '/' + fmt.format(num_batches) + ']'

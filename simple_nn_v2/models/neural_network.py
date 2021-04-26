@@ -2,6 +2,7 @@ import torch
 import numpy as np
 
 class FCNDict(torch.nn.Module):
+
     def __init__(self, nets):
         super(FCNDict, self).__init__()
         self.nets = torch.nn.ModuleDict(nets)
@@ -16,7 +17,6 @@ class FCNDict(torch.nn.Module):
         return res
 
     def write_lammps_potential(self, filename, inputs, scale_factor=None, pca=None):
-        
         
         # TODO: get the parameter info from initial batch generting processs
         atom_type_str = ' '.join(inputs['atom_types'])
@@ -111,6 +111,7 @@ class FCN(torch.nn.Module):
         super(FCN, self).__init__()
 
         self.lin = torch.nn.Sequential()
+
         dim_in = dim_input
         for i,hn in enumerate(dim_hidden):
             self.lin.add_module(f'lin_{i}', torch.nn.Linear(dim_in, hn))
