@@ -2,7 +2,6 @@ from __future__ import print_function
 from __future__ import division
 import os, sys
 import torch
-import tensorflow as tf
 import numpy as np
 from ase import io
 from ase import units

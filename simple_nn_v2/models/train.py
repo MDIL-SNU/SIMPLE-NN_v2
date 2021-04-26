@@ -123,7 +123,8 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
 
                     if use_stress:
                         S_ -= torch.cat(tmp_stress, axis=0) / units.GPa * 10
-            
+
+            #Force loss part 
             if use_force:
                 if inputs['neural_network']['force_diffscale']:
                     # check the scale value: current = norm(force difference)
@@ -137,19 +138,19 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
 
                 loss += inputs['neural_network']['force_coeff'] * f_loss
                 progress_dict['f_err'].update(print_f_loss.detach().item(), F_.size(0))
-
+            #Stress loss part
             if use_stress:
                 s_loss = criterion(S_, S)
             
                 loss += inputs['neural_network']['stress_coeff'] * s_loss
                 progress_dict['s_err'].update(s_loss.detach().item(), n_batch)
 
+        #Energy loss part
         loss = loss + inputs['neural_network']['energy_coeff'] * e_loss
-
         progress_dict['e_err'].update(e_loss.detach().item(), n_batch)
         progress_dict['losses'].update(loss.detach().item(), n_batch)
 
-        if not valid: #Training step
+        if not valid: #Back propagation step
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -158,6 +159,7 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
         end = time.time()
         
         # max_len -> total size / batch size & i -> batch step in traning set
+        # TODO: choose LOG file method
         if epoch % inputs['neural_network']['show_interval'] == 0 or i == max_len-1:
             progress.display(i)
             logfile.write(progress.log(i))
@@ -188,7 +190,7 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
         progress = ProgressMeter(
             len(data_loader),
             progress_list,
-            prefix=f"Valid : [{epoch}]",
+            prefix=f"Valid :[{epoch}]",
             #suffix=f"lr: {optimizer.param_groups[0]['lr']:6.4e}"
         )
 
@@ -197,7 +199,7 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
         progress = ProgressMeter(
             len(data_loader),
             progress_list,
-            prefix=f"Epoch : [{epoch}]",
+            prefix=f"Epoch :[{epoch}]",
             suffix=f"lr: {optimizer.param_groups[0]['lr']:6.4e}"
         )
         

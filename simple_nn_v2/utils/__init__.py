@@ -8,8 +8,8 @@ import types
 import re
 import collections
 from collections import OrderedDict
-from tensorflow.python.framework import ops
-from tensorflow.python.ops import array_ops, control_flow_ops, tensor_array_ops
+#from tensorflow.python.framework import ops
+#from tensorflow.python.ops import array_ops, control_flow_ops, tensor_array_ops
 from .mpiclass import DummyMPI, MPI4PY
 from scipy.integrate import nquad
 import ase
@@ -377,6 +377,8 @@ def memory():
     print('memory_use:', memory_use)
 
 
+#Not use tensorflow
+'''
 def repeat(x, counts):
     """
     repeat x repeated by counts (elementwise)
@@ -405,6 +407,8 @@ def repeat(x, counts):
         num_writes > 0,
         output_array.concat,
         lambda: array_ops.zeros(shape=[0], dtype=x.dtype))
+'''
+
 
 def read_lammps_potential(filename):
     def _read_until(fil, stop_tag):

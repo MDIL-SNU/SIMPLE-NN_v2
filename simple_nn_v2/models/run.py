@@ -30,7 +30,7 @@ def run_model(inputs, logfile):
     # Run training
     best_loss, best_epoch = _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion, scale_factor, pca, best_loss) 
 
-    # Best loss witten
+    # End of progran & Best loss witten 
     logfile.write('Best loss lammps potential written at {0} epoch\n'.format(best_epoch))
 
 
@@ -50,23 +50,28 @@ def _init_model(inputs, logfile):
         inputs['neural_network']['acti_func']) #Make nodes per elements
     model = FCNDict(model) #Macle full model with elementized dictionary model
 
-    try: #Check avaiable CUDA (GPU)
-        model.cuda()
-        logfile.write("Use GPU(CUDA) machine \n")
-    except:
-        model.cpu()
-        logfile.write("GPU is not available. Use CPU machine\n")
-        pass
-
     if inputs['neural_network']['method'] == 'Adam':
         #Adam optimizer (Default)
         optimizer = torch.optim.Adam(model.parameters(), lr=inputs['neural_network']['learning_rate'],
      weight_decay=inputs['neural_network']['weight_decay'])
+    elif inputs['neural_network']['method'] == 'SGD':
+        optimizer = torch.optim.SGD(model.parameters(), lr=inputs['neural_network']['learning_rate'],
+        weight_decay=inputs['neural_network']['weight_decay'])
     else:
-        #Other method should be implemented 
+        #TODO: Other method should be implemented 
         pass
 
-    criterion = torch.nn.MSELoss().cuda()
+    try: #Check avaiable CUDA (GPU)
+        model.cuda()
+        logfile.write("Use GPU(CUDA) machine \n")
+        criterion = torch.nn.MSELoss().cuda()
+    except:
+        model.cpu()
+        logfile.write("GPU is not available. Use CPU machine\n")
+        criterion = torch.nn.MSELoss()
+        pass
+
+
 
     scale_factor = None
     pca = None
@@ -161,6 +166,7 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
 
     #Check GPU (CUDA) available
     CUDA = torch.cuda.is_available()
+
     #Check use validation
     if float(inputs['symmetry_function']['valid_rate']) < 1E-6:
         valid = False
@@ -168,10 +174,10 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
     else:
         valid = True
         logfile.write('Use validation\n')
-    # Run training process
-    if inputs['neural_network']['evaluate']:
+
+    if inputs['neural_network']['evaluate']: #Evalutaion model
         loss = train(inputs, logfile, train_loader, model, criterion=criterion, valid=valid, cuda=CUDA)
-    else:
+    else: #Training model
         for epoch in range(inputs['neural_network']['start_epoch'], inputs['neural_network']['total_iteration']):
             #Train model with train loader 
             train(inputs, logfile, train_loader, model, optimizer=optimizer, criterion=criterion, epoch=epoch, cuda=CUDA)
