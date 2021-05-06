@@ -2,9 +2,9 @@ import sys
 import os
 import yaml
 import collections
-import tensorflow as tf
 import numpy as np
 from .utils import DummyMPI
+import torch
    
 # init
 def initialize_inputs(input_file_name, logfile):
@@ -23,14 +23,12 @@ def initialize_inputs(input_file_name, logfile):
                 'params': dict(),
                 'refdata_format': 'vasp-out',
                 'compress_outcar': True,
-                'data_per_tfrecord': 150,
                 'valid_rate': 0.1,
                 'shuffle': True,
                 'add_NNP_ref': False, # atom E to tfrecord
                 'remain_pickle': False,
                 'continue': False,
                 'add_atom_idx': True, # For backward compatability
-                'num_parallel_calls': 5,
                 'atomic_weights': {
                     'type': None,
                     'params': dict(),
@@ -63,17 +61,14 @@ def initialize_inputs(input_file_name, logfile):
 
                 # Network related
                 'nodes': '30-30',
-                'regularization': {
-                    'type': None,
-                    'params': dict(),
-                },
+                'regularization': 1e-6, #L2 regularization
                 'use_force': True,
                 'use_stress': False,
                 'double_precision': True,
                 'weight_initializer': {
-                    'type': 'truncated normal',
+                    'type': 'xavier normal',
                     'params': {
-                        'stddev': 0.3,
+
                     },
                 },
                 'acti_func': 'sigmoid',
@@ -83,34 +78,32 @@ def initialize_inputs(input_file_name, logfile):
                 'method': 'Adam',
                 'batch_size': 64,
                 'full_batch': False,
-                'total_iteration': 10000,   #Epochs
+                'total_epoch': 10000,
+                'total_iteration': None,  #Warning: Depreciated use total_epoch
                 'learning_rate': 0.0001,
+                'lr_decay': None,
                 'stress_coeff': 0.000001,
                 'force_coeff': 0.1, 
                 'energy_coeff': 1.,
                 'loss_scale': 1.,
-                'optimizer': dict(),
 
-                #Temporary by pytorch 
-                'weight_decay': 1.e-8, # (ADDED)
+                #pytorch 
                 'workers': 4, # (ADDED)
-                'force_diffscale':False,  #True # if true, force error is |F-F'|*(F-F')^2 instead of *(F-F')^2 (ADDED)
+                'force_diffscale':False,  # if true, force error is |F-F'|*(F-F')^2 instead of *(F-F')^2 (ADDED)
 
                 # Loss function related
                 'E_loss': 0,
                 'F_loss': 1,
 
-                # Logging & saving related
-                'save_interval': 1000,
+                # Logging & saving related (Epoch)
+                'save_interval': 1000, 
                 'show_interval': 100,
-                'save_criteria': [],
+                'save_criteria': None,
+                'save_best':False,
                 'break_max': 10,
                 'print_structure_rmse': False,
 
-                # Performace related
-                'inter_op_parallelism_threads': 0,
-                'intra_op_parallelism_threads': 0,
-                'cache': False,
+                #'cache': False,
                 'pca': False,
                 'pca_whiten': True,
                 'pca_min_whiten_level': 1e-8,
@@ -118,7 +111,6 @@ def initialize_inputs(input_file_name, logfile):
                 # Write atomic energies to pickle
                 'NNP_to_pickle': False,
 
-                'evaluate': False, # Evaluate NN instead of traning it (ADDED)
 
                 #RESUME parameters (Temporary)
                 'resume': None, #This should be directory of pytorch.save model file!! (ADDED)
@@ -153,9 +145,14 @@ def initialize_inputs(input_file_name, logfile):
 
     if inputs['random_seed'] is not None:
         seed = inputs['random_seed']
-        tf.set_random_seed(seed)
+        torch.manual_seed(seed)
         np.random.seed(seed)
         logfile.write("*** Random seed: {0:} ***\n".format(seed))
+
+    #Warning about epoch & iteration (epoch only avaialble)
+    if inputs['neural_network']['total_iteration']:
+        inputs['neural_network']['total_epoch'] = inputs['neural_network']['total_iteration']
+        logfile.write("Warning: iteration is not available. Implicitly convert total_iteration to total_epoch\n")
 
     return inputs
 

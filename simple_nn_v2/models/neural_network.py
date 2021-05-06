@@ -120,6 +120,12 @@ class FCN(torch.nn.Module):
             dim_in = hn
             if acti_func == 'sigmoid':
                 self.lin.add_module(f'sigmoid_{i}', torch.nn.Sigmoid())
+            elif acti_func == 'tanh':
+                self.lin.add_module(f'tanh_{i}', torch.nn.Tanh())
+            elif acti_func == 'relu':
+                self.lin.add_module(f'relu_{i}', torch.nn.ReLU())
+            elif acti_func == 'selu':
+                self.lin.add_module(f'tanh_{i}', torch.nn.SELU())
             elif acti_func == 'swish':
                 self.lin.add_module(f'swish_{i}', swish())
             

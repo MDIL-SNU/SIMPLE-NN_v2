@@ -1,1 +1,1 @@
-from .run import run_model
+from .run import train_NN

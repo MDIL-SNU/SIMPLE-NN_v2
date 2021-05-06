@@ -12,7 +12,9 @@ class AverageMeter(object):
         self.avg = 0
         self.sum = 0
         self.count = 0
-
+    
+    #Update values using value, batch_number 
+    #And calculate average, sqrt of batch value
     def update(self, val, n=1):
         self.val = val
         self.sum += val * n
@@ -24,14 +26,15 @@ class AverageMeter(object):
             self.sqrt_val = self.val**0.5
             self.sqrt_avg = self.avg**0.5
 
+    #Show sqrt value & average value : batch_value ( average_value )
     def __str__(self):
-        if self.sqrt:
+        if self.sqrt: #sqrt need
             fmtstr = '{name} {sqrt_val' + self.fmt + '} ( {sqrt_avg' + self.fmt + '} )'
         else:
             fmtstr = '{name} {val' + self.fmt + '} ( {avg' + self.fmt + '} )'
         return fmtstr.format(**self.__dict__)
 
-
+#Show logfile & print information
 class ProgressMeter(object):
     def __init__(self, num_batches, meters, prefix="", suffix=""):
         self.batch_fmtstr = self._get_batch_fmtstr(num_batches)

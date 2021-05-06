@@ -128,6 +128,7 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
             if use_force:
                 if inputs['neural_network']['force_diffscale']:
                     # check the scale value: current = norm(force difference)
+                    # Force different scaling : larger force difference get higher weight !!
                     force_diffscale = torch.sqrt(torch.norm(F_ - F, dim=1, keepdim=True).detach())
 
                     f_loss = criterion(force_diffscale * F_, force_diffscale * F)
@@ -149,7 +150,7 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
         loss = loss + inputs['neural_network']['energy_coeff'] * e_loss
         progress_dict['e_err'].update(e_loss.detach().item(), n_batch)
         progress_dict['losses'].update(loss.detach().item(), n_batch)
-
+        loss = inputs['neural_network']['loss_scale'] * loss
         if not valid: #Back propagation step
             optimizer.zero_grad()
             loss.backward()
@@ -160,19 +161,23 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
         
         # max_len -> total size / batch size & i -> batch step in traning set
         # TODO: choose LOG file method
-        if (epoch * max_len + i) % inputs['neural_network']['show_interval'] == 0 or i == max_len-1:
-            progress.display(i)
-            logfile.write(progress.log(i))
+        if epoch % inputs['neural_network']['show_interval'] == 0 and not valid: #and i == max_len-1:
+            progress.display(i+1)
+            logfile.write(progress.log(i+1))
+        elif epoch % inputs['neural_network']['show_interval'] == 0 and valid:
+            progress.display(i+1)
+            logfile.write(progress.log(i+1))
+
 
     return progress_dict['losses'].avg
     
 def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_stress, save_result):
     ## Setting LOG with progress meter
-    batch_time = AverageMeter('Time', ':6.3f')
-    data_time = AverageMeter('Data', ':6.3f')
-    losses = AverageMeter('Loss', ':.4e')
+    batch_time = AverageMeter('time', ':6.3f')
+    data_time = AverageMeter('data', ':6.3f')
+    losses = AverageMeter('loss', ':8.4e')
     e_err = AverageMeter('E err', ':6.4e', sqrt=True)
-    progress_list = [batch_time, data_time, losses, e_err]
+    progress_list = [losses, e_err]
     progress_dict = {'batch_time': batch_time, 'data_time': data_time, 'losses': losses, 'e_err': e_err} 
     
     if use_force:
@@ -185,13 +190,14 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
         progress_list.append(s_err)
         progress_dict['s_err'] = s_err
 
+    progress_list.append(batch_time)
+    progress_list.append(data_time)
 
     if valid:
         progress = ProgressMeter(
             len(data_loader),
             progress_list,
-            prefix=f"Valid :[{epoch}]",
-            #suffix=f"lr: {optimizer.param_groups[0]['lr']:6.4e}"
+            prefix=f"Valid :[{epoch:6}]",
         )
 
         model.eval()
@@ -199,13 +205,14 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
         progress = ProgressMeter(
             len(data_loader),
             progress_list,
-            prefix=f"Epoch :[{epoch}]",
+            prefix=f"Epoch :[{epoch:6}]",
             suffix=f"lr: {optimizer.param_groups[0]['lr']:6.4e}"
         )
         
         model.train()
     
     #Not used yet
+    '''
     if save_result:
         res_dict = {
             'NNP_E': list(),
@@ -213,6 +220,7 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
             'DFT_E': list(),
             'DFT_F': list(),
         }
+    '''
     return progress, progress_dict
 
 
