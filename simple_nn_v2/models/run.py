@@ -25,6 +25,7 @@ def train_NN(inputs, logfile):
 
     # Convert scale_factor, pca to torch.tensor
     _convert_to_tensor(inputs, logfile, scale_factor, pca)
+    
 
     # Load data loader
     train_loader, valid_loader = _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset)
@@ -351,7 +352,7 @@ def _save_lammps(inputs, logfile, model, is_best, epoch, scale_factor, pca, err_
 
 #Check energy, force, stress criteria exist and create dictoary for them
 def _check_criteria(inputs,logfile):
-    if inputs['neural_network']['energy_criteria'] or inputs['neural_network']['energy_criteria'] or inputs['neural_network']['energy_criteria']:
+    if inputs['neural_network']['energy_criteria'] or inputs['neural_network']['force_criteria'] or inputs['neural_network']['stress_criteria']:
         if inputs['neural_network']['energy_criteria']:
             #Dictionaly with list [error , criteria]
             err_dict = dict()
@@ -359,10 +360,10 @@ def _check_criteria(inputs,logfile):
             logfile.write('Energy criteria used : {0:4}  \n'.format(float(inputs['neural_network']['energy_criteria'])))
         if inputs['neural_network']['force_criteria'] and inputs['neural_network']['use_force']:
             err_dict['f_err'] = [float('inf'), float(inputs['neural_network']['force_criteria'])]
-            logfile.write('Force criteria used : {0:4}\n'.format(float(inputs['neural_network']['energy_criteria'])))
+            logfile.write('Force criteria used : {0:4}\n'.format(float(inputs['neural_network']['force_criteria'])))
         if inputs['neural_network']['stress_criteria'] and inputs['neural_network']['use_stress']:
             err_dict['s_err'] = [float('inf'), float(inputs['neural_network']['stress_criteria'])]
-            logfile.write('Stress criteria used : {0:4}\n'.format(float(inputs['neural_network']['energy_criteria'])))
+            logfile.write('Stress criteria used : {0:4}\n'.format(float(inputs['neural_network']['stress_criteria'])))
     else:
         err_dict = None
 

@@ -86,6 +86,7 @@ def initialize_inputs(input_file_name, logfile):
                 'force_coeff': 0.1, 
                 'energy_coeff': 1.,
                 'loss_scale': 1.,
+                'optimizer': None,
 
                 #pytorch 
                 'workers': 4, # (ADDED)
@@ -98,8 +99,9 @@ def initialize_inputs(input_file_name, logfile):
                 # Logging & saving related (Epoch)
                 'save_interval': 1000, 
                 'show_interval': 100,
-                'save_criteria': None,
-                'save_best':False,
+                'energy_criteria':None,
+                'force_criteria':None,
+                'stress_criteria':None,
                 'break_max': 10,
                 'print_structure_rmse': False,
 
