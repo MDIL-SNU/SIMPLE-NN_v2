@@ -2,11 +2,11 @@ import torch
 import shutil
 import time
 from ase import units
-from ..utils.Logger import AverageMeter, ProgressMeter
+from ..utils.Logger import AverageMeter, ProgressMeter, TimeMeter
 
 
 #This function train NN 
-def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, scheduler=None, epoch=0, valid=False, save_result=False, cuda=False):
+def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, scheduler=None, epoch=0, valid=False, save_result=False, cuda=False, err_dict=None,start_time=None):
 
     ## Extract information of  use force & stress
     use_force = inputs['neural_network']['use_force']
@@ -161,13 +161,15 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
         
         # max_len -> total size / batch size & i -> batch step in traning set
         # TODO: choose LOG file method
-        if epoch % inputs['neural_network']['show_interval'] == 0 and not valid: #and i == max_len-1:
+        if epoch % inputs['neural_network']['show_interval'] == 0 and i == max_len-1:
+            progress_dict['total_time'].update(time.time() - start_time)
             progress.display(i+1)
             logfile.write(progress.log(i+1))
-        elif epoch % inputs['neural_network']['show_interval'] == 0 and valid:
-            progress.display(i+1)
-            logfile.write(progress.log(i+1))
-
+    
+    # After one epoch load err_dict & use_force, use_stress included err_dict
+    if err_dict:
+        for err_type in err_dict.keys():
+            err_dict[err_type][0] = progress_dict[err_type].avg
 
     return progress_dict['losses'].avg
     
@@ -177,8 +179,9 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
     data_time = AverageMeter('data', ':6.3f')
     losses = AverageMeter('loss', ':8.4e')
     e_err = AverageMeter('E err', ':6.4e', sqrt=True)
+    total_time = TimeMeter('total time',':8.4e')
     progress_list = [losses, e_err]
-    progress_dict = {'batch_time': batch_time, 'data_time': data_time, 'losses': losses, 'e_err': e_err} 
+    progress_dict = {'batch_time': batch_time, 'data_time': data_time, 'losses': losses, 'e_err': e_err, 'total_time':total_time} 
     
     if use_force:
         f_err = AverageMeter('F err', ':6.4e', sqrt=True)
@@ -192,6 +195,9 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
 
     progress_list.append(batch_time)
     progress_list.append(data_time)
+
+    if True:
+        progress_list.append(total_time)
 
     if valid:
         progress = ProgressMeter(
@@ -210,7 +216,6 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
         )
         
         model.train()
-    
     #Not used yet
     '''
     if save_result:

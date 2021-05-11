@@ -8,6 +8,7 @@ from .data_handler import TorchStyleDataset, FilelistDataset, my_collate
 from .train import train, save_checkpoint
 from torch.optim.lr_scheduler import ExponentialLR
 import torch.nn.init as init
+import time
 from torch.nn import  Linear
 
 
@@ -28,12 +29,12 @@ def train_NN(inputs, logfile):
     # Load data loader
     train_loader, valid_loader = _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset)
     
+    
 
     # Run training
-    best_loss, best_epoch = _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion, scale_factor, pca, best_loss) 
+    _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion, scale_factor, pca, best_loss) 
 
     # End of progran & Best loss witten 
-    if best_epoch: logfile.write('Best loss lammps potential written at {0} epoch\n'.format(best_epoch))
 
 
 #Initialize model with input, and set default value scale, PCA
@@ -244,9 +245,12 @@ def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_datas
 
 
 def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion, scale_factor, pca, best_loss):
-
+    
     #Check GPU (CUDA) available
     CUDA = torch.cuda.is_available()
+
+    #Initialize time 
+    start_time = time.time()
 
     #Calculate total epoch
     max_len = len(train_loader)
@@ -265,19 +269,31 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
     else:
         valid = True
         logfile.write('Use validation set\n')
+        
+    #Define energy, force, stress error dictionary to use stop criteria
+    err_dict = _check_criteria(inputs, logfile)
 
+
+    ##Training loop##
     if inputs['neural_network']['test']: #Evalutaion model
         loss = train(inputs, logfile, train_loader, model, criterion=criterion, valid=valid, cuda=CUDA)
     else: #Training model
+        best_epoch = inputs['neural_network']['start_epoch']
         for epoch in range(inputs['neural_network']['start_epoch'], total_epoch):
             #Train model with train loader 
-            t_loss = train(inputs, logfile, train_loader, model, optimizer=optimizer, criterion=criterion, epoch=epoch, cuda=CUDA)
+            t_loss = train(inputs, logfile, train_loader, model, optimizer=optimizer, criterion=criterion, epoch=epoch, cuda=CUDA, err_dict=err_dict, start_time=start_time)
             #Calculate valid loss with valid loader
-            if valid: v_loss = train(inputs, logfile, valid_loader, model, criterion=criterion, valid=valid, epoch=epoch, cuda=CUDA)
-            else: v_loss = t_loss
+            if valid: loss  = train(inputs, logfile, valid_loader, model, criterion=criterion, valid=valid, epoch=epoch, cuda=CUDA, err_dict=err_dict, start_time=start_time)
+            else: loss = t_loss #No valid set
+
+            #Learning rate decay part
             if inputs['neural_network']['lr_decay']: scheduler.step()
-            is_best = v_loss < best_loss
-            best_loss = min(best_loss, v_loss)
+
+            is_best = loss < best_loss
+            if is_best:
+                best_loss = loss
+                best_epoch = epoch
+
            
            
             #Checkpoint in model traning !!
@@ -292,34 +308,65 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
                     #'scheduler': scheduler.state_dict()
                 }, is_best)
 
-            breaksignal, best_epoch = _save_lammps(inputs, logfile, model, is_best, v_loss, epoch, scale_factor, pca)            
-            if breaksignal:  break
+            breaksignal  = _save_lammps(inputs, logfile, model, is_best, epoch, scale_factor, pca, err_dict)            
+            if breaksignal:  
+                logfile.write('Break point for training reached\n')
+                break
  
-    return best_loss, best_epoch
+
+        #End of traning loop : best loss potential written
+        logfile.write('Best loss lammps potential written at {0} epoch\n'.format(best_epoch))
 
 
 #function to save lammps with criteria or epoch
-def _save_lammps(inputs, logfile, model, is_best, v_loss, epoch, scale_factor, pca):
+def _save_lammps(inputs, logfile, model, is_best, epoch, scale_factor, pca, err_dict):
     #Lammps save part 
     #Save best lammps potential if set save_best
-    if inputs['neural_network']['save_best'] and is_best: 
+    if is_best: 
         model.write_lammps_potential(filename ='./potential_saved_best_loss', inputs=inputs, scale_factor=scale_factor, pca=pca)
-        best_epoch = epoch 
-    else:
-        best_epoch = None
         
     #Save lammps potential with save_interval
     if epoch  % inputs['neural_network']['save_interval'] == 0:
         model.write_lammps_potential(filename ='./potential_saved_epoch_{0}'.format(epoch), inputs=inputs, scale_factor=scale_factor, pca=pca)
+        print('Lammps potential written at {0} epoch\n'.format(epoch))
         logfile.write('Lammps potential written at {0} epoch\n'.format(epoch))
 
-    #Break if loss is under save_criteria
-    if inputs['neural_network']['save_criteria'] and  v_loss < inputs['neural_network']['save_criteria']:
-        model.write_lammps_potential(filename ='./potential_saved_criteria'.format(epoch), inputs=inputs, scale_factor=scale_factor, pca=pca)
-        logfile.write('Lammps potential written with loss ({0:10.6f}) < save criteria ({1:10.6f})\n'.
-        format(float(v_loss), inputs['neural_network']['save_criteria']))
-        breaksignal = True
-    else:
-        breaksignal = False
 
-    return breaksignal, best_epoch
+    #Break if energy, force, stress is under their criteria
+    if err_dict:
+        breaksignal = False
+        for err_type in err_dict.keys():
+            if err_dict[err_type][0] < err_dict[err_type][1]:
+                breaksignal = True
+            else:
+                breaksignal = False
+                print('No')
+                
+    if breaksignal:
+        for err_type in err_dict.keys():
+            logfile.write('Ctirerion met {0}: {1:4} < criteria : {2:4}\n'.format(err_type,err_dict[err_type][0],err_dict[err_type][1]))
+
+    return breaksignal
+
+
+#Check energy, force, stress criteria exist and create dictoary for them
+def _check_criteria(inputs,logfile):
+    if inputs['neural_network']['energy_criteria'] or inputs['neural_network']['energy_criteria'] or inputs['neural_network']['energy_criteria']:
+        if inputs['neural_network']['energy_criteria']:
+            #Dictionaly with list [error , criteria]
+            err_dict = dict()
+            err_dict['e_err'] = [float('inf') , float(inputs['neural_network']['energy_criteria'])]
+            logfile.write('Energy criteria used : {0:4}  \n'.format(float(inputs['neural_network']['energy_criteria'])))
+        if inputs['neural_network']['force_criteria'] and inputs['neural_network']['use_force']:
+            err_dict['f_err'] = [float('inf'), float(inputs['neural_network']['force_criteria'])]
+            logfile.write('Force criteria used : {0:4}\n'.format(float(inputs['neural_network']['energy_criteria'])))
+        if inputs['neural_network']['stress_criteria'] and inputs['neural_network']['use_stress']:
+            err_dict['s_err'] = [float('inf'), float(inputs['neural_network']['stress_criteria'])]
+            logfile.write('Stress criteria used : {0:4}\n'.format(float(inputs['neural_network']['energy_criteria'])))
+    else:
+        err_dict = None
+
+    return err_dict
+
+
+

@@ -34,6 +34,32 @@ class AverageMeter(object):
             fmtstr = '{name} {val' + self.fmt + '} ( {avg' + self.fmt + '} )'
         return fmtstr.format(**self.__dict__)
 
+class TimeMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self, name, fmt=':6.4e'):
+        self.name = name
+        self.fmt = fmt
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.count = 0 
+    
+    #Update values using value, batch_number 
+    #And calculate average, sqrt of batch value
+    def update(self, val, n=1):
+        self.val = val
+        self.count += n
+
+
+    #Show sqrt value & average value : batch_value ( average_value )
+    def __str__(self):
+        fmtstr = '{name} {val' + self.fmt + '} '
+        return fmtstr.format(**self.__dict__)
+
+
+
 #Show logfile & print information
 class ProgressMeter(object):
     def __init__(self, num_batches, meters, prefix="", suffix=""):
