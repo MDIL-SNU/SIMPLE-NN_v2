@@ -14,7 +14,7 @@ from ...utils import data_generator
 def generate(inputs_full, logfile):
     """ Generate structure data files(format: pickle/pt) that listed in "structure_list" file
 
-    1. Get structure list from "structure_list" file from parsing "structure_list" file
+    1. Get structure list from parsing "structure_list" file
     2. Get symmetry function parameter list for each atom types from parsing "params_XX" file
         symf_params_set[element] keys:
             'num': total number of symmetry functions
@@ -44,10 +44,10 @@ def generate(inputs_full, logfile):
     # structure_weights(float list): list of structure weights       
     structures, structure_tag_idx, structure_tags, structure_weights = data_generator.parse_structure_list(logfile, structure_list=structure_list)
 
-    # 2. Get symmetry function parameter list for each atom types
+    # 2. Get symmetry function parameter dictionary for each atom types
     symf_params_set = _parsing_symf_params(inputs, atom_types)
 
-    # Parsing C type symmetry function parameter to symf_params_set dictionary
+    # Convert values in ['int'] & ['double'] into C type data, and save as key named of ['int_p'] & ['double_p']
     for element in atom_types:
         symf_params_set[element]['int_p'] = _gen_2Darray_for_ffi(symf_params_set[element]['int'], ffi, 'int')
         symf_params_set[element]['double_p'] = _gen_2Darray_for_ffi(symf_params_set[element]['double'], ffi)
@@ -63,7 +63,7 @@ def generate(inputs_full, logfile):
             # type_atom_idx(int list dic): list of atoms index that for each atom types     ex) {'Si': [0,1], 'O': [2,3,4,5]}
             atom_num, atom_type_idx, type_num, type_atom_idx, cart, scale, cell = _get_structure_info(snapshot, atom_types)
 
-            # Make C type data of atom_type_idx, cart, scale, cell
+            # Convert atom_type_idx, cart, scale, cell into C type data
             atom_type_idx_p = ffi.cast('int *', atom_type_idx.ctypes.data)
             cart_p  = _gen_2Darray_for_ffi(cart, ffi)
             scale_p = _gen_2Darray_for_ffi(scale, ffi)
@@ -79,7 +79,7 @@ def generate(inputs_full, logfile):
                 cal_atom_idx, cal_atom_num, x, dx, da = _init_sf_variables(type_atom_idx,\
                     jtem, symf_params_set, atom_num)
                 
-                # Make C array from x, dx, da
+                # Convert cal_atom_idx, x, dx, da into C type data
                 cal_atom_idx_p = ffi.cast('int *', cal_atom_idx.ctypes.data)
                 x_p = _gen_2Darray_for_ffi(x, ffi)
                 dx_p = _gen_2Darray_for_ffi(dx, ffi)
@@ -106,7 +106,7 @@ def generate(inputs_full, logfile):
             result['S'] = torch.tensor(S)
 
             # 6. Save "result" data to pickle file
-            tmp_filename = data_generator.save_to_datafile(inputs, result, data_idx, tag_idx, logfile)
+            tmp_filename = data_generator.save_to_datafile(inputs, result, data_idx, logfile)
             data_list_fil.write("{}:{}\n".format(tag_idx, tmp_filename))
             data_idx += 1
             tmp_endfile = tmp_filename
@@ -175,7 +175,6 @@ def _init_result(type_num, structure_tags, structure_weights, idx, atom_type_idx
     result['params'] = dict()
     result['N'] = type_num
     result['tot_num'] = np.sum(list(type_num.values()))
-    result['partition'] = np.ones([result['tot_num']]).astype(np.int32)
     result['struct_type'] = structure_tags[idx]
     result['struct_weight'] = structure_weights[idx]
     result['atom_idx'] = atom_type_idx
@@ -211,7 +210,7 @@ def _check_error(errnos, logfile):
             assert errno == 0    
 
 # Set resulatant Dictionary
-def _set_result(inputs_full,result, x, dx, da, type_num, jtem, symf_params_set, atom_num):
+def _set_result(result, x, dx, da, type_num, jtem, symf_params_set, atom_num):
     if type_num[jtem] != 0:
         result['x'][jtem] = np.array(x)
         result['dx'][jtem] = np.array(dx)
