@@ -16,7 +16,7 @@ import ase
 import torch
 from ase.geometry import get_distances
 
-def _gen_2Darray_for_ffi(arr, ffi, cdata="double"):
+def _gen_2Darray_for_ffi(arr, ffi, cdata='double'):
     # Function to generate 2D pointer for cffi  
     shape = arr.shape
     arr_p = ffi.new(cdata + " *[%d]" % shape[0])
@@ -39,14 +39,14 @@ def _make_data_list(filename):
 
 def _make_str_data_list(filename):
     """
-    read pickle_list file to make group of list of pickle files.
-    group id is denoted in front of the line (optional).
-    if group id is not denoted, group id of -1 is assigned.
+    Read pickle_list file to make group of list of pickle files.
+    Group id is denoted in front of the line (optional).
+    If group id is not denoted, group id of -1 is assigned.
 
     example:
-    0:file1.pickle
-    0:file2.pickle
-    14:file3.pickle
+        0:file1.pickle
+        0:file2.pickle
+        14:file3.pickle
     """
     h = re.compile("([0-9]+):(.*)")
     data_list = OrderedDict()
@@ -65,9 +65,17 @@ def _make_str_data_list(filename):
 
 def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False, is_ptdata=True):
     """
-    atom_types
-    - None: atom type is not considered
-    - list: use atom_types list
+    Args:
+        filelist(str): name of file list ex) "pickle_train_list", "pickle_valid_list"
+        feature_tag(str): key in data file that generated at generate process ex) 'x', 'dx', 'tot_num', ...
+        atom_types
+            None: atom type is not considered
+            list: use atom_types list
+        use_idx(boolean): 
+        is_ptdata(boolean): boolean if data file is .pt format (else, .pickle format)
+    Returns:
+        feature_list(dict): feature list of feature_tag
+        idx_list(dict): data index for each feature list (if use_idx=Ture)
     """
     data_list = _make_data_list(filelist)
 
@@ -104,8 +112,7 @@ def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False
 
             for i,item in enumerate(atom_types):
                 feature_list[item] = tmp_feature_list[tmp_atom_idx_list == i+1]
-
-        else:
+        else: # use_idx == False
             feature_list = dict()
             idx_list = dict()
 
@@ -121,7 +128,7 @@ def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False
                 for jtem in atom_types:
                     if jtem in tmp_data[feature_tag]:
                         feature_list[jtem].append(tmp_data[feature_tag][jtem])
-                        idx_list[jtem].append([i]*tmp_data['N'][jtem])
+                        idx_list[jtem].append([i] * tmp_data['N'][jtem])
                 
             for item in atom_types:
                 if len(feature_list[item]) > 0:
@@ -130,8 +137,20 @@ def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False
 
     return feature_list, idx_list
 
-
 def _generate_scale_file(feature_list, atom_types, filename='scale_factor', scale_type='minmax', scale_scale=1.0, comm=DummyMPI(), scale_rho=None, params=None, log=None):
+    """
+    Args:
+        feature_list:
+        atom_types:
+        filename:
+        scale_type:
+        scale_scale:
+        scale_rho:
+        params:
+        log:
+    Returns:
+        scale:
+    """
     scale = dict()
     for item in atom_types:
         inp_size = feature_list[item].shape[1]
@@ -140,8 +159,8 @@ def _generate_scale_file(feature_list, atom_types, filename='scale_factor', scal
 
         if len(feature_list[item]) > 0:
             if scale_type == 'minmax':
-                scale[item][0,:] = 0.5*(np.amax(feature_list[item], axis=0) + np.amin(feature_list[item], axis=0))
-                scale[item][1,:] = 0.5*(np.amax(feature_list[item], axis=0) - np.amin(feature_list[item], axis=0)) / scale_scale
+                scale[item][0,:] = 0.5 * (np.amax(feature_list[item], axis=0) + np.amin(feature_list[item], axis=0))
+                scale[item][1,:] = 0.5 * (np.amax(feature_list[item], axis=0) - np.amin(feature_list[item], axis=0)) / scale_scale
                 is_scaled[scale[item][1,:] < 1e-15] = False
                 scale[item][1, scale[item][1,:] < 1e-15] = 1.
             elif scale_type == 'meanstd':
@@ -177,32 +196,32 @@ def _generate_scale_file(feature_list, atom_types, filename='scale_factor', scal
                             (0.5 * (np.cos(np.pi * r1 / rc) + 1))**2
 
                 for p in range(inp_size):
-                    if params[item]['i'][p,0] == 2:
-                        ti = atom_types[params[item]['i'][p,1] - 1]
-                        eta = params[item]['d'][p,1]
-                        rc = params[item]['d'][p,0]
-                        rs = params[item]['d'][p,2]
-                        scale[item][1,p] = scale_rho[ti] * nquad(G2, [[0, rc]])[0]
-                    elif params[item]['i'][p,0] == 4:
-                        ti = atom_types[params[item]['i'][p,1] - 1]
-                        tj = atom_types[params[item]['i'][p,2] - 1]
-                        eta = params[item]['d'][p,1]
-                        rc = params[item]['d'][p,0]
-                        zeta = params[item]['d'][p,2]
-                        lamb = params[item]['d'][p,3]
+                    if params[item]['int'][p,0] == 2:
+                        ti = atom_types[params[item]['int'][p,1] - 1]
+                        eta = params[item]['double'][p,1]
+                        rc = params[item]['double'][p,0]
+                        rs = params[item]['double'][p,2]
+                        scale[item][1,p] = scale_rho[ti] * nquad(G2, [[0,rc]])[0]
+                    elif params[item]['int'][p,0] == 4:
+                        ti = atom_types[params[item]['int'][p,1] - 1]
+                        tj = atom_types[params[item]['int'][p,2] - 1]
+                        eta = params[item]['double'][p,1]
+                        rc = params[item]['double'][p,0]
+                        zeta = params[item]['double'][p,2]
+                        lamb = params[item]['double'][p,3]
                         scale[item][1,p] = scale_rho[ti] * scale_rho[tj] * 4 * np.pi *\
-                                            (nquad(G4, [[0, rc], [0, rc], [0, np.pi]])[0] -\
-                                            (nquad(singular, [[0, rc]])[0] if lamb == 1 else 0))
-                    elif params[item]['i'][p,0] == 5:
-                        ti = atom_types[params[item]['i'][p,1] - 1]
-                        tj = atom_types[params[item]['i'][p,2] - 1]
-                        eta = params[item]['d'][p,1]
-                        rc = params[item]['d'][p,0]
-                        zeta = params[item]['d'][p,2]
-                        lamb = params[item]['d'][p,3]
+                                            (nquad(G4, [[0,rc], [0,rc], [0, np.pi]])[0] -\
+                                            (nquad(singular, [[0,rc]])[0] if lamb == 1 else 0))
+                    elif params[item]['int'][p,0] == 5:
+                        ti = atom_types[params[item]['int'][p,1] - 1]
+                        tj = atom_types[params[item]['int'][p,2] - 1]
+                        eta = params[item]['double'][p,1]
+                        rc = params[item]['double'][p,0]
+                        zeta = params[item]['double'][p,2]
+                        lamb = params[item]['double'][p,3]
                         scale[item][1,p] = scale_rho[ti] * scale_rho[tj] * 4 * np.pi *\
-                                            (nquad(G5, [[0, rc], [0, rc], [0, np.pi]])[0] -\
-                                            (nquad(singular, [[0, rc]])[0] if lamb == 1 else 0))
+                                            (nquad(G5, [[0,rc], [0,rc], [0, np.pi]])[0] -\
+                                            (nquad(singular, [[0,rc]])[0] if lamb == 1 else 0))
                     else:
                         assert False
 
@@ -220,7 +239,7 @@ def _generate_scale_file(feature_list, atom_types, filename='scale_factor', scal
                         i, scale[item][0,i], scale_str, scaled_min[i], scaled_max[i], scaled_std[i]))
         else:
             scale[item][1,:] = 1.
-
+    
     if log is not None and comm.rank == 0:
         log.write("{:-^70}\n".format(""))
 

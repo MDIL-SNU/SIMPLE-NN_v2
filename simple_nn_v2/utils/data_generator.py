@@ -7,24 +7,11 @@ import os
 from . import compress_outcar
 import torch
 
-""" This class handles structure list file, OUTCAR files for making data set(format: pickle or torch)
+""" In this module, functions handles structure list file and OUTCAR files for making data set(format: pickle or torch)
 
-1. Parsing structure list file
-2. Loading structure snapshots in structure list
-3. After preprocess structure snapshots in Symmetry_function class, save results to pickle or pt files
-
-Attributes:
-    inputs(dic): parsed dictionary form of [input.yaml] file
-    structure_list(str): path of structure list file (default='./str_list') 
-    data_list(str): path of file that contains every structure data file path (default='./pickle_list')
-    _is_data_list_open(bool): check if data_list file is open
-    _data_idx(int): index of current final pickle data (total number of pickle files in "data_dir")
-    logfile(file stream): log file stream
-    data_dir(str): directory path for saving data
-Methods:
-    parse_structure_list(): Parsing "structure_list" file (default="./str_list")
-    load_snapshots(): Read structure file and load snapshots using ase.io.read() method
-    save_to_datafile(): 
+    parse_structure_list(logfile, structure_list): Parsing "structure_list" file (default="./str_list")
+    load_snapshots(inputs, item, logfile): Read structure file and load snapshots using ase.io.read() method
+    save_to_datafile(inputs, data, data_idx, logfile): save results to pickle or pt files
 """
 
 def parse_structure_list(logfile, structure_list='./str_list'):
@@ -46,6 +33,9 @@ def parse_structure_list(logfile, structure_list='./str_list'):
     3. Set tag index for each STRUCTURE_PATH
     We support STRUCTURE_PATH_EXP as brace expansion ex) /PATH{1..10}/OUTCAR or /PATH/OUTCAR{1..10}
 
+    Args:
+        logfile(file obj): logfile object
+        structure_list(str): name of structure list file that we have to parse
     Returns:
         structures: list of [STRUCTURE_PATH, INDEX_EXP]
         structure_tag_idx(int list): list of structure tag index of each STRUCTURE_PATH
@@ -132,7 +122,9 @@ def load_snapshots(inputs, item, logfile):
     Handle ase version: later than 3.18.0 vs else
 
     Args:
-        item: [STRUCTURE_PATH, INDEX]    ex) ["/path1/OUTCAR", "::10"] or ["/path2/OUTCAR", "10"]]
+        inputs(dict): ['symmetry_function'] part in input.yaml
+        item(list): [STRUCTURE_PATH, INDEX]    ex) ["/path1/OUTCAR", "::10"] or ["/path2/OUTCAR", "10"]]
+        logfile(file obj): logfile object
     Returns:
         snapshots(ase.atoms.Atoms object): Atoms object from ase module that contain structure information, E, F, S ...
     """
@@ -167,7 +159,7 @@ def load_snapshots(inputs, item, logfile):
     
     return snapshots
 
-def save_to_datafile(inputs, data, data_idx, tag_idx, logfile):
+def save_to_datafile(inputs, data, data_idx, logfile):
     """ Write result data to pickle file
 
     Check if pickle list file is open
@@ -175,8 +167,10 @@ def save_to_datafile(inputs, data, data_idx, tag_idx, logfile):
     Write pickle file path in pickle list
 
     Args:
-        data(dic): result data that created after preprocessing in Symmetry_function class
-        tag_idx(int): structure tag index of snapshot
+        inputs(dict): ['symmetry_function'] part in input.yaml
+        data(dic): result data that contains information after calculting symmetry function values
+        data_idx(int): index of data file to save
+        logfile(file obj): logfile object
     Returns:
         tmp_filename(str): saved pickle file path
     """
