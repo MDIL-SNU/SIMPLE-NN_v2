@@ -31,9 +31,8 @@ class PickleDataset(torch.utils.data.Dataset):
 
 # From pytorch .pt files (will be implemented soon)
 class TorchStyleDataset(torch.utils.data.Dataset):
-    def __init__(self, filename, atom_types):
+    def __init__(self, filename):
         self.data = torch.load(filename)
-        self.atom_types = atom_types
 
     def __len__(self):
         return len(self.data)
@@ -50,14 +49,38 @@ class FilelistDataset(torch.utils.data.Dataset):
                 #for item in list(braceexpand(line.strip())):
                 temp_list = glob(line.strip())
                 temp_list.sort()
+                ## Weight check and copy
                 for item in temp_list:
-                    self.filelist.append(item)
+                    tmp_weight = int(TorchStyleDataset(item)['struct_weight'])
+                    for _ in range(tmp_weight):
+                        self.filelist.append(item)
 
     def __len__(self):
         return len(self.filelist)
 
     def __getitem__(self, idx):
         return torch.load(self.filelist[idx])
+
+class StructlistDataset(FilelistDataset):
+    def __init__(self):
+        self.filelist = list()
+
+#Struct data set to 
+def _set_struct_dict(filename):
+    structure_dict = dict()
+    with open(filename) as fil:
+        for line in fil:
+            temp_list = glob(line.strip())
+            temp_list.sort()
+            ## Weight check and copy
+            for item in temp_list:
+                tmp_name = TorchStyleDataset(item)['struct_type']
+                if not tmp_name in structure_dict.keys():
+                    structure_dict[tmp_name] =  StructlistDataset()
+                structure_dict[tmp_name].filelist.append(item)
+
+    return structure_dict
+
 
 
 #Function to generate Iterator

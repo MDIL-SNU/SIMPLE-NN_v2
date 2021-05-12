@@ -34,8 +34,45 @@ class AverageMeter(object):
             fmtstr = '{name} {val' + self.fmt + '} ( {avg' + self.fmt + '} )'
         return fmtstr.format(**self.__dict__)
 
-class TimeMeter(object):
+
+class StructureMeter(object):
     """Computes and stores the average and current value"""
+    def __init__(self, name, fmt=':6.4e', sqrt=False):
+        self.name = name
+        self.fmt = fmt
+        self.sqrt = sqrt
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+    
+    #Update values using value, batch_number 
+    #And calculate average, sqrt of batch value
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+        if self.sqrt:
+            self.sqrt_avg = self.avg**0.5
+
+    #Show sqrt value & average value : batch_value ( average_value )
+    def __str__(self):
+        fmtstr = '{0}  ( {1' + self.fmt + '} )'
+        #print(self.name, self.avg)
+        if self.sqrt: #sqrt need
+            fmtstr = fmtstr.format(self.name, self.sqrt_avg)
+        else:
+            fmtstr = fmtstr.format(self.name, self.avg)
+        return fmtstr
+
+
+class TimeMeter(object):
+    """Computes total time elapsed"""
     def __init__(self, name, fmt=':6.4e'):
         self.name = name
         self.fmt = fmt
@@ -80,6 +117,14 @@ class ProgressMeter(object):
         entries += [str(meter) for meter in self.meters]
         entries += [self.suffix]
         return '\t'.join(entries)+'\n'
+
+    def string(self):
+        entries = [self.prefix]
+        entries += [str(meter) for meter in self.meters]
+        entries += [self.suffix]
+        return ' '.join(entries)
+
+
 
     def _get_batch_fmtstr(self, num_batches):
         num_digits = len(str(num_batches // 1))
