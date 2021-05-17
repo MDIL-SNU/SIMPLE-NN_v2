@@ -69,6 +69,12 @@ class StructlistDataset(FilelistDataset):
 def _set_struct_dict(filename):
     structure_dict = dict()
     with open(filename) as fil:
+        try: #Check valid set exist
+            print(fil[0])
+            valid = True
+        except:
+            valid = False 
+
         for line in fil:
             temp_list = glob(line.strip())
             temp_list.sort()

@@ -23,8 +23,9 @@ def train_NN(inputs, logfile):
     scale_factor, pca, train_dataset, valid_dataset, best_loss = _load_data(\
     inputs, logfile, model, optimizer, scale_factor, pca)
 
-    # Convert scale_factor, pca to torch.tensor
-    _convert_to_tensor(inputs, logfile, scale_factor, pca)
+    # Convert scale_factor, pca to torch.tensor & if load from checkpoint already torch.tensor
+    if not inputs['neural_network']['resume']:
+        _convert_to_tensor(inputs, logfile, scale_factor, pca)
     
 
     # Load data loader
@@ -172,19 +173,25 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
         checkpoint = torch.load(inputs["neural_network"]["resume"])
         # Load model
         if not inputs["neural_network"]['clear_prev_network']:
+            logfile.write('Clear previous model, optimizer, learning rate\n')
             model.load_state_dict(checkpoint['model'])
             optimizer.load_state_dict(checkpoint['optimizer'])
             for pg in optimizer.param_groups:
                 pg['lr'] = inputs['neural_network']['learning_rate']
+
         if not inputs['neural_network']['clear_prev_status']:
+            logfile.write('Clear previous loss, epoch\n')
             best_loss = checkpoint['best_loss']
             inputs['neural_network']['start_epoch'] = checkpoint['epoch']
 
         # Load scale file & PCA file
         if inputs['symmetry_function']['calc_scale']:
+            logfile.write('Load scale from checkpoint\n')
             scale_factor = checkpoint['scale_factor']
         if inputs['neural_network']['pca']:
+            logfile.write('Load pca from checkpoint\n')
             pca = checkpoint['pca']
+
 
     else: #Not resume, load scale_factor, pca pytorch savefile in preprocess
         #Set best loss as infinite
@@ -197,11 +204,23 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
             pca = torch.load('./pca')
             logfile.write('PCA data loaded\n')
 
+    train_dataset = None
+    valid_dataset = None
+
+
     # Load dataset 
     train_dataset = FilelistDataset(inputs['symmetry_function']['train_list'])
     if not inputs['neural_network']['test']:
         valid_dataset = FilelistDataset(inputs['symmetry_function']['valid_list']) 
-    logfile.write('Train & Valid dataset loaded\n')
+        #Check valid_list exist
+        try:
+            tmp_valid_dataset[0] #Check any valid_file exist
+            logfile.write('Train & Valid dataset loaded\n')
+        except:
+            valid_dataset = None
+            logfile.write('Train dataset loaded, No valid set loaded\n')
+    else:
+        logfile.write('Test dataset loaded\n')
 
     #model, optimizer modified but not return
     return scale_factor, pca, train_dataset, valid_dataset, best_loss 
@@ -233,11 +252,15 @@ def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_datas
         pca_min_whiten_level=inputs['neural_network']['pca_min_whiten_level'],
         use_stress=inputs['neural_network']['use_stress'])
 
+    train_loader = None
+    valid_loader = None
+
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=inputs['neural_network']['batch_size'], shuffle=True, collate_fn=partial_collate,
         num_workers=inputs['neural_network']['workers'], pin_memory=True)
+    
 
-    if not inputs['neural_network']['test']:
+    if not inputs['neural_network']['test'] and valid_dataset:
         valid_loader = torch.utils.data.DataLoader(
             valid_dataset, batch_size=inputs['neural_network']['batch_size'], shuffle=False, collate_fn=partial_collate,
             num_workers=inputs['neural_network']['workers'], pin_memory=True)
@@ -262,14 +285,14 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
     #Learning rate decay schedular
     if inputs['neural_network']['lr_decay']:
         scheduler = ExponentialLR(optimizer=optimizer, gamma=inputs['neural_network']['lr_decay'])
-
-    #Check use validation
-    if float(inputs['symmetry_function']['valid_rate']) < 1E-6:
-        valid = False
-        logfile.write('No validation set\n')
-    else:
+    
+    #Check use validation (valid_set exist)
+    if valid_loader:
         valid = True
-        logfile.write('Use validation set\n')
+    else:
+        logfile.write('Warning : No validation set\n')
+        valid = False
+
         
     #Define energy, force, stress error dictionary to use stop criteria
     err_dict = _check_criteria(inputs, logfile)
@@ -277,9 +300,10 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
 
     ##Training loop##
     if inputs['neural_network']['test']: #Evalutaion model
-        loss = train(inputs, logfile, train_loader, model, criterion=criterion, valid=valid, cuda=CUDA)
+        print('Evaluation(Testing) model'); logfile.write('Evaluation(Testing) model \n')
+        loss = train(inputs, logfile, train_loader, model, criterion=criterion, valid=True, cuda=CUDA, start_time=start_time)
         if inputs['neural_network']['print_structure_rmse'] and train_struct_dict: 
-            pass
+            _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=optimizer, criterion=criterion, cuda=CUDA)
     else: #Training model
         best_epoch = inputs['neural_network']['start_epoch']
         for epoch in range(inputs['neural_network']['start_epoch'], total_epoch):
@@ -287,13 +311,14 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
             t_loss = train(inputs, logfile, train_loader, model, optimizer=optimizer, criterion=criterion, epoch=epoch, cuda=CUDA, err_dict=err_dict, start_time=start_time)
             #Calculate valid loss with valid loader
             if valid: 
-                loss  = train(inputs, logfile, valid_loader, model, criterion=criterion, valid=valid, epoch=epoch, cuda=CUDA, err_dict=err_dict, start_time=start_time)
+                loss  = train(inputs, logfile, valid_loader, model, criterion=criterion, valid=True, epoch=epoch, cuda=CUDA, err_dict=err_dict, start_time=start_time)
             #No valid set
             else: 
                 loss = t_loss 
             
             #Structure rmse part
-            if inputs['neural_network']['print_structure_rmse'] and train_struct_dict: 
+            if (epoch  % inputs['neural_network']['show_interval'] == 0) and\
+                 inputs['neural_network']['print_structure_rmse'] and train_struct_dict: 
                 _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=optimizer, criterion=criterion, cuda=CUDA)
 
             #Learning rate decay part
@@ -353,7 +378,11 @@ def _save_lammps(inputs, logfile, model, is_best, epoch, scale_factor, pca, err_
                 
     if breaksignal:
         for err_type in err_dict.keys():
+            print('Ctirerion met {0} : {1:4.2f} < criteria : {2:4}'.format(err_type,err_dict[err_type][0],err_dict[err_type][1]))
             logfile.write('Ctirerion met {0} : {1:4.2f} < criteria : {2:4}\n'.format(err_type,err_dict[err_type][0],err_dict[err_type][1]))
+        model.write_lammps_potential(filename ='./potential_criterion', inputs=inputs, scale_factor=scale_factor, pca=pca)
+        print('Criterion lammps potential written'.format(err_type,err_dict[err_type][0],err_dict[err_type][1]))
+        logfile.write('Criterion lammps potential written\n'.format(err_type,err_dict[err_type][0],err_dict[err_type][1]))
 
     return breaksignal
 
@@ -380,6 +409,8 @@ def _load_structure(inputs, logfile, scale_factor, pca):
     train_struct_dict = None
     valid_struct_dict = None
     train_struct_dict = _set_struct_dict(inputs['symmetry_function']['train_list'])
+
+    #Check valid list exist and test scheme
     if not inputs['neural_network']['test']:
         valid_struct_dict = _set_struct_dict(inputs['symmetry_function']['valid_list']) 
         #Dictionary Key merge (in train structure, not in valid structue)
@@ -387,6 +418,11 @@ def _load_structure(inputs, logfile, scale_factor, pca):
             if not t_key in valid_struct_dict.keys():
                 #Set blank dataframe
                 valid_struct_dict[t_key] = StructlistDataset()
+    else:
+        valid_struct_dict = dict()
+        for t_key in train_struct_dict.keys():
+            #Set blank dataframe
+            valid_struct_dict[t_key] = StructlistDataset()
 
     #Loop for _load_collate
     for t_key in train_struct_dict.keys():
