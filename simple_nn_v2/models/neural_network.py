@@ -9,7 +9,6 @@ class FCNDict(torch.nn.Module):
 
     def forward(self, x):
         assert [item for item in self.nets.keys()].sort() == [item for item in x.keys()].sort()
-        
         res = {}
         for key in x:
             res[key] = self.nets[key](x[key])
@@ -105,7 +104,6 @@ class FCNDict(torch.nn.Module):
 
         FIL.close()
         
-
 class FCN(torch.nn.Module):
     def __init__(self, dim_input, dim_hidden, acti_func='sigmoid'):
         super(FCN, self).__init__()

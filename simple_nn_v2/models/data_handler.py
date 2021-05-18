@@ -6,7 +6,6 @@ from six.moves import cPickle as pickle
 torch.set_default_dtype(torch.float64)
 
 # From pickle files
-
 class PickleDataset(torch.utils.data.Dataset):
     def __init__(self, filename, atom_types):
         with open(filename) as fil:
@@ -40,7 +39,7 @@ class TorchStyleDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         return self.data[idx]
 
-
+#Open file contain directory of pytorch files and return them
 class FilelistDataset(torch.utils.data.Dataset):
     def __init__(self, filename):
         self.filelist = list()
@@ -61,11 +60,12 @@ class FilelistDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         return torch.load(self.filelist[idx])
 
+#Used in Structure rmse 
 class StructlistDataset(FilelistDataset):
     def __init__(self):
         self.filelist = list()
 
-#Struct data set to 
+#Function that set structure 
 def _set_struct_dict(filename):
     structure_dict = dict()
     with open(filename) as fil:
@@ -86,8 +86,6 @@ def _set_struct_dict(filename):
                 structure_dict[tmp_name].filelist.append(item)
 
     return structure_dict
-
-
 
 #Function to generate Iterator
 def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, use_stress=False):

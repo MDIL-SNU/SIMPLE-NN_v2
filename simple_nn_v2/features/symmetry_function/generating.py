@@ -10,6 +10,16 @@ from ._libsymf import lib, ffi
 from ...utils import _gen_2Darray_for_ffi, compress_outcar
 from ...utils import data_generator
 
+def set_generate(input_f=None):
+
+
+    return generate
+
+
+
+
+
+
 
 def generate(inputs_full, logfile):
     """ Generate structure data files(format: pickle/pt) that listed in "structure_list" file

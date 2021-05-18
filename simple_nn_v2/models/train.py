@@ -8,10 +8,6 @@ from ..utils.Logger import AverageMeter, ProgressMeter, TimeMeter, StructureMete
 #This function train NN 
 def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, scheduler=None, epoch=0, valid=False, save_result=False, cuda=False, err_dict=None,start_time=None):
 
-    ## Extract information of  use force & stress
-    use_force = inputs['neural_network']['use_force']
-    use_stress = inputs['neural_network']['use_stress']
-
     dtype = torch.get_default_dtype()
 
     progress, progress_dict = _init_meters(model, data_loader, optimizer, epoch, 
@@ -81,8 +77,8 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
             progress_list,
             prefix=f"Valid :[{epoch:6}]",
         )
-
         model.eval()
+
     else:
         progress = ProgressMeter(
             len(data_loader),
@@ -110,26 +106,24 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     if is_best:
         shutil.copyfile(filename, 'model_best.pth.tar')
 
-
 def _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=None, criterion=None, cuda=False):
     for t_key in train_struct_dict.keys():
         log_train = _struct_log(inputs, train_struct_dict[t_key], model, optimizer=optimizer, criterion=criterion, cuda=cuda)
         log_train = "[{0:8}] ".format(t_key)+log_train
+
         if valid_struct_dict[t_key]:
             log_valid = _struct_log(inputs, valid_struct_dict[t_key], model,valid=True, optimizer=optimizer, criterion=criterion, cuda=cuda)
             log_valid = "\n[{0:8}] ".format(t_key)+log_valid
+
         else:
             log_valid = ""
         outdict = log_train+log_valid
+
         print(outdict)
         logfile.write(outdict+'\n')
 
 
-
 def _struct_log(inputs, data_loader, model, valid=False, optimizer=None, criterion=None, cuda=False):
-    ## Extract information of  use force & stress
-    use_force = inputs['neural_network']['use_force']
-    use_stress = inputs['neural_network']['use_stress']
 
     dtype = torch.get_default_dtype()
 
@@ -138,15 +132,15 @@ def _struct_log(inputs, data_loader, model, valid=False, optimizer=None, criteri
 
     progress_list = [losses, e_err]
     progress_dict = {'losses': losses, 'e_err': e_err} 
-    if use_force:
+
+    if inputs['neural_network']['use_force']:
         f_err = StructureMeter('F err', ':6.4e',sqrt=True)
         progress_list.append(f_err)
         progress_dict['f_err'] = f_err
 
-    if use_stress:
+    if inputs['neural_network']['use_stress']:
         s_err = StructureMeter('S err', ':6.4e', sqrt=True)
         progress_list.append(s_err)
-
         progress_dict['s_err'] = s_err
 
     if valid:
@@ -155,6 +149,7 @@ def _struct_log(inputs, data_loader, model, valid=False, optimizer=None, criteri
             progress_list,
             prefix="Valid : ",
         )
+
     else:
         progress = ProgressMeter(
             len(data_loader),
@@ -163,9 +158,8 @@ def _struct_log(inputs, data_loader, model, valid=False, optimizer=None, criteri
         )
 
     model.eval()
-    #Training part
+    #Evaluation part
     for i,item in enumerate(data_loader):
-
         if cuda:
             loss = _loop_for_gpu(inputs, item, dtype, model, criterion, progress_dict)
         else:
@@ -173,14 +167,11 @@ def _struct_log(inputs, data_loader, model, valid=False, optimizer=None, criteri
     
     return progress.string()
 
-
-
-
+#Traning loop for CPU 
 def _loop_for_cpu(inputs, item, dtype, model, criterion, progress_dict):
     loss = 0.
     e_loss = 0.
     n_batch = item['E'].size(0) + 1
-
     
     # Since the shape of input and intermediate state during forward is not fixed,
     # forward process is done by structure by structure manner.
@@ -237,7 +228,6 @@ def _loop_for_cpu(inputs, item, dtype, model, criterion, progress_dict):
                     #Index sum
                     tmp_idx += ntem
 
-
                 if inputs['neural_network']['use_force']:
                     F_ -= torch.cat(tmp_force, axis=0)
 
@@ -274,14 +264,11 @@ def _loop_for_cpu(inputs, item, dtype, model, criterion, progress_dict):
 
     return loss
 
-    
-
-
+#Traning loop for GPU 
 def _loop_for_gpu(inputs, item, dtype, model, criterion, progress_dict):
     loss = 0.
     e_loss = 0.
     n_batch = item['E'].size(0) + 1
-
     
     # Since the shape of input and intermediate state during forward is not fixed,
     # forward process is done by structure by structure manner.
@@ -306,10 +293,8 @@ def _loop_for_gpu(inputs, item, dtype, model, criterion, progress_dict):
                 model.nets[atype](x[atype]).squeeze(), size=(item['n'][atype].size(0),
                 item['sp_idx'][atype].size(1))).to_dense(), axis=1)
         n_atoms += item['n'][atype].cuda(non_blocking=True)
-       
-    #LOSS
+    #Energy loss
     e_loss = criterion(E_.squeeze()/n_atoms, item['E'].type(dtype).cuda(non_blocking=True)/n_atoms)
-
    
     #Loop for force, stress
     if inputs['neural_network']['use_force'] or inputs['neural_network']['use_stress']:
@@ -337,8 +322,6 @@ def _loop_for_gpu(inputs, item, dtype, model, criterion, progress_dict):
                     #Index sum
                     tmp_idx += ntem
 
-
-
                 if inputs['neural_network']['use_force']:
                     F_ -= torch.cat(tmp_force, axis=0)
 
@@ -357,13 +340,12 @@ def _loop_for_gpu(inputs, item, dtype, model, criterion, progress_dict):
             else:
                 f_loss = criterion(F_, F)
                 print_f_loss = f_loss
-
             loss += inputs['neural_network']['force_coeff'] * f_loss
             progress_dict['f_err'].update(print_f_loss.detach().item(), F_.size(0))
+
         #Stress loss part
         if inputs['neural_network']['use_stress']:
             s_loss = criterion(S_, S)
-        
             loss += inputs['neural_network']['stress_coeff'] * s_loss
             progress_dict['s_err'].update(s_loss.detach().item(), n_batch)
 
@@ -372,5 +354,5 @@ def _loop_for_gpu(inputs, item, dtype, model, criterion, progress_dict):
     progress_dict['e_err'].update(e_loss.detach().item(), n_batch)
     progress_dict['losses'].update(loss.detach().item(), n_batch)
     loss = inputs['neural_network']['loss_scale'] * loss
-   
+  
     return loss
