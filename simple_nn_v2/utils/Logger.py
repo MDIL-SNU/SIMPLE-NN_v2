@@ -26,6 +26,15 @@ class AverageMeter(object):
             self.sqrt_val = self.val**0.5
             self.sqrt_avg = self.avg**0.5
 
+
+    #Show average value : average value
+    def show_avg(self):
+        if self.sqrt: #sqrt need
+            fmtstr = '{name} ( {sqrt_avg' + self.fmt + '} )'
+        else:
+            fmtstr = '{name} ( {avg' + self.fmt + '} )'
+        return fmtstr.format(**self.__dict__)
+
     #Show sqrt value & average value : batch_value ( average_value )
     def __str__(self):
         if self.sqrt: #sqrt need
@@ -33,7 +42,6 @@ class AverageMeter(object):
         else:
             fmtstr = '{name} {val' + self.fmt + '} ( {avg' + self.fmt + '} )'
         return fmtstr.format(**self.__dict__)
-
 
 class StructureMeter(object):
     """Computes and stores the average and current value"""
@@ -46,6 +54,7 @@ class StructureMeter(object):
     def reset(self):
         self.val = 0
         self.avg = 0
+        self.sqrt_avg = 0
         self.sum = 0
         self.count = 0
     
@@ -63,7 +72,6 @@ class StructureMeter(object):
     #Show sqrt value & average value : batch_value ( average_value )
     def __str__(self):
         fmtstr = '{0}  ( {1' + self.fmt + '} )'
-        #print(self.name, self.avg)
         if self.sqrt: #sqrt need
             fmtstr = fmtstr.format(self.name, self.sqrt_avg)
         else:
@@ -89,7 +97,9 @@ class TimeMeter(object):
         self.val = val
         self.count += n
 
-
+    def show_avg(self):
+        return self.__str__()
+     
     #Show sqrt value & average value : batch_value ( average_value )
     def __str__(self):
         fmtstr = '{name} {val' + self.fmt + '} '
@@ -111,6 +121,12 @@ class ProgressMeter(object):
         entries += [self.suffix]
         print('\t'.join(entries), flush=True)
 
+    def test(self):
+        entries = [self.prefix]
+        entries += [meter.show_avg() for meter in self.meters]
+        entries += [self.suffix]
+        print('\t'.join(entries), flush=True)
+        return '\t'.join(entries)+'\n'  
 
     def log(self, batch):
         entries = [self.prefix + self.batch_fmtstr.format(batch)]

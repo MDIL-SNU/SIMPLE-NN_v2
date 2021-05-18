@@ -6,12 +6,12 @@ from ..utils.Logger import AverageMeter, ProgressMeter, TimeMeter, StructureMete
 
 
 #This function train NN 
-def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, scheduler=None, epoch=0, valid=False, save_result=False, cuda=False, err_dict=None,start_time=None):
+def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, scheduler=None, epoch=0, valid=False, save_result=False, cuda=False, err_dict=None,start_time=None, test=False):
 
     dtype = torch.get_default_dtype()
 
     progress, progress_dict = _init_meters(model, data_loader, optimizer, epoch, 
-                                           valid, inputs['neural_network']['use_force'], inputs['neural_network']['use_stress'], save_result)
+                                           valid, inputs['neural_network']['use_force'], inputs['neural_network']['use_stress'], save_result, test)
 
     end = time.time()
     max_len = len(data_loader)
@@ -25,7 +25,7 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
         else:
             loss = _loop_for_cpu(inputs, item, dtype, model, criterion, progress_dict)
 
-        if not valid: #Back propagation step
+        if not valid and not test: #Back propagation step
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -35,7 +35,9 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
         
         # max_len -> total size / batch size & i -> batch step in traning set
         # TODO: choose LOG file method
-        if epoch % inputs['neural_network']['show_interval'] == 0 and i == max_len-1:
+        if test:
+            progress.test()
+        elif epoch % inputs['neural_network']['show_interval'] == 0 and i == max_len-1:
             progress_dict['total_time'].update(time.time() - start_time)
             progress.display(i+1)
             logfile.write(progress.log(i+1))
@@ -47,7 +49,7 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
 
     return progress_dict['losses'].avg
     
-def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_stress, save_result):
+def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_stress, save_result, test):
     ## Setting LOG with progress meter
     batch_time = AverageMeter('time', ':6.3f')
     data_time = AverageMeter('data', ':6.3f')
@@ -66,12 +68,21 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
         s_err = AverageMeter('S err', ':6.4e', sqrt=True)
         progress_list.append(s_err)
         progress_dict['s_err'] = s_err
+    
+    if not test:
+        progress_list.append(batch_time)
+        progress_list.append(data_time)
+        progress_list.append(total_time)
 
-    progress_list.append(batch_time)
-    progress_list.append(data_time)
-    progress_list.append(total_time)
+    if test:
+        progress = ProgressMeter(
+            len(data_loader),
+            progress_list,
+            prefix="Evaluation : ",
+        )
+        model.eval()
 
-    if valid:
+    elif valid:
         progress = ProgressMeter(
             len(data_loader),
             progress_list,
@@ -100,15 +111,10 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
     '''
     return progress, progress_dict
 
-
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
-    torch.save(state, filename)
-    if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
-
-def _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=None, criterion=None, cuda=False):
+#Show structure rmse
+def _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=None, criterion=None, cuda=False, test=False):
     for t_key in train_struct_dict.keys():
-        log_train = _struct_log(inputs, train_struct_dict[t_key], model, optimizer=optimizer, criterion=criterion, cuda=cuda)
+        log_train = _struct_log(inputs, train_struct_dict[t_key], model, optimizer=optimizer, criterion=criterion, cuda=cuda, test=test)
         log_train = "[{0:8}] ".format(t_key)+log_train
 
         if valid_struct_dict[t_key]:
@@ -122,8 +128,8 @@ def _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, 
         print(outdict)
         logfile.write(outdict+'\n')
 
-
-def _struct_log(inputs, data_loader, model, valid=False, optimizer=None, criterion=None, cuda=False):
+#Generate structure log string
+def _struct_log(inputs, data_loader, model, valid=False, optimizer=None, criterion=None, cuda=False, test=False):
 
     dtype = torch.get_default_dtype()
 
@@ -143,7 +149,14 @@ def _struct_log(inputs, data_loader, model, valid=False, optimizer=None, criteri
         progress_list.append(s_err)
         progress_dict['s_err'] = s_err
 
-    if valid:
+    if test:
+        progress = ProgressMeter(
+            len(data_loader),
+            progress_list,
+            prefix="Test : ",
+        )
+
+    elif valid:
         progress = ProgressMeter(
             len(data_loader),
             progress_list,
@@ -356,3 +369,15 @@ def _loop_for_gpu(inputs, item, dtype, model, criterion, progress_dict):
     loss = inputs['neural_network']['loss_scale'] * loss
   
     return loss
+
+def save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint.pth.tar'):
+    state ={'epoch': epoch + 1,
+            'loss': loss,
+            'model': model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'pca': pca,
+            'scale_factor': scale_factor,
+            #'scheduler': scheduler.state_dict()
+            }
+    torch.save(state, filename)
+

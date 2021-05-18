@@ -184,15 +184,15 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
 
         # Load model
         if not inputs["neural_network"]['clear_prev_network']:
-            logfile.write('Clear previous model, optimizer, learning rate\n')
+            logfile.write('Load previous model, optimizer, learning rate\n')
             model.load_state_dict(checkpoint['model'])
             optimizer.load_state_dict(checkpoint['optimizer'])
             for pg in optimizer.param_groups:
                 pg['lr'] = inputs['neural_network']['learning_rate']
 
         if not inputs['neural_network']['clear_prev_status']:
-            logfile.write('Clear previous loss, epoch\n')
-            best_loss = checkpoint['best_loss']
+            logfile.write('Load previous loss : {0:6.2e}, epoch : {1}\n'.format(checkpoint['loss'], checkpoint['epoch']))
+            loss = checkpoint['loss']
             inputs['neural_network']['start_epoch'] = checkpoint['epoch']
 
         # Load scale file & PCA file
@@ -206,7 +206,7 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
 
     else: #Not resume, load scale_factor, pca pytorch savefile in preprocess
         #Set best loss as infinite
-        best_loss = float('inf')
+        loss = float('inf')
         if inputs['symmetry_function']['calc_scale']:
             scale_factor = torch.load('./scale_factor')
             logfile.write('Scale factor data loaded\n')
@@ -233,7 +233,7 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
         logfile.write('Test dataset loaded\n')
 
     #model, optimizer no need to be returned
-    return scale_factor, pca, train_dataset, valid_dataset, best_loss 
+    return scale_factor, pca, train_dataset, valid_dataset, loss 
 
 # Convert generated scale_factor, pca to pytorch tensor format 
 def _convert_to_tensor(inputs, logfile, scale_factor, pca):
@@ -262,16 +262,26 @@ def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_datas
 
     train_loader = None
     valid_loader = None
+    if inputs['neural_network']['full_batch'] or inputs['neural_network']['test']:
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=len(train_dataset), shuffle=True, collate_fn=partial_collate,
+            num_workers=1, pin_memory=True)
 
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=inputs['neural_network']['batch_size'], shuffle=True, collate_fn=partial_collate,
-        num_workers=inputs['neural_network']['workers'], pin_memory=True)
-
-    #Check test mode, valid dataset exist
-    if not inputs['neural_network']['test'] and valid_dataset:
-        valid_loader = torch.utils.data.DataLoader(
-            valid_dataset, batch_size=inputs['neural_network']['batch_size'], shuffle=False, collate_fn=partial_collate,
+        #Check test mode, valid dataset exist
+        if valid_dataset:
+            valid_loader = torch.utils.data.DataLoader(
+                valid_dataset, batch_size=len(train_dataset), shuffle=False, collate_fn=partial_collate,
+                num_workers=1, pin_memory=True)
+    else:
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=inputs['neural_network']['batch_size'], shuffle=True, collate_fn=partial_collate,
             num_workers=inputs['neural_network']['workers'], pin_memory=True)
+
+        #Check test mode, valid dataset exist
+        if valid_dataset:
+            valid_loader = torch.utils.data.DataLoader(
+                valid_dataset, batch_size=inputs['neural_network']['batch_size'], shuffle=False, collate_fn=partial_collate,
+                num_workers=inputs['neural_network']['workers'], pin_memory=True)
 
     return train_loader, valid_loader
 
@@ -307,15 +317,17 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
     ##Training loop##
     #Evaluation model
     if inputs['neural_network']['test']: 
-        print('Evaluation(Testing) model'); logfile.write('Evaluation(Testing) model \n')
-        loss = train(inputs, logfile, train_loader, model, criterion=criterion, valid=True, cuda=CUDA, start_time=start_time)
+        print('Evaluation(Testing) model')
+        logfile.write('Evaluation(Testing) model \n')
+        loss = train(inputs, logfile, train_loader, model, criterion=criterion, cuda=CUDA, start_time=start_time, test=True)
         if inputs['neural_network']['print_structure_rmse'] and train_struct_dict: 
-            _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=optimizer, criterion=criterion, cuda=CUDA)
+            _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=optimizer, criterion=criterion, cuda=CUDA, test=True)
+
     #Traning model
     else: 
         best_epoch = inputs['neural_network']['start_epoch'] #Set default value
-        for epoch in range(inputs['neural_network']['start_epoch'], total_epoch):
-            #Train model with train loader 
+        for epoch in range(inputs['neural_network']['start_epoch'], total_epoch+1):
+            #Train  model with train loader 
             t_loss = train(inputs, logfile, train_loader, model, optimizer=optimizer, criterion=criterion, epoch=epoch, cuda=CUDA, err_dict=err_dict, start_time=start_time)
             #Calculate valid loss with valid loader if valid dataset exists
             if valid: 
@@ -334,28 +346,26 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
 
             #Check best loss, epoch
             is_best = loss < best_loss
-            [best_loss, best_epoch] = [loss, epoch] if loss < best_loss else [best_loss, best_epoch]
+            if is_best:
+                best_loss = loss
+                best_epoch = epoch 
+                #Checkpoint in model traning when best model
+                save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename = 'bestmodel.pth.tar' )
 
-            #Checkpoint in model traning 
-            save_checkpoint(
-                {
-                    'epoch': epoch + 1,
-                    'best_loss': best_loss,
-                    'model': model.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'pca': pca,
-                    'scale_factor': scale_factor,
-                    #'scheduler': scheduler.state_dict()
-                }, is_best)
+            #Checkpoint for save iteration
+            if (epoch  % inputs['neural_network']['save_interval'] == 0):
+                save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename = f'epoch_{epoch}.pth.tar')
             
             #LAMMPS potential save part
             breaksignal  = _save_lammps(inputs, logfile, model, is_best, epoch, scale_factor, pca, err_dict)            
             if breaksignal:  
                 logfile.write('Break point reached. Terminating traning model\n')
+                save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename = 'breakpoint.pth.tar')
                 break
 
         #End of traning loop : best loss potential written
         logfile.write('Best loss lammps potential written at {0} epoch\n'.format(best_epoch))
+   
 
 
 #function to save lammps with criteria or epoch
@@ -380,7 +390,6 @@ def _save_lammps(inputs, logfile, model, is_best, epoch, scale_factor, pca, err_
                 breaksignal = True
             else:
                 breaksignal = False
-                print('No')
                 
     if breaksignal:
         for err_type in err_dict.keys():
