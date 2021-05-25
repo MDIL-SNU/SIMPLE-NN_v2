@@ -32,8 +32,7 @@ def train_NN(inputs, logfile):
     train_loader, valid_loader = _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset)
     
     # For structure rmse    
-    if inputs['neural_network']['print_structure_rmse']: 
-        train_struct_dict, valid_struct_dict = _load_structure(inputs, logfile, scale_factor, pca)
+    train_struct_dict, valid_struct_dict = _load_structure(inputs, logfile, scale_factor, pca)
     
 
     # Run training
