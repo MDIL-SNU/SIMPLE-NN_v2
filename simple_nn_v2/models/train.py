@@ -11,7 +11,7 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
     dtype = torch.get_default_dtype()
 
     progress, progress_dict = _init_meters(model, data_loader, optimizer, epoch, 
-                                           valid, inputs['neural_network']['use_force'], inputs['neural_network']['use_stress'], save_result, test)
+    valid, inputs['neural_network']['use_force'], inputs['neural_network']['use_stress'], save_result, test)
 
     end = time.time()
     max_len = len(data_loader)
@@ -34,9 +34,8 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
         end = time.time()
         
         # max_len -> total size / batch size & i -> batch step in traning set
-        # TODO: choose LOG file method
         if test:
-            progress.test()
+            logfile.write(progress.test(i+1))
         elif epoch % inputs['neural_network']['show_interval'] == 0 and i == max_len-1:
             progress_dict['total_time'].update(time.time() - start_time)
             progress.display(i+1)
@@ -78,7 +77,7 @@ def _init_meters(model, data_loader, optimizer, epoch, valid, use_force, use_str
         progress = ProgressMeter(
             len(data_loader),
             progress_list,
-            prefix="Evaluation : ",
+            prefix="Test    : ",
         )
         model.eval()
 
@@ -184,7 +183,7 @@ def _struct_log(inputs, data_loader, model, valid=False, optimizer=None, criteri
 def _loop_for_cpu(inputs, item, dtype, model, criterion, progress_dict):
     loss = 0.
     e_loss = 0.
-    n_batch = item['E'].size(0) + 1
+    n_batch = item['E'].size(0) 
     
     # Since the shape of input and intermediate state during forward is not fixed,
     # forward process is done by structure by structure manner.
@@ -281,7 +280,7 @@ def _loop_for_cpu(inputs, item, dtype, model, criterion, progress_dict):
 def _loop_for_gpu(inputs, item, dtype, model, criterion, progress_dict):
     loss = 0.
     e_loss = 0.
-    n_batch = item['E'].size(0) + 1
+    n_batch = item['E'].size(0) 
     
     # Since the shape of input and intermediate state during forward is not fixed,
     # forward process is done by structure by structure manner.

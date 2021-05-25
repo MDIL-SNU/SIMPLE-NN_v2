@@ -121,8 +121,8 @@ class ProgressMeter(object):
         entries += [self.suffix]
         print('\t'.join(entries), flush=True)
 
-    def test(self):
-        entries = [self.prefix]
+    def test(self, batch):
+        entries = [self.prefix + self.batch_fmtstr.format(batch)]
         entries += [meter.show_avg() for meter in self.meters]
         entries += [self.suffix]
         print('\t'.join(entries), flush=True)

@@ -262,7 +262,7 @@ def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_datas
 
     train_loader = None
     valid_loader = None
-    if inputs['neural_network']['full_batch'] or inputs['neural_network']['test']:
+    if inputs['neural_network']['full_batch']: #or inputs['neural_network']['test']:
         train_loader = torch.utils.data.DataLoader(
             train_dataset, batch_size=len(train_dataset), shuffle=True, collate_fn=partial_collate,
             num_workers=1, pin_memory=True)
