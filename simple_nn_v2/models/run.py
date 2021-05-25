@@ -353,9 +353,11 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
                 save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename = 'bestmodel.pth.tar' )
 
             #Checkpoint for save iteration
-            if (epoch  % inputs['neural_network']['save_interval'] == 0):
+            if inputs['neural_network']['checkpoint_interval'] and (epoch  % inputs['neural_network']['checkpoint_interval'] == 0):
                 save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename = f'epoch_{epoch}.pth.tar')
-            
+            elif not inputs['neural_network']['checkpoint_interval']:
+                save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor)
+
             #LAMMPS potential save part
             breaksignal  = _save_lammps(inputs, logfile, model, is_best, epoch, scale_factor, pca, err_dict)            
             if breaksignal:  

@@ -15,6 +15,7 @@ def initialize_inputs(input_file_name, logfile):
         'atom_types': [],
         'random_seed': None,
         }
+
     descriptor_default_inputs = \
         {'symmetry_function': 
             {
@@ -25,7 +26,7 @@ def initialize_inputs(input_file_name, logfile):
                 'compress_outcar': True,
                 'valid_rate': 0.1,
                 'shuffle': True,
-                'add_NNP_ref': False, # atom E to tfrecord
+                'add_NNP_ref': False, # atom E 
                 'remain_pickle': False,
                 'continue': False,
                 'add_atom_idx': True, # For backward compatability
@@ -78,7 +79,7 @@ def initialize_inputs(input_file_name, logfile):
                 'method': 'Adam',
                 'batch_size': 64,
                 'full_batch': False,
-                'total_epoch': 10000,
+                'total_epoch': 1000,
                 'total_iteration': None,  #Warning: Depreciated use total_epoch
                 'learning_rate': 0.0001,
                 'lr_decay': None,
@@ -88,17 +89,17 @@ def initialize_inputs(input_file_name, logfile):
                 'loss_scale': 1.,
                 'optimizer': None,
 
-                #pytorch 
-                'workers': 4, # (ADDED)
-                'force_diffscale':False,  # if true, force error is |F-F'|*(F-F')^2 instead of *(F-F')^2 (ADDED)
+                'workers': 4, 
+                'force_diffscale':False,  # if true, force error is |F-F'|*(F-F')^2 instead of *(F-F')^2 
 
                 # Loss function related
                 'E_loss': 0,
                 'F_loss': 1,
 
                 # Logging & saving related (Epoch)
-                'save_interval': 1000, 
-                'show_interval': 100,
+                'save_interval': 100, 
+                'show_interval': 10,
+                'checkpoint_interval': None,
                 'energy_criteria':None,
                 'force_criteria':None,
                 'stress_criteria':None,
@@ -114,11 +115,11 @@ def initialize_inputs(input_file_name, logfile):
                 'NNP_to_pickle': False,
 
 
-                #RESUME parameters (Temporary)
-                'resume': None, #This should be directory of pytorch.save model file!! (ADDED)
-                'clear_prev_status': False,  #Erase status before traning (ADDED)
-                'clear_prev_network': False, #Erase network informateion  brfore training (ADDED)
-                'start_epoch': 0 # if resume is not null(None), start_epoch is automatically set from checkpoint file
+                #RESUME parameters 
+                'resume': None, #Write filename 
+                'clear_prev_status': False,  
+                'clear_prev_network': False,
+                'start_epoch': 0 
 
 
             }
