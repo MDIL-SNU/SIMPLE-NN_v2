@@ -1,48 +1,45 @@
 import torch
 import numpy as np
-from functools import partial
 from sklearn.decomposition import PCA
 
 from .neural_network import FCNDict, FCN
-from .data_handler import StructlistDataset, FilelistDataset, my_collate, _set_struct_dict
-from .train import train, save_checkpoint, _show_structure_rmse
+from .data_handler import StructlistDataset, WeightedDataset, FilelistDataset, my_collate, _set_struct_dict, _load_collate
+from .train import train, save_checkpoint, _show_structure_rmse, _save_nnp_result
 from torch.optim.lr_scheduler import ExponentialLR
 import torch.nn.init as init
 import time
 from torch.nn import  Linear
 
 
-def train_NN(inputs, logfile):
+def train_NN(inputs, logfile,user_optimizer=None):
     #Set default type
-    if inputs['neural_network']['double_precision']: torch.set_default_dtype(torch.float64)
+    if inputs['neural_network']['double_precision']: 
+        torch.set_default_dtype(torch.float64)
 
     # Initialize model
-    model, optimizer, criterion, scale_factor, pca = _init_model(inputs, logfile)
+    model, optimizer, criterion, scale_factor, pca = _init_model(inputs, logfile, user_optimizer=None)
     
     # Resume job if possible and load dataset & scale_factor, pca
     scale_factor, pca, train_dataset, valid_dataset, best_loss = _load_data(\
     inputs, logfile, model, optimizer, scale_factor, pca)
 
-    # Convert scale_factor, pca to torch.tensor & if load from checkpoint already torch.tensor
-    if not inputs['neural_network']['resume']:
-        _convert_to_tensor(inputs, logfile, scale_factor, pca)
-    
-
     # Load data loader
-    train_loader, valid_loader = _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset)
-    
+    if inputs['neural_network']['full_batch']:
+        batch_size = len(train_dataset)
+    else:
+        batch_size = inputs['neural_network']['batch_size']
+    train_loader, valid_loader = _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset, batch_size=batch_size)   
+
     # For structure rmse    
     train_struct_dict, valid_struct_dict = _load_structure(inputs, logfile, scale_factor, pca)
     
-
     # Run training
     _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion, scale_factor, pca, best_loss, train_struct_dict, valid_struct_dict) 
-
     # End of progran & Best loss witten 
 
 
 #Initialize model with input, and set default value scale, PCA
-def _init_model(inputs, logfile):
+def _init_model(inputs, logfile,user_optimizer=None):
     #Set default configuration
     logfile.write('Initialize pytorch model\n')
     model = {}
@@ -53,131 +50,47 @@ def _init_model(inputs, logfile):
             tmp_symf = f.readlines()
             sym_num = len(tmp_symf)
         #Make NN for each element 
-        model[item] = FCN(sym_num, temp_nodes, acti_func=\
-        inputs['neural_network']['acti_func']) #Make nodes per elements
+        model[item] = FCN(sym_num, temp_nodes,
+         acti_func=inputs['neural_network']['acti_func'],
+         dropout=inputs['neural_network']['dropout']) #Make nodes per elements
 
         #Apply weight initialization !
         weight_log = _init_weight(inputs, model[item])
     
     logfile.write(weight_log)
-    model = FCNDict(model) #Macle full model with elementized dictionary model
+    model = FCNDict(model) #Make full model with elementized dictionary model
+    regularization = float(inputs['neural_network']['regularization'])
 
     if inputs['neural_network']['method'] == 'Adam':
         #Adam optimizer (Default)
         optimizer = torch.optim.Adam(model.parameters(), lr=inputs['neural_network']['learning_rate'],
-     weight_decay=inputs['neural_network']['regularization'])
+     weight_decay=regularization)
 
     elif inputs['neural_network']['method'] == 'SGD':
         optimizer = torch.optim.SGD(model.parameters(), lr=inputs['neural_network']['learning_rate'],
-        weight_decay=inputs['neural_network']['regularization'])
+        weight_decay=regularization)
     else:
-        #TODO: Other method should be implemented 
-        pass
+        if user_optimizer != None:
+            optimizer = user_optimizer(model.parameters(), lr=inputs['neural_network']['learning_rate'],
+            **self.inputs['neural_network']['optimizer']) 
+        else:
+            raise ValueError
+    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    try: #Check avaiable CUDA (GPU)
-        model.cuda()
-        criterion = torch.nn.MSELoss().cuda()
-        logfile.write("Use GPU(CUDA) machine \n")
-    except:
-        model.cpu()
-        criterion = torch.nn.MSELoss()
-        logfile.write("GPU is not available. Use CPU machine\n")
-        pass
-
-
+    logfile.write(f"Use {device} in model\n")
+    device = torch.device(device)
+    model.to(device=device)
+    criterion = torch.nn.MSELoss().to(device=device)
 
     scale_factor = None
     pca = None
     
     return  model, optimizer, criterion, scale_factor, pca
 
-#weight, bias initialization here
-def _init_weight(inputs, model):
-    #Get parameter for initialization
-    try:
-
-        init_dic = inputs['neural_network']['weight_initializer']
-        init_name = init_dic['type']
-        init_params = init_dic['params']
-
-        #If use xavier initialization, gain should be defined
-        if init_name == 'xavier uniform' or init_name == 'xavier normal' or init_name == 'orthogonal':
-            anti = inputs['neural_network']['acti_func']
-            #Nonlinear functions that gain defined
-            nonlinear_list = ['sigmoid', 'tanh', 'relu', 'selu']
-            if anti in nonlinear_list:
-                gain = init.calculate_gain(anti)
-            else:
-                gain = init_params['gain']
-    except:
-        init_dic = None
-    
-    implimented_init = ['xavier uniform', 'xavier normal', 'normal', 'constant', 'kaiming normal', 'he normal', 
-                        'kaiming uniform', 'he uniform', 'orthogonal']
-    try:
-        #Loop for initilaization
-        if not init_dic:
-            weight_log = "No weight initialization infomation in input file\n"
-
-        elif not init_name in implimented_init:
-            weight_log = f"{init_name} weight initialization infomation is not implemented\n".format()
-
-        elif init_name == 'xavier uniform':
-            weight_log = "Xavier Uniform weight initialization : gain {0:4.2f}\n".format(gain)
-            for lin in model.lin:
-                init.xavier_uniform_(lin.weight, gain=gain)
-                init.xavier_unifrom_(lin.bias, gain=gain)
-
-        elif init_name == 'xavier normal':
-            weight_log = "Xavier Uniform weight initialization : gain {0:4.2f}\n".format(gain)
-            for lin in model.lin:
-                if lin == Linear:
-                    init.xavier_normal_(lin.weight, gain=gain)
-                    init.xavier_normal_(lin.bias, gain=gain)
-
-        elif init_name == 'normal':
-            weight_log = "Normal weight initialization : mean {0} std {1}\n".format(init_params['mean'], init_params['std'])
-            for lin in model.lin:
-                if lin == Linear:
-                    init.normal_(lin.weight, mean=init_params['mean'], std=init_params['std'])
-                    init.normal_(lin.bias, mean=init_params['mean'], std=init_params['std'])
-
-        elif init_name == 'constant':
-            weight_log = "Constant weight initialization : var {0}\n".format(init_params['var'])
-            for lin in model.lin:
-                if lin == Linear:
-                    init.constant_(lin.weight, var=init_params['var'])
-                    init.constant_(lin.bias, var=init_params['var'])
-
-        elif init_name == 'kaiming uniform' or init_name == 'he uniform':
-            weight_log = "Kaiming Uniform (He Uniform) weight initialization\n"
-            for lin in model.lin:
-                if lin == Linear:
-                    init.kaiming_uniform_(lin.weight, mode='fan_out', nonlinearity='relu')
-                    init.kaiming_uniform_(lin.bias, mode='fan_out', nonlinearity='relu')
-
-        elif init_name == 'kaiming normal' or init_name == 'he normal':
-            weight_log = "Kaiming Normal (He Normal) weight initialization\n"
-            for lin in model.lin:
-                if lin == Linear:
-                    init.kaiming_normal_(lin.weight, mode='fan_out', nonlinearity='relu')
-                    init.kaiming_normal_(lin.bias, mode='fan_out', nonlinearity='relu')
-        elif init_name == 'orthogonal':
-            weight_log = "Orthogonal weight initialization : gain {0:4.2f}\n".format(gain)
-            for lin in model.lin:
-                if lin == Linear:
-                    init.orthogonal_(lin.weight, gain=gain)
-                    init.orthogonal_(lin.bias, gain=gain)
-    except:
-        import sys
-        print(sys.exc_info())
-        weight_log = "During weight initialization error occured. Default Initialization used\n"
-        
-    return  weight_log
-
+#Load data (pca,scale fator, dataset) , resume from checkpoint
 def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
-    # Load checkpoint from resume (if necessary)
-    if inputs["neural_network"]["resume"] is not None:
+    if inputs["neural_network"]["resume"] is not None and inputs["neural_network"]["resume"]:
         logfile.write('Load pytorch model from {0}\n'.format(inputs["neural_network"]["resume"]))
         checkpoint = torch.load(inputs["neural_network"]["resume"])
 
@@ -202,7 +115,6 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
             logfile.write('Load pca from checkpoint\n')
             pca = checkpoint['pca']
 
-
     else: #Not resume, load scale_factor, pca pytorch savefile in preprocess
         #Set best loss as infinite
         loss = float('inf')
@@ -213,15 +125,17 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
         if inputs['neural_network']['pca']:
             pca = torch.load('./pca')
             logfile.write('PCA data loaded\n')
+        
+        _convert_to_tensor(inputs, logfile, scale_factor, pca)
 
     train_dataset = None
     valid_dataset = None
 
     # Load train dataset 
-    train_dataset = FilelistDataset(inputs['symmetry_function']['train_list'])
+    train_dataset = WeightedDataset(inputs['symmetry_function']['train_list'])
     # Load valid dataset
     if not inputs['neural_network']['test']:
-        valid_dataset = FilelistDataset(inputs['symmetry_function']['valid_list']) 
+        valid_dataset = WeightedDataset(inputs['symmetry_function']['valid_list']) 
         try: #Check valid dataset exist
             valid_dataset[0] 
             logfile.write('Train & Valid dataset loaded\n')
@@ -234,62 +148,9 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
     #model, optimizer no need to be returned
     return scale_factor, pca, train_dataset, valid_dataset, loss 
 
-# Convert generated scale_factor, pca to pytorch tensor format 
-def _convert_to_tensor(inputs, logfile, scale_factor, pca):
-    for item in inputs['atom_types']:
-        if inputs['symmetry_function']['calc_scale']:
-            max_plus_min  = torch.tensor(scale_factor[item][0,:])
-            max_minus_min = torch.tensor(scale_factor[item][1,:])
-            scale_factor[item] = [max_plus_min, max_minus_min] #To list format
-            logfile.write('Convert {0} scale_factor to tensor\n'.format(item))
-        if inputs['neural_network']['pca']:
-            pca[item][0] = torch.tensor(pca[item][0])
-            pca[item][1] = torch.tensor(pca[item][1])
-            pca[item][2] = torch.tensor(pca[item][2])
-            logfile.write('Convert {0} PCA to tensor\n'.format(item))
-
-#Load collate from train, valid dataset
-def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset):
-
-    partial_collate = partial(
-        my_collate, 
-        atom_types=inputs['atom_types'], 
-        scale_factor=scale_factor, 
-        pca=pca, 
-        pca_min_whiten_level=inputs['neural_network']['pca_min_whiten_level'],
-        use_stress=inputs['neural_network']['use_stress'])
-
-    train_loader = None
-    valid_loader = None
-    if inputs['neural_network']['full_batch']: #or inputs['neural_network']['test']:
-        train_loader = torch.utils.data.DataLoader(
-            train_dataset, batch_size=len(train_dataset), shuffle=True, collate_fn=partial_collate,
-            num_workers=1, pin_memory=True)
-
-        #Check test mode, valid dataset exist
-        if valid_dataset:
-            valid_loader = torch.utils.data.DataLoader(
-                valid_dataset, batch_size=len(train_dataset), shuffle=False, collate_fn=partial_collate,
-                num_workers=1, pin_memory=True)
-    else:
-        train_loader = torch.utils.data.DataLoader(
-            train_dataset, batch_size=inputs['neural_network']['batch_size'], shuffle=True, collate_fn=partial_collate,
-            num_workers=inputs['neural_network']['workers'], pin_memory=True)
-
-        #Check test mode, valid dataset exist
-        if valid_dataset:
-            valid_loader = torch.utils.data.DataLoader(
-                valid_dataset, batch_size=inputs['neural_network']['batch_size'], shuffle=False, collate_fn=partial_collate,
-                num_workers=inputs['neural_network']['workers'], pin_memory=True)
-
-    return train_loader, valid_loader
-
 #Main traning part 
 def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion, scale_factor, pca, best_loss, train_struct_dict = None, valid_struct_dict = None):
     
-    #Check GPU (CUDA) available
-    CUDA = torch.cuda.is_available()
-
     #Get start time 
     start_time = time.time()
 
@@ -297,40 +158,44 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
     max_len = len(train_loader)
     total_epoch = int(inputs['neural_network']['total_epoch'])
     total_iter = int(inputs['neural_network']['total_epoch']*max_len)
-    logfile.write('Total training iteration {0} , epoch {1}\n'.format(total_iter, total_epoch))
+    logfile.write('Total training iteration : {0} , epoch : {1}, batch number : {2}\n'.format(total_iter, total_epoch, max_len))
     
     #Learning rate decay schedular
     if inputs['neural_network']['lr_decay']:
         scheduler = ExponentialLR(optimizer=optimizer, gamma=inputs['neural_network']['lr_decay'])
     
-    #Check use validation (valid_set exist)
+    #Check use validation (valid set exist)
     if valid_loader:
         valid = True
     else:
-        #logfile.write('Warning : No validation set\n')
         valid = False
         
     #Define energy, force, stress error dictionary to use stop criteria
     err_dict = _check_criteria(inputs, logfile)
+    
+    if inputs['neural_network']['save_result']:
+        train_dataset_save = FilelistDataset(inputs['symmetry_function']['train_list'])
+        valid_dataset_save = FilelistDataset(inputs['symmetry_function']['valid_list'])
+        trainset_saved, validset_saved = _load_collate(inputs, logfile, scale_factor, pca,
+         train_dataset_save, valid_dataset_save, batch_size=inputs['neural_network']['batch_size'])
 
-    ##Training loop##
+    
     #Evaluation model
     if inputs['neural_network']['test']: 
         print('Evaluation(Testing) model')
         logfile.write('Evaluation(Testing) model \n')
-        loss = train(inputs, logfile, train_loader, model, criterion=criterion, cuda=CUDA, start_time=start_time, test=True)
+        loss = train(inputs, logfile, train_loader, model, criterion=criterion, start_time=start_time, test=True)
         if inputs['neural_network']['print_structure_rmse'] and train_struct_dict: 
-            _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=optimizer, criterion=criterion, cuda=CUDA, test=True)
-
+            _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=optimizer, criterion=criterion, test=True)
     #Traning model
     else: 
         best_epoch = inputs['neural_network']['start_epoch'] #Set default value
         for epoch in range(inputs['neural_network']['start_epoch'], total_epoch+1):
             #Train  model with train loader 
-            t_loss = train(inputs, logfile, train_loader, model, optimizer=optimizer, criterion=criterion, epoch=epoch, cuda=CUDA, err_dict=err_dict, start_time=start_time)
+            t_loss = train(inputs, logfile, train_loader, model, optimizer=optimizer, criterion=criterion, epoch=epoch, err_dict=err_dict, start_time=start_time)
             #Calculate valid loss with valid loader if valid dataset exists
             if valid: 
-                loss  = train(inputs, logfile, valid_loader, model, criterion=criterion, valid=True, epoch=epoch, cuda=CUDA, err_dict=err_dict, start_time=start_time)
+                loss  = train(inputs, logfile, valid_loader, model, criterion=criterion, valid=True, epoch=epoch, err_dict=err_dict, start_time=start_time)
             #No valid set, get training loss as valid loss
             else: 
                 loss = t_loss 
@@ -338,7 +203,7 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
             #Structure rmse part
             if (epoch  % inputs['neural_network']['show_interval'] == 0) and\
                  inputs['neural_network']['print_structure_rmse'] and train_struct_dict: 
-                _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=optimizer, criterion=criterion, cuda=CUDA)
+                _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=optimizer, criterion=criterion)
 
             #Learning rate decay part
             if inputs['neural_network']['lr_decay']: scheduler.step()
@@ -356,6 +221,12 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
                 save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename = f'epoch_{epoch}.pth.tar')
             elif not inputs['neural_network']['checkpoint_interval']:
                 save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor)
+
+            #Save result
+            if inputs['neural_network']['save_result'] and  (epoch % inputs['neural_network']['save_interval'] == 0):
+                res_dict = _save_nnp_result(inputs, model, trainset_saved, validset_saved)
+                logfile.write(f'DFT, NNP result saved at {epoch}\n')
+                torch.save(res_dict, 'saved_result')
 
             #LAMMPS potential save part
             breaksignal  = _save_lammps(inputs, logfile, model, is_best, epoch, scale_factor, pca, err_dict)            
@@ -441,10 +312,115 @@ def _load_structure(inputs, logfile, scale_factor, pca):
             #Set blank dataframe
             valid_struct_dict[t_key] = StructlistDataset()
 
+    if inputs['neural_network']['full_batch']:
+        batch_size = len(train_dataset)
+    else:
+        batch_size = inputs['neural_network']['batch_size']
     #Loop for _load_collate
     for t_key in train_struct_dict.keys():
         train_struct_dict[t_key], valid_struct_dict[t_key] =_load_collate(inputs,
-         logfile, scale_factor, pca, train_struct_dict[t_key], valid_struct_dict[t_key])
+         logfile, scale_factor, pca, train_struct_dict[t_key], valid_struct_dict[t_key],batch_size=batch_size)
 
     return train_struct_dict, valid_struct_dict
+
+#weight, bias initialization here
+def _init_weight(inputs, model):
+    #Get parameter for initialization
+    try:
+
+        init_dic = inputs['neural_network']['weight_initializer']
+        init_name = init_dic['type']
+        init_params = init_dic['params']
+
+        #If use xavier initialization, gain should be defined
+        if init_name == 'xavier uniform' or init_name == 'xavier normal' or init_name == 'orthogonal':
+            anti = inputs['neural_network']['acti_func']
+            #Nonlinear functions that gain defined
+            nonlinear_list = ['sigmoid', 'tanh', 'relu', 'selu']
+            if anti in nonlinear_list:
+                gain = init.calculate_gain(anti)
+            else:
+                gain = init_params['gain']
+    except:
+        init_dic = None
+    
+    implimented_init = ['xavier uniform', 'xavier normal', 'normal', 'constant', 'kaiming normal', 'he normal', 
+                        'kaiming uniform', 'he uniform', 'orthogonal']
+    try:
+        #Loop for initilaization
+        if not init_dic:
+            weight_log = "No weight initialization infomation in input file\n"
+
+        elif not init_name in implimented_init:
+            weight_log = f"{init_name} weight initialization infomation is not implemented\n".format()
+
+        elif init_name == 'xavier uniform':
+            weight_log = "Xavier Uniform weight initialization : gain {0:4.2f}\n".format(gain)
+            for lin in model.lin:
+                if lin == Linear:
+                    init.xavier_uniform_(lin.weight, gain=gain)
+                    init.xavier_unifrom_(lin.bias, gain=gain)
+
+        elif init_name == 'xavier normal':
+            weight_log = "Xavier Uniform weight initialization : gain {0:4.2f}\n".format(gain)
+            for lin in model.lin:
+                if lin == Linear:
+                    init.xavier_normal_(lin.weight, gain=gain)
+                    init.xavier_normal_(lin.bias, gain=gain)
+
+        elif init_name == 'normal':
+            weight_log = "Normal weight initialization : mean {0} std {1}\n".format(init_params['mean'], init_params['std'])
+            for lin in model.lin:
+                if lin == Linear:
+                    init.normal_(lin.weight, mean=init_params['mean'], std=init_params['std'])
+                    init.normal_(lin.bias, mean=init_params['mean'], std=init_params['std'])
+
+        elif init_name == 'constant':
+            weight_log = "Constant weight initialization : var {0}\n".format(init_params['var'])
+            for lin in model.lin:
+                if lin == Linear:
+                    init.constant_(lin.weight, var=init_params['var'])
+                    init.constant_(lin.bias, var=init_params['var'])
+
+        elif init_name == 'kaiming uniform' or init_name == 'he uniform':
+            weight_log = "Kaiming Uniform (He Uniform) weight initialization\n"
+            for lin in model.lin:
+                if lin == Linear:
+                    init.kaiming_uniform_(lin.weight, mode='fan_out', nonlinearity='relu')
+                    init.kaiming_uniform_(lin.bias, mode='fan_out', nonlinearity='relu')
+
+        elif init_name == 'kaiming normal' or init_name == 'he normal':
+            weight_log = "Kaiming Normal (He Normal) weight initialization\n"
+            for lin in model.lin:
+                if lin == Linear:
+                    init.kaiming_normal_(lin.weight, mode='fan_out', nonlinearity='relu')
+                    init.kaiming_normal_(lin.bias, mode='fan_out', nonlinearity='relu')
+
+        elif init_name == 'orthogonal':
+            weight_log = "Orthogonal weight initialization : gain {0:4.2f}\n".format(gain)
+            for lin in model.lin:
+                if lin == Linear:
+                    init.orthogonal_(lin.weight, gain=gain)
+                    init.orthogonal_(lin.bias, gain=gain)
+    except:
+        import sys
+        print(sys.exc_info())
+        weight_log = "During weight initialization error occured. Default Initialization used\n"
+        
+    return  weight_log
+
+# Convert generated scale_factor, pca to pytorch tensor format 
+def _convert_to_tensor(inputs, logfile, scale_factor, pca):
+    for item in inputs['atom_types']:
+        if inputs['symmetry_function']['calc_scale']:
+            max_plus_min  = torch.tensor(scale_factor[item][0,:])
+            max_minus_min = torch.tensor(scale_factor[item][1,:])
+            scale_factor[item] = [max_plus_min, max_minus_min] #To list format
+            logfile.write('Convert {0} scale_factor to tensor\n'.format(item))
+        if inputs['neural_network']['pca']:
+            pca[item][0] = torch.tensor(pca[item][0])
+            pca[item][1] = torch.tensor(pca[item][1])
+            pca[item][2] = torch.tensor(pca[item][2])
+            logfile.write('Convert {0} PCA to tensor\n'.format(item))
+
 

@@ -19,8 +19,8 @@ def initialize_inputs(input_file_name, logfile):
     descriptor_default_inputs = \
         {'symmetry_function': 
             {
-                'train_list':'./train_list', # (ADDED)
-                'valid_list':'./valid_list', # (ADDED)
+                'train_list':'./train_list', 
+                'valid_list':'./valid_list', 
                 'params': dict(),
                 'refdata_format': 'vasp-out',
                 'compress_outcar': True,
@@ -38,18 +38,18 @@ def initialize_inputs(input_file_name, logfile):
                     'type': None,
                     'params': dict(),
                 },
-                'calc_scale': True, # calculation scale factor (ADDED)
+                'calc_scale': True, 
                 'scale_type': 'minmax',
                 'scale_scale': 1.0,
                 'scale_rho': None,
 
-                'save_to_pickle': False, # default format is .pt / if True, format is .pickle (ADDED)
-                'save_directory': './data', # directory of data files (ADDED)
+                'save_to_pickle': False, 
+                'save_directory': './data', 
 
-                'read_force': True, #Read force in non-vasp files(ex. LAMMPS) (ADDED)
-                'read_stress': True, #Read stress in non-vasp files(ex. LAMMPS) (ADDED)
-                'dx_save_sparse': True,  # Save derivative tensor as sparse tensor (ADDED)
-                'single_file': False   # Save all data into single file (ADDED)
+                'read_force': True, #Read force in non-vasp files(ex. LAMMPS) Not implemented
+                'read_stress': True, #Read stress in non-vasp files(ex. LAMMPS) Not implimented
+                'dx_save_sparse': True, 
+                'single_file': False   # Save all data into single file Not implemented
             }
         }
     model_default_inputs = \
@@ -80,7 +80,7 @@ def initialize_inputs(input_file_name, logfile):
                 'batch_size': 64,
                 'full_batch': False,
                 'total_epoch': 1000,
-                'total_iteration': None,  #Warning: Depreciated use total_epoch
+                'total_iteration': None,  #Warning: Use total_epoch
                 'learning_rate': 0.0001,
                 'lr_decay': None,
                 'stress_coeff': 0.000001,
@@ -106,13 +106,13 @@ def initialize_inputs(input_file_name, logfile):
                 'break_max': 10,
                 'print_structure_rmse': False,
 
-                #'cache': False,
                 'pca': False,
                 'pca_whiten': True,
                 'pca_min_whiten_level': 1e-8,
 
                 # Write atomic energies to pickle
                 'NNP_to_pickle': False,
+                'save_result': False,
 
 
                 #RESUME parameters 

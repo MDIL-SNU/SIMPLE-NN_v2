@@ -30,9 +30,11 @@ class AverageMeter(object):
     #Show average value : average value
     def show_avg(self):
         if self.sqrt: #sqrt need
-            fmtstr = '{name} ( {sqrt_avg' + self.fmt + '} )'
+            #fmtstr = '{name} ( {sqrt_avg' + self.fmt + '} )'
+            fmtstr = '{name}  {sqrt_avg' + self.fmt + '} '
         else:
-            fmtstr = '{name} ( {avg' + self.fmt + '} )'
+            #fmtstr = '{name} ( {avg' + self.fmt + '} )'
+            fmtstr = '{name}  {avg' + self.fmt + '} '
         return fmtstr.format(**self.__dict__)
 
     #Show sqrt value & average value : batch_value ( average_value )
@@ -71,7 +73,8 @@ class StructureMeter(object):
 
     #Show sqrt value & average value : batch_value ( average_value )
     def __str__(self):
-        fmtstr = '{0}  ( {1' + self.fmt + '} )'
+        #fmtstr = '{0}  ( {1' + self.fmt + '} )'
+        fmtstr = '{0}   {1' + self.fmt + '} '
         if self.sqrt: #sqrt need
             fmtstr = fmtstr.format(self.name, self.sqrt_avg)
         else:
@@ -121,8 +124,14 @@ class ProgressMeter(object):
         entries += [self.suffix]
         print('\t'.join(entries), flush=True)
 
-    def test(self, batch):
-        entries = [self.prefix + self.batch_fmtstr.format(batch)]
+    def display_epoch(self):
+        entries = [self.prefix]
+        entries += [meter.show_avg() for meter in self.meters]
+        entries += [self.suffix]
+        print('\t'.join(entries), flush=True)
+
+    def test(self):
+        entries = [self.prefix]
         entries += [meter.show_avg() for meter in self.meters]
         entries += [self.suffix]
         print('\t'.join(entries), flush=True)
@@ -134,13 +143,17 @@ class ProgressMeter(object):
         entries += [self.suffix]
         return '\t'.join(entries)+'\n'
 
+    def log_epoch(self):
+        entries = [self.prefix]
+        entries += [meter.show_avg() for meter in self.meters]
+        entries += [self.suffix]
+        return '\t'.join(entries)+'\n'
+
     def string(self):
         entries = [self.prefix]
         entries += [str(meter) for meter in self.meters]
         entries += [self.suffix]
         return ' '.join(entries)
-
-
 
     def _get_batch_fmtstr(self, num_batches):
         num_digits = len(str(num_batches // 1))

@@ -1,4 +1,5 @@
 import torch
+from functools import partial
 from braceexpand import braceexpand
 from glob import glob
 from six.moves import cPickle as pickle
@@ -28,7 +29,7 @@ class PickleDataset(torch.utils.data.Dataset):
 
         return {'x': x, 'dx': dx, 'E': E, 'F': F}
 
-# From pytorch .pt files (will be implemented soon)
+# Read specific parameter from pt file
 class TorchStyleDataset(torch.utils.data.Dataset):
     def __init__(self, filename):
         self.data = torch.load(filename)
@@ -50,9 +51,7 @@ class FilelistDataset(torch.utils.data.Dataset):
                 temp_list.sort()
                 ## Weight check and copy
                 for item in temp_list:
-                    tmp_weight = int(TorchStyleDataset(item)['struct_weight'])
-                    for _ in range(tmp_weight):
-                        self.filelist.append(item)
+                    self.filelist.append(item)
 
     def __len__(self):
         return len(self.filelist)
@@ -64,6 +63,22 @@ class FilelistDataset(torch.utils.data.Dataset):
 class StructlistDataset(FilelistDataset):
     def __init__(self):
         self.filelist = list()
+
+#Used in save result
+class WeightedDataset(FilelistDataset):
+    def __init__(self, filename):
+        self.filelist = list()
+        with open(filename) as fil:
+            for line in fil:
+                #for item in list(braceexpand(line.strip())):
+                temp_list = glob(line.strip())
+                temp_list.sort()
+                ## Weight check and copy
+                for item in temp_list:
+                    tmp_weight = int(TorchStyleDataset(item)['struct_weight'])
+                    for _ in range(tmp_weight):
+                        self.filelist.append(item)
+
 
 #Function that set structure 
 def _set_struct_dict(filename):
@@ -165,3 +180,30 @@ def gen_sparse_index(nlist):
             res[1,idx] = idx
             idx += 1
     return res
+ 
+
+#Load collate from train, valid dataset
+def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset, batch_size=1):
+    partial_collate = partial(
+        my_collate, 
+        atom_types=inputs['atom_types'], 
+        scale_factor=scale_factor, 
+        pca=pca, 
+        pca_min_whiten_level=inputs['neural_network']['pca_min_whiten_level'],
+        use_stress=inputs['neural_network']['use_stress'])
+
+    train_loader = None
+    valid_loader = None
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, collate_fn=partial_collate,
+        num_workers=inputs['neural_network']['workers'], pin_memory=True)
+
+    #Check test mode, valid dataset exist
+    if valid_dataset:
+        valid_loader = torch.utils.data.DataLoader(
+            valid_dataset, batch_size=batch_size, shuffle=False, collate_fn=partial_collate,
+            num_workers=inputs['neural_network']['workers'], pin_memory=True)
+
+    return train_loader, valid_loader
+
+
