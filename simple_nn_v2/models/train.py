@@ -287,7 +287,7 @@ def _save_nnp_result(inputs, model, train_loader, valid_loader):
 
     return res_dict
 
-def _loop_to_save(inputs, model, train_loader, res_dict, save_dict='train'):
+def _loop_to_save(inputs, model, dataset_loader, res_dict, save_dict='train'):
     #Set device
     cuda = torch.cuda.is_available()
     if cuda:
@@ -297,7 +297,7 @@ def _loop_to_save(inputs, model, train_loader, res_dict, save_dict='train'):
 
     dtype = torch.get_default_dtype()
  
-    for i, item in enumerate(train_loader):
+    for i, item in enumerate(dataset_loader):
         x = dict()
         E_ = 0.
         F_ = 0.
@@ -339,15 +339,59 @@ def _loop_to_save(inputs, model, train_loader, res_dict, save_dict='train'):
             for n in range(n_batch):
                 tmp_idx = 0
                 for atype in inputs['atom_types']:
-                    if x[atype].size(0) != 0:
+
                         tmp_idx += item['n'][atype][n]
-                res_dict['NNP']['total']['F'].append(F_[batch_idx:(batch_idx+tmp_idx)])
-                res_dict['DFT']['total']['F'].append(item['F'][batch_idx:(batch_idx+tmp_idx)])
-                res_dict['NNP'][save_dict]['F'].append(F_[batch_idx:(batch_idx+tmp_idx)])
-                res_dict['DFT'][save_dict]['F'].append(item['F'][batch_idx:(batch_idx+tmp_idx)])
+                res_dict['NNP']['total']['F'].append(F_[batch_idx:(batch_idx+tmp_idx)].detach().numpy())
+                res_dict['DFT']['total']['F'].append(item['F'][batch_idx:(batch_idx+tmp_idx)].detach().numpy())
+                res_dict['NNP'][save_dict]['F'].append(F_[batch_idx:(batch_idx+tmp_idx)].detach().numpy())
+                res_dict['DFT'][save_dict]['F'].append(item['F'][batch_idx:(batch_idx+tmp_idx)].detach().numpy())
                 batch_idx += tmp_idx 
 
 
+def _save_atomic_E(inputs, logfile, model, train_loader, valid_loader):
+    #Save NNP energy, force, DFT energy, force to use it
+    model.eval()
+    _loop_to_save_atomic_E(inputs, model, train_loader)
+    if valid_loader:
+        _loop_to_save_atomic_E(inputs, model, valid_loader)
+
+def _loop_to_save_atomic_E(inputs, model, dataset_loader):
+    #Set device
+    cuda = torch.cuda.is_available()
+    if cuda:
+        device = 'cuda'
+    else:
+        device = 'cpu'
+    dtype = torch.get_default_dtype()
+ 
+    for i, item in enumerate(dataset_loader):
+        x = dict()
+        dx = dict()
+        da = dict()
+        n_type = dict()
+        atomic_E = dict()
+        n_atoms = 0.
+        n_batch = item['E'].size(0) 
+        #Loop
+        for atype in inputs['atom_types']:
+            n_type[atype] = 0
+            x[atype] = item['x'][atype].to(device=device, non_blocking=cuda).requires_grad_(True)
+            if x[atype].size(0) != 0:
+                atomic_E[atype] =   torch.sparse.DoubleTensor(
+                    item['sp_idx'][atype].long().to(device=device, non_blocking=cuda), 
+                    model.nets[atype](x[atype]).squeeze(), size=(item['n'][atype].size(0),
+                    item['sp_idx'][atype].size(1))).to_dense()
+        #Save    
+        for f in range(n_batch): 
+            pt_dict =  torch.load(item['filename'][f])
+            del pt_dict['filename'] 
+            pt_dict['atomic_E'] = dict()
+            for atype in inputs['atom_types']:
+                if (x[atype].size(0) != 0) and (item['n'][atype][f].item() != 0):
+                    file_atomic_E = atomic_E[atype][f][n_type[atype]:n_type[atype]+item['n'][atype][f]]
+                    pt_dict['atomic_E'][atype] = file_atomic_E
+                    n_type[atype] += item['n'][atype][f] 
+            torch.save(pt_dict,item['filename'][f])
 
 #Not use
 def _save_dft_info(inputs, trail_dataset, valid_dataset):

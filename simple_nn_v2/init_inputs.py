@@ -27,7 +27,6 @@ def initialize_inputs(input_file_name, logfile):
                 'valid_rate': 0.1,
                 'shuffle': True,
                 'add_NNP_ref': False, # atom E 
-                'remain_pickle': False,
                 'continue': False,
                 'add_atom_idx': True, # For backward compatability
                 'atomic_weights': {

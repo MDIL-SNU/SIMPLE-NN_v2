@@ -58,6 +58,12 @@ class FilelistDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         return torch.load(self.filelist[idx])
+    
+    def save_filename(self):
+        for f in self.filelist:
+            tmp_dict = torch.load(f)
+            tmp_dict['filename'] = f
+            torch.save(tmp_dict,f)
 
 #Used in Structure rmse 
 class StructlistDataset(FilelistDataset):
@@ -171,6 +177,17 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
 
     return {'x': x, 'dx': dx, 'da': da, 'n': n, 'E': E, 'F': F, 'S': S, 'sp_idx': sparse_index}
 
+
+
+#Function to generate Iterator
+def filename_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, use_stress=False):
+    tmp_dict = my_collate(batch, atom_types, scale_factor, pca, pca_min_whiten_level, use_stress)
+    tmp_dict['filename'] = list()
+    for item in batch:
+        tmp_dict['filename'].append(item['filename'])
+    return tmp_dict
+
+
 def gen_sparse_index(nlist):
     res = torch.zeros(2, sum(nlist))
     idx = 0
@@ -183,7 +200,7 @@ def gen_sparse_index(nlist):
  
 
 #Load collate from train, valid dataset
-def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset, batch_size=1):
+def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset, batch_size=1,my_collate=my_collate):
     partial_collate = partial(
         my_collate, 
         atom_types=inputs['atom_types'], 

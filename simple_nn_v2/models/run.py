@@ -3,8 +3,8 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 from .neural_network import FCNDict, FCN
-from .data_handler import StructlistDataset, WeightedDataset, FilelistDataset, my_collate, _set_struct_dict, _load_collate
-from .train import train, save_checkpoint, _show_structure_rmse, _save_nnp_result
+from .data_handler import StructlistDataset, WeightedDataset, FilelistDataset, _set_struct_dict, _load_collate, filename_collate
+from .train import train, save_checkpoint, _show_structure_rmse, _save_nnp_result, _save_atomic_E
 from torch.optim.lr_scheduler import ExponentialLR
 import torch.nn.init as init
 import time
@@ -173,11 +173,17 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
     #Define energy, force, stress error dictionary to use stop criteria
     err_dict = _check_criteria(inputs, logfile)
     
-    if inputs['neural_network']['save_result']:
+    if inputs['neural_network']['save_result'] or inputs['symmetry_function']['add_NNP_ref']:
         train_dataset_save = FilelistDataset(inputs['symmetry_function']['train_list'])
         valid_dataset_save = FilelistDataset(inputs['symmetry_function']['valid_list'])
-        trainset_saved, validset_saved = _load_collate(inputs, logfile, scale_factor, pca,
-         train_dataset_save, valid_dataset_save, batch_size=inputs['neural_network']['batch_size'])
+        if inputs['symmetry_function']['add_NNP_ref']:
+            train_dataset_save.save_filename()
+            valid_dataset_save.save_filename()
+            trainset_saved, validset_saved = _load_collate(inputs, logfile, scale_factor, pca,
+            train_dataset_save, valid_dataset_save, batch_size=inputs['neural_network']['batch_size'], my_collate=filename_collate)
+        else:
+            trainset_saved, validset_saved = _load_collate(inputs, logfile, scale_factor, pca,
+            train_dataset_save, valid_dataset_save, batch_size=inputs['neural_network']['batch_size'])
 
     
     #Evaluation model
@@ -237,8 +243,10 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
 
         #End of traning loop : best loss potential written
         logfile.write('Best loss lammps potential written at {0} epoch\n'.format(best_epoch))
-   
 
+    if inputs['symmetry_function']['add_NNP_ref']:
+        logfile.write('Best loss lammps potential written at {0} epoch\n'.format(best_epoch))
+        _save_atomic_E(inputs, logfile, model, trainset_saved, validset_saved)
 
 #function to save lammps with criteria or epoch
 def _save_lammps(inputs, logfile, model, is_best, epoch, scale_factor, pca, err_dict):
