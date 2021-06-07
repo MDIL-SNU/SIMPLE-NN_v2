@@ -71,6 +71,7 @@ class StructlistDataset(FilelistDataset):
         self.filelist = list()
 
 #Used in save result
+#Not use now
 class WeightedDataset(FilelistDataset):
     def __init__(self, filename):
         self.filelist = list()
@@ -123,9 +124,11 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
     E = list()
     F = list()
     S = list()
+    struct_weight = list()
 
     # add scale, pca
     for item in batch:
+        struct_weight.append(item['struct_weight'])
         for atype in atom_types: 
             x[atype].append(item['x'][atype])
             tmp_dx = item['dx'][atype] #Make dx to sparse_tensor
@@ -170,12 +173,13 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
                 x[atype] /= pca[atype][1].view(1,-1)
         sparse_index[atype] = gen_sparse_index(n[atype])
         n[atype] = torch.tensor(n[atype])
+    struct_weight = torch.tensor(struct_weight) 
     E = torch.tensor(E)
     F = torch.cat(F, axis=0)
     if use_stress:
         S = torch.cat(S, axis=0)
 
-    return {'x': x, 'dx': dx, 'da': da, 'n': n, 'E': E, 'F': F, 'S': S, 'sp_idx': sparse_index}
+    return {'x': x, 'dx': dx, 'da': da, 'n': n, 'E': E, 'F': F, 'S': S, 'sp_idx': sparse_index, 'struct_weight': struct_weight}
 
 
 

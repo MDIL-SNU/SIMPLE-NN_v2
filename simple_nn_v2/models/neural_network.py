@@ -1,12 +1,13 @@
 import torch
 import numpy as np
+import shutil
 
 class FCNDict(torch.nn.Module):
 
     def __init__(self, nets):
         super(FCNDict, self).__init__()
         self.nets = torch.nn.ModuleDict(nets)
-
+        self.keys = self.nets.keys()
     def forward(self, x):
         assert [item for item in self.nets.keys()].sort() == [item for item in x.keys()].sort()
         res = {}
@@ -25,7 +26,7 @@ class FCNDict(torch.nn.Module):
 
         for item in inputs['atom_types']:
             params = list()
-            with open(inputs['symmetry_function']['params'][item]) as fil:
+            with open(inputs['descriptor']['params'][item]) as fil:
                 for line in fil:
                     tmp = line.split()
                     params += [list(map(float, tmp))]
@@ -45,7 +46,7 @@ class FCNDict(torch.nn.Module):
                     format(int(ctem[0]), ctem[3], ctem[4], ctem[5], ctem[6], tmp_types))
 
             if scale_factor is None:
-                with open(inputs['symmetry_function']['params'],'r') as f:
+                with open(inputs['descriptor']['params'],'r') as f:
                     tmp = f.readlines()
                 input_dim= len(tmp) #open params read input number of symmetry functions
                 FIL.write('scale1 {}\n'.format(' '.join(np.zeros(input_dim).astype(np.str))))
@@ -141,3 +142,49 @@ class swish(torch.nn.Module):
         
     def forward(self, x):
         return x * torch.sigmoid(x)
+
+
+def read_lammps_potential(filename):
+    def _read_until(fil, stop_tag):
+        while True:
+            line = fil.readline()
+            if stop_tag in line:
+                break
+
+        return line
+
+    shutil.copy2(filename, 'potential_read')
+
+    weights = dict()
+    with open(filename) as fil:
+        atom_types = fil.readline().replace('\n','').split()[1:]
+        for item in atom_types:
+            weights[item] = dict()            
+
+            dims = list()
+            dims.append(int(_read_until(fil, 'SYM').split()[1]))
+
+            hidden_to_out = map(lambda x: int(x), _read_until(fil, 'NET').split()[2:])
+            dims += hidden_to_out
+
+            num_weights = len(dims) - 1
+    
+            tmp_idx = 0
+            for j in range(num_weights):
+                weights[item][f'lin_{tmp_idx}'] = dict()
+                tmp_weights = np.zeros([dims[j], dims[j+1]])
+                tmp_bias = np.zeros([dims[j+1]])
+
+                # Since PCA will be dealt separately, skip PCA layer.
+                skip = True if fil.readline().split()[-1] == 'PCA' else False
+                for k in range(dims[j+1]):
+                    tmp_weights[:,k] = list(map(lambda x: float(x), fil.readline().split()[1:]))
+                    tmp_bias[k] = float(fil.readline().split()[1])
+
+                weights[item][f'lin_{tmp_idx}']['weight'] = np.copy(tmp_weights)
+                weights[item][f'lin_{tmp_idx}']['bias']  = np.copy(tmp_bias)
+                if skip:
+                    continue
+                else:
+                    tmp_idx += 1
+    return weights

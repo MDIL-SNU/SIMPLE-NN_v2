@@ -1,14 +1,15 @@
 import torch
+import torch.nn.init as init
+from torch.optim.lr_scheduler import ExponentialLR
+from torch.nn import  Linear, Parameter
+
+import time
 import numpy as np
 from sklearn.decomposition import PCA
 
-from .neural_network import FCNDict, FCN
-from .data_handler import StructlistDataset, WeightedDataset, FilelistDataset, _set_struct_dict, _load_collate, filename_collate
+from .neural_network import FCNDict, FCN, read_lammps_potential
+from .data_handler import StructlistDataset, FilelistDataset, _set_struct_dict, _load_collate, filename_collate
 from .train import train, save_checkpoint, _show_structure_rmse, _save_nnp_result, _save_atomic_E
-from torch.optim.lr_scheduler import ExponentialLR
-import torch.nn.init as init
-import time
-from torch.nn import  Linear
 
 
 def train_NN(inputs, logfile,user_optimizer=None):
@@ -28,6 +29,7 @@ def train_NN(inputs, logfile,user_optimizer=None):
         batch_size = len(train_dataset)
     else:
         batch_size = inputs['neural_network']['batch_size']
+
     train_loader, valid_loader = _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset, batch_size=batch_size)   
 
     # For structure rmse    
@@ -46,7 +48,7 @@ def _init_model(inputs, logfile,user_optimizer=None):
     for item in inputs['atom_types']:
         temp_nodes = [int(jtem) for jtem in inputs['neural_network']['nodes'].split('-')]
         #Extract number of symmetry functions in params
-        with open(inputs['symmetry_function']['params'][item],'r') as f:
+        with open(inputs['descriptor']['params'][item],'r') as f:
             tmp_symf = f.readlines()
             sym_num = len(tmp_symf)
         #Make NN for each element 
@@ -90,14 +92,19 @@ def _init_model(inputs, logfile,user_optimizer=None):
 
 #Load data (pca,scale fator, dataset) , resume from checkpoint
 def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
-    if inputs["neural_network"]["resume"] is not None and inputs["neural_network"]["resume"]:
+    if inputs["neural_network"]["resume"]:
         logfile.write('Load pytorch model from {0}\n'.format(inputs["neural_network"]["resume"]))
         checkpoint = torch.load(inputs["neural_network"]["resume"])
 
         # Load model
         if not inputs["neural_network"]['clear_prev_network']:
             logfile.write('Load previous model, optimizer, learning rate\n')
-            model.load_state_dict(checkpoint['model'])
+            # Read LAMMPS potential
+            if inputs["neural_network"]['continue']:
+                _load_lammps_potential(inputs, logfile, model)
+            else:
+                model.load_state_dict(checkpoint['model'])
+            #Load optimizer
             optimizer.load_state_dict(checkpoint['optimizer'])
             for pg in optimizer.param_groups:
                 pg['lr'] = inputs['neural_network']['learning_rate']
@@ -108,7 +115,7 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
             inputs['neural_network']['start_epoch'] = checkpoint['epoch']
 
         # Load scale file & PCA file
-        if inputs['symmetry_function']['calc_scale']:
+        if inputs['descriptor']['calc_scale']:
             logfile.write('Load scale from checkpoint\n')
             scale_factor = checkpoint['scale_factor']
         if inputs['neural_network']['pca']:
@@ -118,7 +125,7 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
     else: #Not resume, load scale_factor, pca pytorch savefile in preprocess
         #Set best loss as infinite
         loss = float('inf')
-        if inputs['symmetry_function']['calc_scale']:
+        if inputs['descriptor']['calc_scale']:
             scale_factor = torch.load('./scale_factor')
             logfile.write('Scale factor data loaded\n')
 
@@ -132,10 +139,10 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
     valid_dataset = None
 
     # Load train dataset 
-    train_dataset = WeightedDataset(inputs['symmetry_function']['train_list'])
+    train_dataset = FilelistDataset(inputs['descriptor']['train_list'])
     # Load valid dataset
     if not inputs['neural_network']['test']:
-        valid_dataset = WeightedDataset(inputs['symmetry_function']['valid_list']) 
+        valid_dataset = FilelistDataset(inputs['descriptor']['valid_list']) 
         try: #Check valid dataset exist
             valid_dataset[0] 
             logfile.write('Train & Valid dataset loaded\n')
@@ -173,10 +180,10 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
     #Define energy, force, stress error dictionary to use stop criteria
     err_dict = _check_criteria(inputs, logfile)
     
-    if inputs['neural_network']['save_result'] or inputs['symmetry_function']['add_NNP_ref']:
-        train_dataset_save = FilelistDataset(inputs['symmetry_function']['train_list'])
-        valid_dataset_save = FilelistDataset(inputs['symmetry_function']['valid_list'])
-        if inputs['symmetry_function']['add_NNP_ref']:
+    if inputs['neural_network']['save_result'] or inputs['descriptor']['add_NNP_ref']:
+        train_dataset_save = FilelistDataset(inputs['descriptor']['train_list'])
+        valid_dataset_save = FilelistDataset(inputs['descriptor']['valid_list'])
+        if inputs['descriptor']['add_NNP_ref']:
             train_dataset_save.save_filename()
             valid_dataset_save.save_filename()
             trainset_saved, validset_saved = _load_collate(inputs, logfile, scale_factor, pca,
@@ -244,7 +251,7 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
         #End of traning loop : best loss potential written
         logfile.write('Best loss lammps potential written at {0} epoch\n'.format(best_epoch))
 
-    if inputs['symmetry_function']['add_NNP_ref']:
+    if inputs['descriptor']['add_NNP_ref']:
         logfile.write('Best loss lammps potential written at {0} epoch\n'.format(best_epoch))
         _save_atomic_E(inputs, logfile, model, trainset_saved, validset_saved)
 
@@ -304,11 +311,11 @@ def _check_criteria(inputs,logfile):
 def _load_structure(inputs, logfile, scale_factor, pca):
     train_struct_dict = None
     valid_struct_dict = None
-    train_struct_dict = _set_struct_dict(inputs['symmetry_function']['train_list'])
+    train_struct_dict = _set_struct_dict(inputs['descriptor']['train_list'])
 
     #Check valid list exist and test scheme
     if not inputs['neural_network']['test']:
-        valid_struct_dict = _set_struct_dict(inputs['symmetry_function']['valid_list']) 
+        valid_struct_dict = _set_struct_dict(inputs['descriptor']['valid_list']) 
         #Dictionary Key merge (in train structure, not in valid structue)
         for t_key in train_struct_dict.keys():
             if not t_key in valid_struct_dict.keys():
@@ -320,12 +327,12 @@ def _load_structure(inputs, logfile, scale_factor, pca):
             #Set blank dataframe
             valid_struct_dict[t_key] = StructlistDataset()
 
-    if inputs['neural_network']['full_batch']:
-        batch_size = len(train_dataset)
-    else:
-        batch_size = inputs['neural_network']['batch_size']
     #Loop for _load_collate
     for t_key in train_struct_dict.keys():
+        if inputs['neural_network']['full_batch']:
+            batch_size = len(train_struct_dict[t_key])
+        else:
+            batch_size = inputs['neural_network']['batch_size']
         train_struct_dict[t_key], valid_struct_dict[t_key] =_load_collate(inputs,
          logfile, scale_factor, pca, train_struct_dict[t_key], valid_struct_dict[t_key],batch_size=batch_size)
 
@@ -420,7 +427,7 @@ def _init_weight(inputs, model):
 # Convert generated scale_factor, pca to pytorch tensor format 
 def _convert_to_tensor(inputs, logfile, scale_factor, pca):
     for item in inputs['atom_types']:
-        if inputs['symmetry_function']['calc_scale']:
+        if inputs['descriptor']['calc_scale']:
             max_plus_min  = torch.tensor(scale_factor[item][0,:])
             max_minus_min = torch.tensor(scale_factor[item][1,:])
             scale_factor[item] = [max_plus_min, max_minus_min] #To list format
@@ -431,4 +438,13 @@ def _convert_to_tensor(inputs, logfile, scale_factor, pca):
             pca[item][2] = torch.tensor(pca[item][2])
             logfile.write('Convert {0} PCA to tensor\n'.format(item))
 
-
+def _load_lammps_potential(inputs, logfile, model):
+    logfile.write('Load parameters from lammps potential filename: {0}\n'.format(inputs["neural_network"]['continue']))
+    potential_params = read_lammps_potential(inputs["neural_network"]['continue'])
+    assert [item for item in model.keys].sort() == [item for item in potential_params.keys()].sort()
+    for item in potential_params.keys():
+        for name, lin in model.nets[item].lin.named_modules():
+            if name in potential_params[item].keys():
+                lin.weight = Parameter(torch.transpose(torch.tensor(potential_params[item][name]['weight']),-1,0))
+                lin.bias = Parameter(torch.transpose(torch.tensor(potential_params[item][name]['bias']),-1,0))
+ 
