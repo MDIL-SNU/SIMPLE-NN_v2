@@ -41,7 +41,7 @@ def train_NN(inputs, logfile,user_optimizer=None):
 
 
 #Initialize model with input, and set default value scale, PCA
-def _init_model(inputs, logfile,user_optimizer=None):
+def _init_model(inputs, logfile, user_optimizer=None):
     #Set default configuration
     logfile.write('Initialize pytorch model\n')
     model = {}
@@ -83,7 +83,7 @@ def _init_model(inputs, logfile,user_optimizer=None):
     logfile.write(f"Use {device} in model\n")
     device = torch.device(device)
     model.to(device=device)
-    criterion = torch.nn.MSELoss().to(device=device)
+    criterion = torch.nn.MSELoss(reduction='none').to(device=device)
 
     scale_factor = None
     pca = None
@@ -92,19 +92,15 @@ def _init_model(inputs, logfile,user_optimizer=None):
 
 #Load data (pca,scale fator, dataset) , resume from checkpoint
 def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
-    if inputs["neural_network"]["resume"]:
-        logfile.write('Load pytorch model from {0}\n'.format(inputs["neural_network"]["resume"]))
-        checkpoint = torch.load(inputs["neural_network"]["resume"])
+    if inputs["neural_network"]["continue"]:
+        logfile.write('Load pytorch model from {0}\n'.format(inputs["neural_network"]["continue"]))
+        checkpoint = torch.load(inputs["neural_network"]["continue"])
 
+        model.load_state_dict(checkpoint['model'])
         # Load model
         if not inputs["neural_network"]['clear_prev_network']:
             logfile.write('Load previous model, optimizer, learning rate\n')
-            # Read LAMMPS potential
-            if inputs["neural_network"]['continue']:
-                _load_lammps_potential(inputs, logfile, model)
-            else:
-                model.load_state_dict(checkpoint['model'])
-            #Load optimizer
+            #OPTIMIZER
             optimizer.load_state_dict(checkpoint['optimizer'])
             for pg in optimizer.param_groups:
                 pg['lr'] = inputs['neural_network']['learning_rate']
@@ -113,6 +109,12 @@ def _load_data(inputs, logfile, model, optimizer, scale_factor, pca):
             logfile.write('Load previous loss : {0:6.2e}, epoch : {1}\n'.format(checkpoint['loss'], checkpoint['epoch']))
             loss = checkpoint['loss']
             inputs['neural_network']['start_epoch'] = checkpoint['epoch']
+        else:
+            loss = float('inf')
+
+        # Read LAMMPS potential
+        if inputs["neural_network"]['read_potential']:
+            _load_lammps_potential(inputs, logfile, model)
 
         # Load scale file & PCA file
         if inputs['descriptor']['calc_scale']:
@@ -252,7 +254,6 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
         logfile.write('Best loss lammps potential written at {0} epoch\n'.format(best_epoch))
 
     if inputs['descriptor']['add_NNP_ref']:
-        logfile.write('Best loss lammps potential written at {0} epoch\n'.format(best_epoch))
         _save_atomic_E(inputs, logfile, model, trainset_saved, validset_saved)
 
 #function to save lammps with criteria or epoch

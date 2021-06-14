@@ -22,6 +22,7 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
         progress_dict['data_time'].update(time.time() - end)
         
         loss = _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=(not valid))
+        #loss = _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=True)
 
         #Training part
         if not valid and not test: 
@@ -176,30 +177,14 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
 
     if struct_weight:
         weight = item['struct_weight'].to(device=device, non_blocking=cuda)
-        if inputs['neural_network']['use_force']:
-            F = item['F'].type(dtype).to(device=device, non_blocking=cuda)
-            batch_idx = 0
-            for n in range(n_batch): #Make structure_weighted force
-                tmp_idx = 0
-                for atype in inputs['atom_types']: #Sum all atoms 
-                    tmp_idx += item['n'][atype][n]
-                item['F'][batch_idx:(batch_idx+tmp_idx)] = item['F'][batch_idx:(batch_idx+tmp_idx)]*weight[n]
-                batch_idx += tmp_idx 
-        if inputs['neural_network']['use_stress']:
-            S = item['S'].type(dtype).to(device=device, non_blocking=cuda)
-            batch_idx = 0
-            for n in range(n_batch): #Make structure_weighted force
-                tmp_idx = 0
-                for atype in inputs['atom_types']: #Sum all atoms 
-                    tmp_idx += item['n'][atype][n]
-                item['S'][batch_idx:(batch_idx+tmp_idx)] = item['S'][batch_idx:(batch_idx+tmp_idx)]*weight[n]
-                batch_idx += tmp_idx 
     else:
         weight = torch.ones(n_batch).to(device=device, non_blocking=cuda)
-        if inputs['neural_network']['use_force']:
-            F = item['F'].type(dtype).to(device=device, non_blocking=cuda)
-        if inputs['neural_network']['use_stress']:
-            S = item['S'].type(dtype).to(device=device, non_blocking=cuda)
+    if inputs['neural_network']['use_force']:
+        F = item['F'].type(dtype).to(device=device, non_blocking=cuda)
+    if inputs['neural_network']['use_stress']:
+        S = item['S'].type(dtype).to(device=device, non_blocking=cuda)
+
+
     E_ = 0.
     F_ = 0.
     S_ = 0.
@@ -215,8 +200,10 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
                 item['sp_idx'][atype].size(1))).to_dense(), axis=1)
         n_atoms += item['n'][atype].to(device=device, non_blocking=cuda)
     #Energy loss + structure_weight
-    e_loss = criterion(weight*E_.squeeze()/n_atoms, weight*item['E'].type(dtype).to(device=device, non_blocking=cuda)/n_atoms)
-   
+    e_loss = criterion(E_.squeeze()/n_atoms, item['E'].type(dtype).to(device=device, non_blocking=cuda)/n_atoms)
+    print_e_loss = torch.mean(e_loss*weight)
+    e_loss = torch.mean(e_loss*weight)
+
     #Loop for force, stress
     if inputs['neural_network']['use_force'] or inputs['neural_network']['use_stress']:
         #Loop for elements type
@@ -231,13 +218,13 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
                 for n,ntem in enumerate(item['n'][atype]):
                     if inputs['neural_network']['use_force']: #force loop + structure_weight
                         if ntem != 0:
-                            tmp_force.append(weight[n]*torch.einsum('ijkl,ij->kl', item['dx'][atype][n].to(device=device, non_blocking=cuda), dEdG[tmp_idx:(tmp_idx + ntem)]))
+                            tmp_force.append(torch.einsum('ijkl,ij->kl', item['dx'][atype][n].to(device=device, non_blocking=cuda), dEdG[tmp_idx:(tmp_idx + ntem)]))
                         else:
                             tmp_force.append(torch.zeros(item['dx'][atype][n].size()[-2], item['dx'][atype][n].size()[-1]).to(device=device, non_blocking=cuda))
 
                     if inputs['neural_network']['use_stress']: #stress loop
                         if ntem != 0:
-                            tmp_stress.append(weight[n]*torch.einsum('ijkl,ij->kl', item['da'][atype][n].to(device=device, non_blocking=cuda), dEdG[tmp_idx:(tmp_idx + ntem)]).sum(axis=0))
+                            tmp_stress.append(torch.einsum('ijkl,ij->kl', item['da'][atype][n].to(device=device, non_blocking=cuda), dEdG[tmp_idx:(tmp_idx + ntem)]).sum(axis=0))
                         else:
                             tmp_stress.append(torch.zeros(item['da'][atype][n].size()[-1]).to(device=device, non_blocking=cuda))
                     #Index sum
@@ -255,24 +242,42 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
                 # check the scale value: current = norm(force difference)
                 # Force different scaling : larger force difference get higher weight !!
                 force_diffscale = torch.sqrt(torch.norm(F_ - F, dim=1, keepdim=True).detach())
-
                 f_loss = criterion(force_diffscale * F_, force_diffscale * F)
-                print_f_loss = criterion(F_, F)
+                print_f_loss = torch.mean(criterion(F_, F))
+                #batch_idx = 0
+                #for n in range(n_batch): #Make structure_weighted force
+                #    tmp_idx = item['tot_num'][n].item()
+                #    f_loss[batch_idx:(batch_idx+tmp_idx)] = f_loss[batch_idx:(batch_idx+tmp_idx)]*weight[n].item()
+                #    batch_idx += tmp_idx 
+                f_loss = torch.mean(f_loss)
             else:
                 f_loss = criterion(F_, F)
-                print_f_loss = f_loss
+                print_f_loss = torch.mean(f_loss)
+                batch_idx = 0
+                for n in range(n_batch): #Make structure_weighted force
+                    tmp_idx = item['tot_num'][n].item()
+                    f_loss[batch_idx:(batch_idx+tmp_idx)] = f_loss[batch_idx:(batch_idx+tmp_idx)]*weight[n].item()
+                    batch_idx += tmp_idx 
+                f_loss = torch.mean(f_loss)
             loss += inputs['neural_network']['force_coeff'] * f_loss
             progress_dict['f_err'].update(print_f_loss.detach().item(), F_.size(0))
 
         #Stress loss part
         if inputs['neural_network']['use_stress']:
             s_loss = criterion(S_, S)
+            print_s_loss = torch.mean(s_loss)
+            batch_idx = 0
+            for n in range(n_batch): #Make structure_weighted force
+                tmp_idx = item['tot_num'][n].item()
+                s_loss[batch_idx:(batch_idx+tmp_idx)] = s_loss[batch_idx:(batch_idx+tmp_idx)]*weight[n].item()
+                batch_idx += tmp_idx 
+            s_loss = torch.mean(s_loss)
             loss += inputs['neural_network']['stress_coeff'] * s_loss
-            progress_dict['s_err'].update(s_loss.detach().item(), n_batch)
+            progress_dict['s_err'].update(print_s_loss.detach().item(), n_batch)
 
     #Energy loss part
     loss = loss + inputs['neural_network']['energy_coeff'] * e_loss
-    progress_dict['e_err'].update(e_loss.detach().item(), n_batch)
+    progress_dict['e_err'].update(print_e_loss.detach().item(), n_batch)
     loss = inputs['neural_network']['loss_scale'] * loss
     progress_dict['losses'].update(loss.detach().item(), n_batch)
     return loss
@@ -294,10 +299,10 @@ def _save_nnp_result(inputs, model, train_loader, valid_loader):
     model.eval()
     #Set output
     res_dict = {'DFT':dict(),'NNP':dict()}
-    for datatype in ['total','train','valid']:
+    for datatype in ['train','valid']:
         res_dict['DFT'][datatype] = {'E':list(),'F':list()}
         res_dict['NNP'][datatype] = {'E':list(),'F':list()}
- 
+        res_dict['tot_num'] = list()
    
     _loop_to_save(inputs, model, train_loader, res_dict, save_dict='train')
     if valid_loader:
@@ -333,7 +338,8 @@ def _loop_to_save(inputs, model, dataset_loader, res_dict, save_dict='train'):
             n_atoms += item['n'][atype].to(device=device, non_blocking=cuda)
         
         for n in range(n_batch):
-            res_dict['NNP'][save_dict]['E'].append(E_[n].item())
+            res_dict['tot_num'].append(item['tot_num'][n].item())
+            res_dict['NNP'][save_dict]['E'].append(E_[n].item()))
             res_dict['DFT'][save_dict]['E'].append(item['E'][n].item())
        
         if inputs['neural_network']['use_force']:
@@ -353,9 +359,7 @@ def _loop_to_save(inputs, model, dataset_loader, res_dict, save_dict='train'):
             batch_idx = 0
 
             for n in range(n_batch):
-                tmp_idx = 0
-                for atype in inputs['atom_types']:
-                        tmp_idx += item['n'][atype][n]
+                tmp_idx = item['tot_num'][n].item()
                 res_dict['NNP'][save_dict]['F'].append(F_[batch_idx:(batch_idx+tmp_idx)].detach().numpy())
                 res_dict['DFT'][save_dict]['F'].append(item['F'][batch_idx:(batch_idx+tmp_idx)].detach().numpy())
                 batch_idx += tmp_idx 

@@ -2,41 +2,30 @@ import sys
 import os
 import yaml
 import collections
-import numpy as np
-from .utils import DummyMPI
 import torch
-   
-# init
-def initialize_inputs(input_file_name, logfile):
-    default_inputs = {
-        'generate_features': True,
-        'preprocess': False,
-        'train_model': True,
-        'atom_types': [],
-        'random_seed': None,
-        }
+import numpy as np
 
-    descriptor_default_inputs = \
-        {'symmetry_function': 
+default_inputs = {
+    'generate_features': True,
+    'preprocess': True,
+    'train_model': True,
+    'atom_types': [],
+    'random_seed': None,
+}
+symmetry_function_descriptor_default_inputs = \
+        {'descriptor': 
             {
+                'type':'symmetry_function',
                 'train_list':'./train_list', 
                 'valid_list':'./valid_list', 
+
                 'params': dict(),
                 'refdata_format': 'vasp-out',
                 'compress_outcar': True,
+
                 'valid_rate': 0.1,
                 'shuffle': True,
-                'add_NNP_ref': False, # atom E 
-                'continue': False,
-                'add_atom_idx': True, # For backward compatability
-                'atomic_weights': {
-                    'type': None,
-                    'params': dict(),
-                },
-                'weight_modifier': {
-                    'type': None,
-                    'params': dict(),
-                },
+
                 'calc_scale': True, 
                 'scale_type': 'minmax',
                 'scale_scale': 1.0,
@@ -48,17 +37,29 @@ def initialize_inputs(input_file_name, logfile):
                 'read_force': True, #Read force in non-vasp files(ex. LAMMPS) Not implemented
                 'read_stress': True, #Read stress in non-vasp files(ex. LAMMPS) Not implimented
                 'dx_save_sparse': True, 
-                'single_file': False   # Save all data into single file Not implemented
+
+                'add_NNP_ref': False, # atom E 
+                'add_atom_idx': True, # For backward compatability
+                
+                #Not implement yet
+                'atomic_weights': {
+                    'type': None,
+                    'params': dict(),
+                },
+                'weight_modifier': {
+                    'type': None,
+                    'params': dict(),
+                }
+ 
             }
         }
-    model_default_inputs = \
+model_default_inputs = \
         {'neural_network':
             {
                 # Function related
                 'train': True,
                 'test': False,
-                'continue': False,
-
+                
                 # Network related
                 'nodes': '30-30',
                 'regularization': 1e-6, #L2 regularization
@@ -113,32 +114,35 @@ def initialize_inputs(input_file_name, logfile):
                 'NNP_to_pickle': False,
                 'save_result': False,
 
-
-                #RESUME parameters 
-                'resume': None, #Write filename 
+                #RESUME parameters
+                'continue': None, 
                 'clear_prev_status': False,  
                 'clear_prev_network': False,
-                'start_epoch': 0 
-
+                'start_epoch': 0,
+                'read_potential':None
 
             }
         }
+
+def initialize_inputs(input_file_name, logfile):
+    with open(input_file_name) as input_file:
+        input_yaml = yaml.safe_load(input_file)
+    descriptor_type = input_yaml['descriptor']['type']
     
-    # default inputs
+    #set default inputs
     inputs = default_inputs
+    descriptor_default_inputs = get_descriptor_default_inputs(logfile, descriptor_type=descriptor_type)
     inputs = _deep_update(inputs, descriptor_default_inputs)
     inputs = _deep_update(inputs, model_default_inputs)
 
     # update inputs using 'input.yaml'
-    with open(input_file_name) as input_file:
-        inputs = _deep_update(inputs, yaml.safe_load(input_file), warn_new_key=True,
-                                    logfile=logfile)
+    inputs = _deep_update(inputs, input_yaml, warn_new_key=True, logfile=logfile)
 
     if len(inputs['atom_types']) == 0:
         raise KeyError
 
     if not inputs['neural_network']['use_force'] and \
-            inputs['symmetry_function']['atomic_weights']['type'] is not None:
+            inputs['descriptor']['atomic_weights']['type'] is not None:
         logfile.write("Warning: Force training is off but atomic weights are given. Atomic weights will be ignored.\n")
 
     if inputs['neural_network']['method'] == 'L-BFGS' and \
@@ -151,18 +155,24 @@ def initialize_inputs(input_file_name, logfile):
         np.random.seed(seed)
         logfile.write("*** Random seed: {0:} ***\n".format(seed))
 
-    #Warning about epoch & iteration (epoch only avaialble)
-    if inputs['neural_network']['total_iteration']:
-        inputs['neural_network']['total_epoch'] = inputs['neural_network']['total_iteration']
-        logfile.write("Warning: iteration is not available. Implicitly convert total_iteration to total_epoch\n")
-
     return inputs
+
+def get_descriptor_default_inputs(logfile, descriptor_type='symmetry_function'):
+    descriptor_inputs = {
+        'symmetry_function': symmetry_function_descriptor_default_inputs
+    }
+
+    if descriptor_type not in descriptor_inputs.keys():
+        err = "'{}' type descriptor is not implemented.".format(descriptor_type)
+        logfile.write("\nError: {:}\n".format(err))
+        raise NotImplementedError(err)
+
+    return descriptor_inputs[descriptor_type]
 
 def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, parent="top"):
     """
     Update a nested dictionary or similar mapping.
     Modify ``source`` in place.
-
     :param dict source: base dictionary to be updated
     :param dict overrides: new dictionary
     :param bool warn_new_key: if true, warn about new keys in overrides
@@ -188,11 +198,3 @@ def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, p
         else:
             source = {key: overrides[key]}
     return source
-
-def write_inputs(self):
-    """
-    Write current input parameters to the 'input_cont.yaml' file
-    """
-    with open('input_cont.yaml', 'w') as fil:
-        yaml.dump(self.inputs, fil, default_flow_style=False)
-

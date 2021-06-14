@@ -125,10 +125,12 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
     F = list()
     S = list()
     struct_weight = list()
+    tot_num = list()
 
     # add scale, pca
     for item in batch:
         struct_weight.append(item['struct_weight'])
+        tot_num.append(item['tot_num'])
         for atype in atom_types: 
             x[atype].append(item['x'][atype])
             tmp_dx = item['dx'][atype] #Make dx to sparse_tensor
@@ -174,12 +176,13 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
         sparse_index[atype] = gen_sparse_index(n[atype])
         n[atype] = torch.tensor(n[atype])
     struct_weight = torch.tensor(struct_weight) 
+    tot_num = torch.tensor(tot_num)
     E = torch.tensor(E)
     F = torch.cat(F, axis=0)
     if use_stress:
         S = torch.cat(S, axis=0)
 
-    return {'x': x, 'dx': dx, 'da': da, 'n': n, 'E': E, 'F': F, 'S': S, 'sp_idx': sparse_index, 'struct_weight': struct_weight}
+    return {'x': x, 'dx': dx, 'da': da, 'n': n, 'E': E, 'F': F, 'S': S, 'sp_idx': sparse_index, 'struct_weight': struct_weight, 'tot_num':tot_num}
 
 
 
@@ -216,13 +219,13 @@ def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_datas
     train_loader = None
     valid_loader = None
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True, collate_fn=partial_collate,
+        train_dataset, batch_size=batch_size, shuffle=inputs['descriptor']['shuffle'], collate_fn=partial_collate,
         num_workers=inputs['neural_network']['workers'], pin_memory=True)
 
     #Check test mode, valid dataset exist
     if valid_dataset:
         valid_loader = torch.utils.data.DataLoader(
-            valid_dataset, batch_size=batch_size, shuffle=False, collate_fn=partial_collate,
+            valid_dataset, batch_size=batch_size, shuffle=inputs['descriptor']['shuffle'], collate_fn=partial_collate,
             num_workers=inputs['neural_network']['workers'], pin_memory=True)
 
     return train_loader, valid_loader
