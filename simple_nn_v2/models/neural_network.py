@@ -3,11 +3,11 @@ import numpy as np
 import shutil
 
 class FCNDict(torch.nn.Module):
-
     def __init__(self, nets):
         super(FCNDict, self).__init__()
         self.nets = torch.nn.ModuleDict(nets)
         self.keys = self.nets.keys()
+
     def forward(self, x):
         assert [item for item in self.nets.keys()].sort() == [item for item in x.keys()].sort()
         res = {}
@@ -36,9 +36,9 @@ class FCNDict(torch.nn.Module):
             FIL.write('SYM {}\n'.format(len(params)))
 
             for ctem in params:
-                tmp_types = inputs['atom_types'][int(ctem[1])-1]
+                tmp_types = inputs['atom_types'][int(ctem[1]) - 1]
                 if int(ctem[0]) > 3:
-                    tmp_types += ' {}'.format(inputs['atom_types'][int(ctem[2])-1])
+                    tmp_types += ' {}'.format(inputs['atom_types'][int(ctem[2]) - 1])
                 if len(ctem) != 7:
                     raise ValueError("params file must have lines with 7 columns.")
 
@@ -97,7 +97,7 @@ class FCNDict(torch.nn.Module):
 
                 FIL.write('LAYER {} {}\n'.format(j+joffset, acti))
 
-                for k in range(nodes[j+joffset]):
+                for k in range(nodes[j + joffset]):
                     FIL.write('w{} {}\n'.format(k, ' '.join(weights[j][k,:].astype(np.str))))
                     FIL.write('b{} {}\n'.format(k, biases[j][k]))
 
@@ -106,13 +106,13 @@ class FCNDict(torch.nn.Module):
         FIL.close()
         
 class FCN(torch.nn.Module):
-    def __init__(self, dim_input, dim_hidden, acti_func='sigmoid',dropout=None):
+    def __init__(self, dim_input, dim_hidden, acti_func='sigmoid', dropout=None):
         super(FCN, self).__init__()
 
         self.lin = torch.nn.Sequential()
 
         dim_in = dim_input
-        for i,hn in enumerate(dim_hidden):
+        for i, hn in enumerate(dim_hidden):
             if dropout:
                 self.lin.add_module(f'drop_{i}', torch.nn.Dropout(p=dropout))
             self.lin.add_module(f'lin_{i}', torch.nn.Linear(dim_in, hn))
@@ -157,7 +157,7 @@ def read_lammps_potential(filename):
 
     weights = dict()
     with open(filename) as fil:
-        atom_types = fil.readline().replace('\n','').split()[1:]
+        atom_types = fil.readline().replace('\n', '').split()[1:]
         for item in atom_types:
             weights[item] = dict()            
 

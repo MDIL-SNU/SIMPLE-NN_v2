@@ -23,8 +23,8 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
         if self.sqrt:
-            self.sqrt_val = self.val**0.5
-            self.sqrt_avg = self.avg**0.5
+            self.sqrt_val = self.val ** 0.5
+            self.sqrt_avg = self.avg ** 0.5
 
 
     #Show average value : average value
@@ -69,7 +69,7 @@ class StructureMeter(object):
         self.avg = self.sum / self.count
 
         if self.sqrt:
-            self.sqrt_avg = self.avg**0.5
+            self.sqrt_avg = self.avg ** 0.5
 
     #Show sqrt value & average value : batch_value ( average_value )
     def __str__(self):
