@@ -15,9 +15,10 @@ default_inputs = {
 symmetry_function_descriptor_default_inputs = \
         {'descriptor': 
             {
-                'type':'symmetry_function',
-                'train_list':'./train_list', 
-                'valid_list':'./valid_list', 
+                'type': 'symmetry_function',
+                'train_list': './train_list', 
+                'valid_list': './valid_list', 
+                'test_list': './test_list',
 
                 'params': dict(),
                 'refdata_format': 'vasp-out',
@@ -69,7 +70,10 @@ model_default_inputs = \
                 'weight_initializer': {
                     'type': 'xavier normal',
                     'params': {
-
+                        'gain': None,
+                        'std': None,
+                        'mean': None,
+                        'var': None
                     },
                 },
                 'acti_func': 'sigmoid',

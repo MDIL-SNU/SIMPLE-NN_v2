@@ -86,7 +86,6 @@ class WeightedDataset(FilelistDataset):
                     for _ in range(tmp_weight):
                         self.filelist.append(item)
 
-
 #Function that set structure 
 def _set_struct_dict(filename):
     structure_dict = dict()
@@ -184,8 +183,6 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
 
     return {'x': x, 'dx': dx, 'da': da, 'n': n, 'E': E, 'F': F, 'S': S, 'sp_idx': sparse_index, 'struct_weight': struct_weight, 'tot_num': tot_num}
 
-
-
 #Function to generate Iterator
 def filename_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, use_stress=False):
     tmp_dict = my_collate(batch, atom_types, scale_factor, pca, pca_min_whiten_level, use_stress)
@@ -193,7 +190,6 @@ def filename_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whi
     for item in batch:
         tmp_dict['filename'].append(item['filename'])
     return tmp_dict
-
 
 def gen_sparse_index(nlist):
     res = torch.zeros(2, sum(nlist))
@@ -205,9 +201,8 @@ def gen_sparse_index(nlist):
             idx += 1
     return res
  
-
 #Load collate from train, valid dataset
-def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_dataset, batch_size=1, my_collate=my_collate):
+def _make_dataloader(inputs, logfile, scale_factor, pca, train_dataset_list, valid_dataset_list, batch_size=1, my_collate=my_collate):
     partial_collate = partial(
         my_collate, 
         atom_types=inputs['atom_types'], 
@@ -216,18 +211,15 @@ def _load_collate(inputs, logfile, scale_factor, pca, train_dataset, valid_datas
         pca_min_whiten_level=inputs['neural_network']['pca_min_whiten_level'],
         use_stress=inputs['neural_network']['use_stress'])
 
-    train_loader = None
-    valid_loader = None
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=inputs['descriptor']['shuffle'], collate_fn=partial_collate,
+        train_dataset_list, batch_size=batch_size, shuffle=inputs['descriptor']['shuffle'], collate_fn=partial_collate,
         num_workers=inputs['neural_network']['workers'], pin_memory=True)
 
     #Check test mode, valid dataset exist
-    if valid_dataset:
+    valid_loader = None
+    if valid_dataset_list:
         valid_loader = torch.utils.data.DataLoader(
-            valid_dataset, batch_size=batch_size, shuffle=inputs['descriptor']['shuffle'], collate_fn=partial_collate,
+            valid_dataset_list, batch_size=batch_size, shuffle=inputs['descriptor']['shuffle'], collate_fn=partial_collate,
             num_workers=inputs['neural_network']['workers'], pin_memory=True)
 
     return train_loader, valid_loader
-
-

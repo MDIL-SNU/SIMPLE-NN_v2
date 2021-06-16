@@ -3,7 +3,7 @@ import shutil
 import time
 from ase import units
 from simple_nn_v2.utils.Logger import AverageMeter, ProgressMeter, TimeMeter, StructureMeter
-from simple_nn_v2.models.data_handler import FilelistDataset, _load_collate
+from simple_nn_v2.models.data_handler import FilelistDataset, _make_dataloader
 
 #This function train NN 
 def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, scheduler=None, epoch=0, valid=False, err_dict=None,start_time=None, test=False):
