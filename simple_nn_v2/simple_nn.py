@@ -3,65 +3,47 @@ import os
 import yaml
 import functools
 import atexit
-from .utils import modified_sigmoid, _generate_gdf_file
+#from simple_nn_v2.utils import modified_sigmoid, _generate_gdf_file
 from ._version import __version__, __git_sha__
-import numpy as np
 
-from .init_inputs import initialize_inputs
+from simple_nn_v2.init_inputs import initialize_inputs
+from simple_nn_v2.features import preprocess
+from simple_nn_v2.models import train_NN 
 
-from .features import preprocess as prep
-from .features.symmetry_function import generate
-from .models import train_NN
-from .init_inputs import initialize_inputs
+#from models import neural_network
 
-#input parameter descriptor, model --> function 
-def run(input_file_name, descriptor=None, preprocess=None, model=None):
-    # Set log file
+#input parameter descriptor
+def run(input_file_name):
     logfile = sys.stdout
     logfile = open('LOG', 'w', 10)
     atexit.register(_close_log, logfile)
     _log_header(logfile)
 
-    # Initialize inputs
     inputs = initialize_inputs(input_file_name, logfile)
+
+    if inputs['generate_features'] is True:
+        generate = get_generate_function(logfile, descriptor_type=inputs['descriptor']['type'])
+        generate(inputs, logfile)
     
-    # Set modifier, atomic weights
-    modifier = None
-    if inputs['symmetry_function']['weight_modifier']['type'] == 'modified sigmoid':
-        modifier = dict()
-        #modifier = functools.partial(modified_sigmoid, **self.descriptor.inputs['weight_modifier']['params'])
-        for item in inputs['atom_types']:
-            modifier[item] = functools.partial(modified_sigmoid, **inputs['symmetry_function']['weight_modifier']['params'][item])
-    if inputs['symmetry_function']['atomic_weights']['type'] == 'gdf':
-        #get_atomic_weights = functools.partial(_generate_gdf_file)#, modifier=modifier)
-        get_atomic_weights = _generate_gdf_file
-    elif inputs['symmetry_function']['atomic_weights']['type'] == 'user':
-        get_atomic_weights = user_atomic_weights_function
-    elif inputs['symmetry_function']['atomic_weights']['type'] == 'file':
-        get_atomic_weights = './atomic_weights'
-    else:
-        get_atomic_weights = None
+    if inputs['preprocess'] is True:
+        preprocess(inputs, logfile)
 
-    get_atomic_weights = None
-    if not descriptor:
-        descriptor = generate
-    if not preprocess:
-        preprocess = prep
-    if not model:
-        model = train_NN
-    # main running part
-    if inputs['generate_features']:
-        descriptor(inputs, logfile)
-
-    if inputs['preprocess']:
-        preprocess(inputs, logfile, get_atomic_weights=get_atomic_weights)
-
-    #TODO:  should add atomic weight modifier 
     if inputs['train_model']:
-        model(inputs, logfile) 
+        trainNN(inputs, logfile)
 
+from simple_nn_v2.features.symmetry_function import generate as symf_generator
 
+def get_generate_function(logfile, descriptor_type='symmetry_function'):
+    generator = {
+        'symmetry_function': symf_generator
+    }
 
+    if descriptor_type not in generator.keys():
+        err = "'{}' type descriptor is not implemented.".format(descriptor_type)
+        logfile.write("\nError: {:}\n".format(err))
+        raise NotImplementedError(err)
+
+    return generator[descriptor_type] 
 
 def _close_log(logfile):
     logfile.flush()

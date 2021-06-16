@@ -1,4 +1,4 @@
-from .simple_nn import run
+from simple_nn_v2.simple_nn import run
 
 #Check  unary, bianry works
 #Valid with other network 

@@ -4,7 +4,6 @@ import numpy as np
 import ase
 from ase import io
 import os
-from . import compress_outcar
 import torch
 
 """ In this module, functions handles structure list file and OUTCAR files for making data set(format: pickle or torch)
@@ -14,10 +13,10 @@ import torch
     save_to_datafile(inputs, data, data_idx, logfile): save results to pickle or pt files
 """
 
-def parse_structure_list(logfile, structure_list='./str_list'):
-    """ Parsing "structure_list" file (default="./str_list")
+def parse_structure_list(logfile, structure_list='./structure_list'):
+    """ Parsing "structure_list" file (default="./structure_list")
 
-    ex) "str_list" file format:
+    ex) "structure_list" file format:
             [structure_tag1 : weight]
             STRUCTURE_PATH_EXP1 INDEX_EXP1   ex) /PATH/OUTCAR1 ::10
             STRUCTURE_PATH_EXP2 INDEX_EXP2   ex) /PATH/OUTCAR2 10:1000:50
@@ -37,13 +36,14 @@ def parse_structure_list(logfile, structure_list='./str_list'):
         logfile(file obj): logfile object
         structure_list(str): name of structure list file that we have to parse
     Returns:
-        structures: list of [STRUCTURE_PATH, INDEX_EXP]
-        structure_tag_idx(int list): list of structure tag index of each STRUCTURE_PATH
         structure_tags(str list): list of structure tag
         structure_weights(float list): list of structure weight
+        structure_file_list(str list): list of STRUCTURE_PATH
+        structure_slicing_list(str list): list of INDEX_EXP
+        structure_tag_idx(int list): list of structure tag index of each STRUCTURE_PATH
     """
-
-    structures = []
+    structure_file_list = []
+    structure_slicing_list = []
     structure_tag_idx = []
     structure_tags = ['None']
     structure_weights = [1.0]
@@ -84,10 +84,11 @@ def parse_structure_list(logfile, structure_list='./str_list'):
             else:
                 tmp_split = line.split()
                 try:
-                    structure_path_exp = tmp_split[0]
-                    index_exp = tmp_split[1]
-                    for structure_path in list(braceexpand(structure_path_exp)):
-                        structures.append([structure_path, index_exp])
+                    structure_file_exp = tmp_split[0]
+                    structure_slicing = tmp_split[1]
+                    for structure_file in list(braceexpand(structure_file_exp)):
+                        structure_file_list.append(structure_file)
+                        structure_slicing_list.append(structure_slicing)
                         structure_tag_idx.append(structure_tags.index(tag))
                 except:
                     err = "Unexpected line format in [str_list]"
@@ -95,7 +96,7 @@ def parse_structure_list(logfile, structure_list='./str_list'):
                     logfile.write("ERROR LINE: {:}\n".format(line))
                     raise NotImplementedError(err)
 
-    return structures, structure_tag_idx, structure_tags, structure_weights
+    return structure_tags, structure_weights, structure_file_list, structure_slicing_list, structure_tag_idx
 
 # Structure tag is in front of ":" and weight is back of ":" ex) [structur_tag : weight]
 # If no explicit weight(no ":"), default weight=1.0  ex) [structure_tag]
@@ -114,50 +115,42 @@ def _get_tag_and_weight(text):
         
     return tag, weight
 
-def load_snapshots(inputs, item, logfile):
-    """ Read structure file and load snapshots using ase.io.read() method
+def load_structures(inputs, structure_file, structure_slicing, logfile):
+    """ Read structure file and load structures using ase.io.read() method
 
     Handle inputs['refdata_format']: 'vasp-out' vs else
     Handle inputs['compress_outcar']: True vs False
     Handle ase version: later than 3.18.0 vs else
 
     Args:
-        inputs(dict): ['symmetry_function'] part in input.yaml
-        item(list): [STRUCTURE_PATH, INDEX]    ex) ["/path1/OUTCAR", "::10"] or ["/path2/OUTCAR", "10"]]
+        inputs(dict): ['descriptor'] part in input.yaml
+        structure_file(str): structure file path
+        structure_slicing(str): index expression    ex) "::10", "8"
         logfile(file obj): logfile object
     Returns:
-        snapshots(ase.atoms.Atoms object): Atoms object from ase module that contain structure information, E, F, S ...
+        structures(ase.atoms.Atoms object): Atoms object from ase module that contain structure information, E, F, S ...
     """
-    file_path = item[0]
-    if len(item) == 1:
-        index = 0
-        logfile.write("{} 0".format(file_path))
+    file_path = structure_file
+    if ':' in structure_slicing:
+        index = structure_slicing
     else:
-        if ':' in item[1]:
-            index = item[1]
+        index = int(structure_slicing)
+    logfile.write("{} {}".format(file_path, index))
+
+    if inputs['descriptor']['refdata_format'] == 'vasp-out':
+        if inputs['descriptor']['compress_outcar']:
+            file_path = compress_outcar(structure_file)
+
+        if ase.__version__ >= '3.18.0':
+            structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'])
         else:
-            index = int(item[1])
-        logfile.write("{} {}".format(file_path, item[1]))
-
-    if inputs['refdata_format'] == 'vasp-out':
-        if inputs['compress_outcar']:
-            tmp_name = compress_outcar(file_path)
-
-            if ase.__version__ >= '3.18.0':
-                snapshots = io.read(tmp_name, index=index, format=inputs['refdata_format'])
-            else:
-                snapshots = io.read(tmp_name, index=index, format=inputs['refdata_format'], force_consistent=True)
-        else:    
-            if ase.__version__ >= '3.18.0':
-                snapshots = io.read(file_path, index=index, format=inputs['refdata_format'])
-            else:
-                snapshots = io.read(file_path, index=index, format=inputs['refdata_format'], force_consistent=True)
+            structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'], force_consistent=True)
     else:
         logfile.write("Warning: Structure format is not OUTCAR(['refdata_format'] : {:}). Unexpected error can occur.\n"\
-                                                    .format(inputs['refdata_format']))
-        snapshots = io.read(file_path, index=index, format=inputs['refdata_format'])
+                                                    .format(inputs['descriptor']['refdata_format']))
+        structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'])
     
-    return snapshots
+    return structures
 
 def save_to_datafile(inputs, data, data_idx, logfile):
     """ Write result data to pickle file
@@ -167,28 +160,28 @@ def save_to_datafile(inputs, data, data_idx, logfile):
     Write pickle file path in pickle list
 
     Args:
-        inputs(dict): ['symmetry_function'] part in input.yaml
+        inputs(dict): ['descriptor'] part in input.yaml
         data(dic): result data that contains information after calculting symmetry function values
         data_idx(int): index of data file to save
         logfile(file obj): logfile object
     Returns:
         tmp_filename(str): saved pickle file path
     """
-    data_dir = inputs['save_directory']
+    data_dir = inputs['descriptor']['save_directory']
 
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
 
     try:
-        if inputs['save_to_pickle'] == False:
+        if inputs['descriptor']['save_to_pickle'] == False:
             tmp_filename = os.path.join(data_dir, 'data{}.pt'.format(data_idx))
             torch.save(data, tmp_filename)
-        elif inputs['save_to_pickle'] == True:
+        elif inputs['descriptor']['save_to_pickle'] == True:
             tmp_filename = os.path.join(data_dir, 'data{}.pickle'.format(data_idx))
             with open(tmp_filename, 'wb') as fil:
                 pickle.dump(data, fil, protocol=2)
     except:
-        if inputs['save_to_pickle'] == False:
+        if inputs['descriptor']['save_to_pickle'] == False:
             err = "Unexpected error during save data to .pt file"
         else:
             err = "Unexpected error during save data to .pickle file"
@@ -196,3 +189,55 @@ def save_to_datafile(inputs, data, data_idx, logfile):
         raise NotImplementedError(err)
 
     return tmp_filename
+
+def compress_outcar(filename):
+    """
+    Compress VASP OUTCAR file for fast file-reading in ASE.
+    Compressed file (tmp_comp_OUTCAR) is temporarily created in the current directory.
+
+    :param str filename: filename of OUTCAR
+
+    supported properties:
+
+    - atom types
+    - lattice vector(cell)
+    - free energy
+    - force
+    - stress
+    """
+    comp_name = './tmp_comp_OUTCAR'
+
+    with open(filename, 'r') as fil, open(comp_name, 'w') as res:
+        minus_tag = 0
+        line_tag = 0
+        for line in fil:
+            if 'POTCAR:' in line:
+                res.write(line)
+            if 'POSCAR:' in line:
+                res.write(line)
+            elif 'ions per type' in line:
+                res.write(line)
+            elif 'direct lattice vectors' in line:
+                res.write(line)
+                minus_tag = 3
+            elif 'FREE ENERGIE OF THE ION-ELECTRON SYSTEM' in line:
+                res.write(line)
+                minus_tag = 4
+            elif 'POSITION          ' in line:
+                res.write(line)
+                line_tag = 3
+            elif 'FORCE on cell =-STRESS' in line:
+                res.write(line)
+                minus_tag = 15
+            elif 'Iteration' in line:
+                res.write(line)
+            elif minus_tag > 0:
+                res.write(line)
+                minus_tag -= 1
+            elif line_tag > 0:
+                res.write(line)
+                if '-------------------' in line:
+                    line_tag -= 1
+
+    return comp_name
+    
