@@ -29,7 +29,7 @@ def run(input_file_name):
         preprocess(inputs, logfile)
 
     if inputs['train_model']:
-        trainNN(inputs, logfile)
+        train_NN(inputs, logfile)
 
 from simple_nn_v2.features.symmetry_function import generate as symf_generator
 
