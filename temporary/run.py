@@ -17,6 +17,7 @@ def train_NN(inputs, logfile, user_optimizer=None):
 
     device = _set_device()
     model = _initialize_model(inputs, logfile, device)
+    model.share_memory()
     optimizer = _initialize_optimizer(inputs, model)
     criterion = torch.nn.MSELoss(reduction='none').to(device=device)    
     
@@ -128,21 +129,21 @@ def _convert_to_tensor(inputs, logfile, scale_factor, pca):
     device = _set_device()
     for item in inputs['atom_types']:
         if inputs['descriptor']['calc_scale']:
-            max_plus_min  = torch.tensor(scale_factor[item][0,:]).to(device=device)
-            max_minus_min = torch.tensor(scale_factor[item][1,:]).to(device=device)
+            max_plus_min  = torch.tensor(scale_factor[item][0,:])
+            max_minus_min = torch.tensor(scale_factor[item][1,:])
             scale_factor[item] = [max_plus_min, max_minus_min] #To list format
             logfile.write("Convert {0} scale_factor to tensor\n".format(item))
         if inputs['neural_network']['pca']:
-            pca[item][0] = torch.tensor(pca[item][0]).to(device=device)
-            pca[item][1] = torch.tensor(pca[item][1]).to(device=device)
-            pca[item][2] = torch.tensor(pca[item][2]).to(device=device)
+            pca[item][0] = torch.tensor(pca[item][0])
+            pca[item][1] = torch.tensor(pca[item][1])
+            pca[item][2] = torch.tensor(pca[item][2])
             logfile.write("Convert {0} PCA to tensor\n".format(item))
 
 def _load_dataset_list(inputs, logfile):
     device = _set_device()
     if inputs['neural_network']['test'] is False:
-        train_dataset_list = FilelistDataset(inputs['descriptor']['train_list'])
-        valid_dataset_list = FilelistDataset(inputs['descriptor']['valid_list']) 
+        train_dataset_list = FilelistDataset(inputs['descriptor']['train_list'], device)
+        valid_dataset_list = FilelistDataset(inputs['descriptor']['valid_list'], device)
         try: #Check valid dataset exist
             valid_dataset_list[0] 
             logfile.write("Train & Valid dataset loaded\n")
@@ -150,7 +151,7 @@ def _load_dataset_list(inputs, logfile):
             valid_dataset_list = None
             logfile.write("Train dataset loaded, No valid set loaded\n")
     else:
-        train_dataset_list = FilelistDataset(inputs['descriptor']['test_list'])
+        train_dataset_list = FilelistDataset(inputs['descriptor']['test_list'], device)
         valid_dataset_list = None
         logfile.write("Test dataset loaded\n")
 
@@ -213,8 +214,8 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
     err_dict = _check_criteria(inputs, logfile)
     
     if inputs['neural_network']['save_result'] or inputs['descriptor']['add_NNP_ref']:
-        train_dataset_save = FilelistDataset(inputs['descriptor']['train_list'])
-        valid_dataset_save = FilelistDataset(inputs['descriptor']['valid_list'])
+        train_dataset_save = FilelistDataset(inputs['descriptor']['train_list'],device)
+        valid_dataset_save = FilelistDataset(inputs['descriptor']['valid_list'],device)
         if inputs['descriptor']['add_NNP_ref']:
             train_dataset_save.save_filename()
             valid_dataset_save.save_filename()
@@ -418,9 +419,6 @@ def _initialize_optimizer(inputs, model):
     return optimizer[optim_type](model.parameters(), lr=lr, weight_decay=regularization)
 
 def _set_device():
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    device = torch.device(device)
-
-    return device
+    return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
