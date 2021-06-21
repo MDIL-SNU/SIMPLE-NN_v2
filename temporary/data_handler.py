@@ -124,18 +124,18 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
             if tmp_dx.is_sparse:
                 tmp_dx = tmp_dx.to_dense().reshape(item['dx_size'][atype]) 
             if scale_factor is not None:
-                tmp_dx /= scale_factor[atype][1].view(1,-1,1,1).to(device=device)
+                tmp_dx /= scale_factor[atype][1].view(1,-1,1,1)
                 if use_stress:
-                    tmp_da /= scale_factor[atype][1].view(1,-1,1,1).to(device=device)
+                    tmp_da /= scale_factor[atype][1].view(1,-1,1,1)
             if pca is not None:
                 if tmp_dx.size(0) != 0:
-                    tmp_dx = torch.einsum('ijkl,jm->imkl', tmp_dx, pca[atype][0].to(device=device))
+                    tmp_dx = torch.einsum('ijkl,jm->imkl', tmp_dx, pca[atype][0])
                     if use_stress:
-                        tmp_da = torch.einsum('ijkl,jm->imkl', tmp_da, pca[atype][0].to(device=device))
+                        tmp_da = torch.einsum('ijkl,jm->imkl', tmp_da, pca[atype][0])
                 if pca_min_whiten_level is not None:
-                    tmp_dx /= pca[atype][1].view(1,-1,1,1).to(device=device)
+                    tmp_dx /= pca[atype][1].view(1,-1,1,1)
                     if use_stress:
-                        tmp_da /= pca[atype][1].view(1,-1,1,1).to(device=device)
+                        tmp_da /= pca[atype][1].view(1,-1,1,1)
             dx[atype].append(tmp_dx) #sparse_tensor dx
             if use_stress:
                 da[atype].append(tmp_da)
@@ -148,17 +148,17 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
     for atype in atom_types:
         x[atype] = torch.cat(x[atype], axis=0)
         if scale_factor is not None: #Scale part
-            x[atype] -= scale_factor[atype][0].view(1,-1).to(device=device)
-            x[atype] /= scale_factor[atype][1].view(1,-1).to(device=device)
+            x[atype] -= scale_factor[atype][0].view(1,-1)
+            x[atype] /= scale_factor[atype][1].view(1,-1)
         if pca is not None: #PCA part
             if x[atype].size(0) != 0:
                 #Important note 
                 #tmp_dx mkatrix size should exceed number of symmetryfunction
                 #If less than number of symmetry funtion -> n * n < # of SF matrix return
-                x[atype] = torch.einsum('ij,jm->im', x[atype], pca[atype][0].to(device=device)) - \
+                x[atype] = torch.einsum('ij,jm->im', x[atype], pca[atype][0]) - \
                 pca[atype][2].to(device=device).reshape(1,-1) 
             if pca_min_whiten_level is not None:
-                x[atype] /= pca[atype][1].view(1,-1).to(device=device)
+                x[atype] /= pca[atype][1].view(1,-1)
         sparse_index[atype] = gen_sparse_index(n[atype],device)
         n[atype] = torch.tensor(n[atype], device=device)
     struct_weight = torch.tensor(struct_weight, device=device)

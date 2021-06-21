@@ -129,14 +129,14 @@ def _convert_to_tensor(inputs, logfile, scale_factor, pca):
     device = _set_device()
     for item in inputs['atom_types']:
         if inputs['descriptor']['calc_scale']:
-            max_plus_min  = torch.tensor(scale_factor[item][0,:])
-            max_minus_min = torch.tensor(scale_factor[item][1,:])
+            max_plus_min  = torch.tensor(scale_factor[item][0,:], device=device)
+            max_minus_min = torch.tensor(scale_factor[item][1,:], device=device)
             scale_factor[item] = [max_plus_min, max_minus_min] #To list format
             logfile.write("Convert {0} scale_factor to tensor\n".format(item))
         if inputs['neural_network']['pca']:
-            pca[item][0] = torch.tensor(pca[item][0])
-            pca[item][1] = torch.tensor(pca[item][1])
-            pca[item][2] = torch.tensor(pca[item][2])
+            pca[item][0] = torch.tensor(pca[item][0], device=device)
+            pca[item][1] = torch.tensor(pca[item][1], device=device)
+            pca[item][2] = torch.tensor(pca[item][2], device=device)
             logfile.write("Convert {0} PCA to tensor\n".format(item))
 
 def _load_dataset_list(inputs, logfile):

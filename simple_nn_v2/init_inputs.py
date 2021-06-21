@@ -94,11 +94,10 @@ model_default_inputs = \
                 'optimizer': None,
 
                 'workers': 4, 
-                'force_diffscale':False,  # if true, force error is |F-F'|*(F-F')^2 instead of *(F-F')^2 
 
                 # Loss function related
-                'E_loss': 0,
-                'F_loss': 1,
+                'E_loss_type': 0,
+                'F_loss_type': 1,
 
                 # Logging & saving related (Epoch)
                 'save_interval': 100, 

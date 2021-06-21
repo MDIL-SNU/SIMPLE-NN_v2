@@ -91,14 +91,11 @@ class TimeMeter(object):
 
     def reset(self):
         self.val = 0
-        self.avg = 0
-        self.count = 0 
     
     #Update values using value, batch_number 
     #And calculate average, sqrt of batch value
-    def update(self, val, n=1):
-        self.val = val
-        self.count += n
+    def update(self, val):
+        self.val += val
 
     def show_avg(self):
         return self.__str__()

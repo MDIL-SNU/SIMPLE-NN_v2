@@ -108,7 +108,7 @@ def _load_scale_factor_and_pca(inputs, logfile, checkpoint):
         if inputs['neural_network']['pca']:
             pca = torch.load('./pca')
             logfile.write("PCA data loaded\n")        
-        _convert_to_tensor(inputs, logfile, scale_factor, pca, device)
+        _convert_to_tensor(inputs, logfile, scale_factor, pca)
     
     return scale_factor, pca
 
@@ -126,16 +126,17 @@ def _load_lammps_potential(inputs, logfile, model):
 # Convert generated scale_factor, pca to pytorch tensor format 
 def _convert_to_tensor(inputs, logfile, scale_factor, pca):
     device = _set_device()
+    device = torch.device('cpu')
     for item in inputs['atom_types']:
-        if inputs['descriptor']['calc_scale']:
-            max_plus_min  = torch.tensor(scale_factor[item][0,:]).to(device=device)
-            max_minus_min = torch.tensor(scale_factor[item][1,:]).to(device=device)
+        if scale_factor:
+            max_plus_min  = torch.tensor(scale_factor[item][0,:], device=device)
+            max_minus_min = torch.tensor(scale_factor[item][1,:], device=device)
             scale_factor[item] = [max_plus_min, max_minus_min] #To list format
             logfile.write("Convert {0} scale_factor to tensor\n".format(item))
-        if inputs['neural_network']['pca']:
-            pca[item][0] = torch.tensor(pca[item][0]).to(device=device)
-            pca[item][1] = torch.tensor(pca[item][1]).to(device=device)
-            pca[item][2] = torch.tensor(pca[item][2]).to(device=device)
+        if pca:
+            pca[item][0] = torch.tensor(pca[item][0], device=device)
+            pca[item][1] = torch.tensor(pca[item][1], device=device)
+            pca[item][2] = torch.tensor(pca[item][2], device=device)
             logfile.write("Convert {0} PCA to tensor\n".format(item))
 
 def _load_dataset_list(inputs, logfile):
@@ -197,7 +198,8 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
     max_len = len(train_loader)
     total_epoch = int(inputs['neural_network']['total_epoch'])
     total_iter = int(inputs['neural_network']['total_epoch']*max_len)
-    logfile.write("Total training iteration : {0} , epoch : {1}, batch number : {2}\n".format(total_iter, total_epoch, max_len))
+    logfile.write("Total training iteration : {0} , epoch : {1}, batch number : {2}, batch size : {3}, workers : {4}\n"\
+    .format(total_iter, total_epoch, max_len,'full_batch' if inputs['neural_network']['full_batch'] else inputs['neural_network']['batch_size'],inputs['neural_network']['workers']))
     
     #Learning rate decay schedular
     if inputs['neural_network']['lr_decay']:
@@ -224,16 +226,13 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
             trainset_saved, validset_saved = _make_dataloader(inputs, logfile, scale_factor, pca,
             train_dataset_save, valid_dataset_save, batch_size=inputs['neural_network']['batch_size'])
 
-    
-    #Evaluation model
-    if inputs['neural_network']['test']: 
+    if inputs['neural_network']['test']: #Evalutaion model
         print("Evaluation(Testing) model")
         logfile.write("Evaluation(Testing) model \n")
         loss = train(inputs, logfile, train_loader, model, criterion=criterion, start_time=start_time, test=True)
         if inputs['neural_network']['print_structure_rmse'] and train_struct_dict: 
             _show_structure_rmse(inputs, logfile, train_struct_dict, valid_struct_dict, model, optimizer=optimizer, criterion=criterion, test=True)
-    #Traning model
-    else: 
+    else: #Traning model 
         best_epoch = inputs['neural_network']['start_epoch'] #Set default value
         for epoch in range(inputs['neural_network']['start_epoch'], total_epoch+1):
             #Train  model with train loader 
@@ -283,7 +282,7 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
         #End of traning loop : best loss potential written
         logfile.write("Best loss lammps potential written at {0} epoch\n".format(best_epoch))
 
-    if inputs['descriptor']['add_NNP_ref']:
+    if inputs['descriptor']['add_NNP_ref'] and not inputs['neural_network']['E_loss_type'] == 3:
         _save_atomic_E(inputs, logfile, model, trainset_saved, validset_saved)
 
 #function to save lammps with criteria or epoch
@@ -418,9 +417,6 @@ def _initialize_optimizer(inputs, model):
     return optimizer[optim_type](model.parameters(), lr=lr, weight_decay=regularization)
 
 def _set_device():
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    device = torch.device(device)
-
-    return device
+    return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
