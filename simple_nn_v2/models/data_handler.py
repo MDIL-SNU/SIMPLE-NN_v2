@@ -175,14 +175,12 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
 def atomic_e_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     x = dict()
-    dx = dict()
     n = dict()
     sparse_index = dict()
     atomic_E = dict()
     atomic_num = dict()
     for atype in atom_types:
         x[atype] = list()
-        dx[atype] = list()
         n[atype] = list()
         sparse_index[atype] = list()
         atomic_E[atype] = list()
@@ -196,17 +194,6 @@ def atomic_e_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whi
         tot_num.append(item['tot_num'])
         for atype in atom_types: 
             x[atype].append(item['x'][atype])
-            tmp_dx = item['dx'][atype] #Make dx to sparse_tensor
-            if tmp_dx.is_sparse:
-                tmp_dx = tmp_dx.to_dense().reshape(item['dx_size'][atype]) 
-            if scale_factor is not None:
-                tmp_dx /= scale_factor[atype][1].view(1,-1,1,1)
-            if pca is not None:
-                if tmp_dx.size(0) != 0:
-                    tmp_dx = torch.einsum('ijkl,jm->imkl', tmp_dx, pca[atype][0])
-                if pca_min_whiten_level is not None:
-                    tmp_dx /= pca[atype][1].view(1,-1,1,1)
-            dx[atype].append(tmp_dx) #sparse_tensor dx
             n[atype].append(item['x'][atype].size(0))
             if atype in item['atomic_E'].keys():
                 atomic_E[atype].append(item['atomic_E'][atype])

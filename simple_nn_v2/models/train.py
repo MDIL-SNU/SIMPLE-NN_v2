@@ -227,6 +227,7 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
                 print_e_loss.append(atype_loss[atype])
                 atomic_loss.append(atype_loss[atype])
         print_e_loss = torch.mean(torch.cat(print_e_loss))
+        #TODO: add struct weight
         atomic_loss = torch.mean(torch.cat(atomic_loss))
         e_loss += atomic_loss
         progress_dict['e_err'].update(print_e_loss.detach().item(), n_batch)
