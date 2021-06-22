@@ -220,12 +220,18 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
         e_loss = criterion(E_.squeeze() / n_atoms, item['E'].type(dtype).to(device=device, non_blocking=non_block) / n_atoms)
 
     if inputs['neural_network']['E_loss_type'] == 3: #atomic e loss
+        struct_weight_factor = None
         print_e_loss = list()
         atomic_loss = list()
         for atype in inputs['atom_types']:
             if atype_loss[atype] is not None:
+                struct_weight_factor = torch.zeros(torch.sum(item['atomic_num'][atype]), device=device)
+                tmp_idx = 0
+                for num in range(n_batch):
+                    struct_weight_factor[tmp_idx:tmp_idx+num] += weight[num]
+                    tmp_idx += item['atomic_num'][atype][num].item()
                 print_e_loss.append(atype_loss[atype])
-                atomic_loss.append(atype_loss[atype])
+                atomic_loss.append(atype_loss[atype]*struct_weight_factor)
         print_e_loss = torch.mean(torch.cat(print_e_loss))
         #TODO: add struct weight
         atomic_loss = torch.mean(torch.cat(atomic_loss))
