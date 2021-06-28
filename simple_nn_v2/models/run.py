@@ -40,6 +40,13 @@ def train_NN(inputs, logfile, user_optimizer=None):
 
 def _initialize_model(inputs, logfile, device):
     logfile.write(f"Use {device} in model\n")
+    #Parrelism
+    if inputs['neural_network']['intra_op_parallelism_threads'] != 0:
+        torch.set_num_threads(inputs['neural_network']['intra_op_parallelism_threads'])
+    if inputs['neural_network']['inter_op_parallelism_threads'] != 0:
+        torch.set_num_interop_threads(inputs['neural_network']['inter_op_parallelism_threads'])
+    logfile.write("Parallelism intra_thread : {0} inter_thread : {1}\n".format(torch.get_num_threads(),torch.get_num_interop_threads()))
+
     #Set default configuration
     model = {}
     for item in inputs['atom_types']:

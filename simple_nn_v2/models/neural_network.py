@@ -52,8 +52,8 @@ class FCNDict(torch.nn.Module):
                 FIL.write('scale1 {}\n'.format(' '.join(np.zeros(input_dim).astype(np.str))))
                 FIL.write('scale2 {}\n'.format(' '.join(np.ones(input_dim).astype(np.str))))
             else:
-                FIL.write('scale1 {}\n'.format(' '.join(scale_factor[item][0].numpy().astype(np.str))))
-                FIL.write('scale2 {}\n'.format(' '.join(scale_factor[item][1].numpy().astype(np.str))))
+                FIL.write('scale1 {}\n'.format(' '.join(scale_factor[item][0].cpu().numpy().astype(np.str))))
+                FIL.write('scale2 {}\n'.format(' '.join(scale_factor[item][1].cpu().numpy().astype(np.str))))
 
             #weights = sess.run(self.models[item].weights)
             #nlayers = len(self.nodes[item])
@@ -69,7 +69,7 @@ class FCNDict(torch.nn.Module):
             #nodes.append(1)
             nlayers = len(nodes)
             if pca is not None:
-                nodes = [pca[item][0].numpy().shape[1]] + nodes
+                nodes = [pca[item][0].cpu().numpy().shape[1]] + nodes
                 joffset = 1
             else:
                 joffset = 0
@@ -78,13 +78,13 @@ class FCNDict(torch.nn.Module):
             # PCA transformation layer.
             if pca is not None:
                 FIL.write('LAYER 0 linear PCA\n')
-                pca_mat = np.copy(pca[item][0].numpy())
-                pca_mean = np.copy(pca[item][2].numpy())
+                pca_mat = np.copy(pca[item][0].cpu().numpy())
+                pca_mean = np.copy(pca[item][2].cpu().numpy())
                 if inputs['neural_network']['pca_min_whiten_level'] is not None:
-                    pca_mat /= pca[item][1].numpy().reshape([1, -1])
-                    pca_mean /= pca[item][1].numpy()
+                    pca_mat /= pca[item][1].cpu().numpy().reshape([1, -1])
+                    pca_mean /= pca[item][1].cpu().numpy()
 
-                for k in range(pca[item][0].numpy().shape[1]):
+                for k in range(pca[item][0].cpu().numpy().shape[1]):
                     FIL.write('w{} {}\n'.format(k, ' '.join(pca_mat[:,k].astype(np.str))))
                     FIL.write('b{} {}\n'.format(k, -pca_mean[k]))
 

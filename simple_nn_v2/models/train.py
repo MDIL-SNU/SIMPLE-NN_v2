@@ -166,7 +166,7 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
     n_batch = item['E'].size(0) 
     #Set device
     device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == 'cuda':
+    if device == torch.device('cuda'):
         non_block = True
     else:
         non_block = False
@@ -228,7 +228,7 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
                 struct_weight_factor = torch.zeros(torch.sum(item['atomic_num'][atype]), device=device)
                 tmp_idx = 0
                 for num in range(n_batch):
-                    struct_weight_factor[tmp_idx:tmp_idx+num] += weight[num]
+                    struct_weight_factor[tmp_idx:tmp_idx+item['atomic_num'][atype][num].item()] += weight[num]
                     tmp_idx += item['atomic_num'][atype][num].item()
                 print_e_loss.append(atype_loss[atype])
                 atomic_loss.append(atype_loss[atype]*struct_weight_factor)
@@ -240,6 +240,7 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
     else:
         print_e_loss = torch.mean(e_loss)
         e_loss = torch.mean(e_loss * weight)
+        progress_dict['e_err'].update(print_e_loss.detach().item(), n_batch)
 
     #Loop for force, stress
     if (inputs['neural_network']['use_force'] or inputs['neural_network']['use_stress']) and (inputs['neural_network']['E_loss_type'] != 3):
@@ -344,11 +345,11 @@ def _save_nnp_result(inputs, model, train_loader, valid_loader):
 
 def _loop_to_save(inputs, model, dataset_loader, res_dict, save_dict='train'):
     #Set device
-    cuda = torch.cuda.is_available()
-    if cuda:
-        device = 'cuda'
+    device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if device == torch.device('cuda'):
+        non_block = True
     else:
-        device = 'cpu'
+        non_block = False
 
     dtype = torch.get_default_dtype()
  
@@ -360,14 +361,14 @@ def _loop_to_save(inputs, model, dataset_loader, res_dict, save_dict='train'):
         n_batch = item['E'].size(0) 
         #Loop
         for atype in inputs['atom_types']:
-            x[atype] = item['x'][atype].to(device=device, non_blocking=cuda).requires_grad_(True)
+            x[atype] = item['x'][atype].to(device=device, non_blocking=non_block).requires_grad_(True)
             if x[atype].size(0) != 0:
                 atomic_E = torch.sparse.DoubleTensor(
-                    item['sp_idx'][atype].long().to(device=device, non_blocking=cuda), 
+                    item['sp_idx'][atype].long().to(device=device, non_blocking=non_block), 
                     model.nets[atype](x[atype]).squeeze(), size=(item['n'][atype].size(0),
                     item['sp_idx'][atype].size(1))).to_dense()
                 E_ += torch.sum(atomic_E, axis = 1)
-            n_atoms += item['n'][atype].to(device=device, non_blocking=cuda)
+            n_atoms += item['n'][atype].to(device=device, non_blocking=non_block)
         
         for n in range(n_batch):
             res_dict['tot_num'].append(item['tot_num'][n].item())
@@ -375,7 +376,7 @@ def _loop_to_save(inputs, model, dataset_loader, res_dict, save_dict='train'):
             res_dict['DFT'][save_dict]['E'].append(item['E'][n].item())
        
         if inputs['neural_network']['use_force']:
-            F = item['F'].type(dtype).to(device=device, non_blocking=cuda)
+            F = item['F'].type(dtype).to(device=device, non_blocking=non_block)
             for atype in inputs['atom_types']:
                 if x[atype].size(0) != 0:
                     dEdG = torch.autograd.grad(torch.sum(E_), x[atype], create_graph=True)[0]
@@ -383,9 +384,9 @@ def _loop_to_save(inputs, model, dataset_loader, res_dict, save_dict='train'):
                     tmp_idx = 0
                     for n, ntem in enumerate(item['n'][atype]):
                         if ntem != 0:
-                            tmp_force.append(torch.einsum('ijkl,ij->kl', item['dx'][atype][n].to(device=device, non_blocking=cuda), dEdG[tmp_idx:(tmp_idx + ntem)]))
+                            tmp_force.append(torch.einsum('ijkl,ij->kl', item['dx'][atype][n].to(device=device, non_blocking=non_block), dEdG[tmp_idx:(tmp_idx + ntem)]))
                         else:
-                            tmp_force.append(torch.zeros(item['dx'][atype][n].size()[-2], item['dx'][atype][n].size()[-1]).to(device=device, non_blocking=cuda))
+                            tmp_force.append(torch.zeros(item['dx'][atype][n].size()[-2], item['dx'][atype][n].size()[-1]).to(device=device, non_blocking=non_block))
                         tmp_idx += ntem
                     F_ -= torch.cat(tmp_force, axis=0)
             batch_idx = 0
@@ -406,8 +407,11 @@ def _save_atomic_E(inputs, logfile, model, train_loader, valid_loader):
 
 def _loop_to_save_atomic_E(inputs, model, dataset_loader):
     #Set device
-    cuda = torch.cuda.is_available()
-    device = 'cuda' if cuda else 'cpu'
+    device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if device == torch.device('cuda'):
+        non_block = True
+    else:
+        non_block = False
     dtype = torch.get_default_dtype()
  
     for i, item in enumerate(dataset_loader):
@@ -421,10 +425,10 @@ def _loop_to_save_atomic_E(inputs, model, dataset_loader):
         #Loop
         for atype in inputs['atom_types']:
             n_type[atype] = 0
-            x[atype] = item['x'][atype].to(device=device, non_blocking=cuda).requires_grad_(True)
+            x[atype] = item['x'][atype].to(device=device, non_blocking=non_block).requires_grad_(True)
             if x[atype].size(0) != 0:
                 atomic_E[atype] = torch.sparse.DoubleTensor(
-                    item['sp_idx'][atype].long().to(device=device, non_blocking=cuda), 
+                    item['sp_idx'][atype].long().to(device=device, non_blocking=non_block), 
                     model.nets[atype](x[atype]).squeeze(), size=(item['n'][atype].size(0),
                     item['sp_idx'][atype].size(1))).to_dense()
         #Save    
@@ -488,7 +492,6 @@ def _loop_for_loss_type1(inputs, item, model, criterion, progress_dict, struct_w
         cuda = True
     else:
         cuda = False
-    cuda = False
    
     # Since the shape of input and intermediate state during forward is not fixed,
     # forward process is done by structure by structure manner.

@@ -62,7 +62,6 @@ class FilelistDataset(torch.utils.data.Dataset):
     def save_filename(self):
         for f in self.filelist:
             tmp_dict = torch.load(f, map_location=torch.device('cpu'))
-            #tmp_dict = torch.load(f)
             tmp_dict['filename'] = f
             torch.save(tmp_dict, f)
 
@@ -98,6 +97,7 @@ def _set_struct_dict(filename):
 #Function to generate Iterator
 def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, use_stress=False):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    non_block = True
     x = dict()
     dx = dict()
     da = dict()
@@ -113,6 +113,17 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
     S = list()
     struct_weight = list()
     tot_num = list()
+    '''
+    for atype in atom_types:
+        if scale_factor:
+            scale_factor[atype][0] = scale_factor[atype][0].to(device=device, non_blocking=non_block)
+            scale_factor[atype][1] = scale_factor[atype][1].to(device=device, non_blocking=non_block)
+        if pca:
+            pca[atype][0] = pca[atype][0].to(device=device, non_blocking=non_block)
+            pca[atype][1] = pca[atype][1].to(device=device, non_blocking=non_block)
+            pca[atype][2] = pca[atype][2].to(device=device, non_blocking=non_block)
+    '''
+
 
     for item in batch:
         struct_weight.append(item['struct_weight'])
@@ -160,11 +171,17 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
             if pca_min_whiten_level is not None:
                 x[atype] /= pca[atype][1].view(1,-1)
         n[atype] = torch.tensor(n[atype])
+        #n[atype] = torch.tensor(n[atype], device=device)
         sparse_index[atype] = gen_sparse_index(n[atype])
+        #sparse_index[atype] = gen_sparse_index(n[atype], device)
         
     struct_weight = torch.tensor(struct_weight) 
     tot_num = torch.tensor(tot_num)
     E = torch.tensor(E)
+    #struct_weight = torch.tensor(struct_weight, device=device)  
+    #tot_num = torch.tensor(tot_num, device=device)
+    #E = torch.tensor(E, device=device)
+ 
     F = torch.cat(F, axis=0)
     if use_stress:
         S = torch.cat(S, axis=0)
@@ -267,14 +284,16 @@ def _make_dataloader(inputs, logfile, scale_factor, pca, train_dataset_list, val
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset_list, batch_size=batch_size, shuffle=inputs['descriptor']['shuffle'], collate_fn=partial_collate,
-        num_workers=inputs['neural_network']['workers'], pin_memory=False)
+        #num_workers=inputs['neural_network']['workers'], pin_memory=False)
+        num_workers=0, pin_memory=False)
 
     #Check test mode, valid dataset exist
     valid_loader = None
     if valid_dataset_list:
         valid_loader = torch.utils.data.DataLoader(
             valid_dataset_list, batch_size=batch_size, shuffle=inputs['descriptor']['shuffle'], collate_fn=partial_collate,
-            num_workers=inputs['neural_network']['workers'], pin_memory=False)
+            #num_workers=inputs['neural_network']['workers'], pin_memory=False)
+            num_workers=0, pin_memory=False)
 
     return train_loader, valid_loader
 
@@ -288,96 +307,4 @@ def delete_key_in_pt(filename, key):
         if key in pt_dict.keys():
             del pt_dict[key]
         torch.save(pt_dict, f['filename'])
-
-
-
-#Function to generate Iterator
-def _my_collate_type1(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, use_stress=False):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == 'cuda':
-        non_block = True
-    else:
-        non_block = False
-    x = dict()
-    dx = dict()
-    da = dict()
-    n = dict()
-    sparse_index = dict()
-    for atype in atom_types:
-        x[atype] = list()
-        dx[atype] = list()
-        da[atype] = list()
-        n[atype] = list()
-    E = list()
-    F = list()
-    S = list()
-    struct_weight = list()
-    tot_num = list()
-    for atype in atom_types:
-        if scale_factor:
-            scale_factor[atype][0] = scale_factor[atype][0].to(device=device, non_blocking=non_block)
-            scale_factor[atype][1] = scale_factor[atype][1].to(device=device, non_blocking=non_block)
-        if pca:
-            pca[atype][0] = pca[atype][0].to(device=device, non_blocking=non_block)
-            pca[atype][1] = pca[atype][1].to(device=device, non_blocking=non_block)
-            pca[atype][2] = pca[atype][2].to(device=device, non_blocking=non_block)
-
-    for item in batch:
-        struct_weight.append(item['struct_weight'])
-        tot_num.append(item['tot_num'])
-        for atype in atom_types: 
-            x[atype].append(item['x'][atype].to(device=device, non_blocking=non_block))
-            tmp_dx = item['dx'][atype].to(device=device, non_blocking=non_block) #Make dx to sparse_tensor
-            if use_stress:
-                tmp_da = item['da'][atype].to(device=device, non_blocking=non_block)
-            if tmp_dx.is_sparse:
-                tmp_dx = tmp_dx.to_dense().reshape(item['dx_size'][atype]) 
-            if scale_factor is not None:
-                tmp_dx /= scale_factor[atype][1].view(1,-1,1,1)
-                if use_stress:
-                    tmp_da /= scale_factor[atype][1].view(1,-1,1,1)
-            if pca is not None:
-                if tmp_dx.size(0) != 0:
-                    tmp_dx = torch.einsum('ijkl,jm->imkl', tmp_dx, pca[atype][0])
-                    if use_stress:
-                        tmp_da = torch.einsum('ijkl,jm->imkl', tmp_da, pca[atype][0])
-                if pca_min_whiten_level is not None:
-                    tmp_dx /= pca[atype][1].view(1,-1,1,1)
-                    if use_stress:
-                        tmp_da /= pca[atype][1].view(1,-1,1,1)
-            dx[atype].append(tmp_dx) #sparse_tensor dx
-            if use_stress:
-                da[atype].append(tmp_da)
-            n[atype].append(item['x'][atype].size(0))
-        E.append(item['E'])
-        F.append(item['F'])
-        if use_stress:
-            S.append(item['S'])
-
-    for atype in atom_types:
-        x[atype] = torch.cat(x[atype], axis=0)
-        if scale_factor is not None: #Scale part
-            x[atype] -= scale_factor[atype][0].view(1,-1)
-            x[atype] /= scale_factor[atype][1].view(1,-1)
-        if pca is not None: #PCA part
-            if x[atype].size(0) != 0:
-                #Important note 
-                #tmp_dx mkatrix size should exceed number of symmetryfunction
-                #If less than number of symmetry funtion -> n * n < # of SF matrix return
-                x[atype] = torch.einsum('ij,jm->im', x[atype], pca[atype][0]) - pca[atype][2].reshape(1,-1)
-            if pca_min_whiten_level is not None:
-                x[atype] /= pca[atype][1].view(1,-1)
-        n[atype] = torch.tensor(n[atype], device=device)
-        sparse_index[atype] = gen_sparse_index(n[atype], device)
-        
-    struct_weight = torch.tensor(struct_weight, device=device) 
-    tot_num = torch.tensor(tot_num, device=device)
-    E = torch.tensor(E, device=device)
-    F = torch.cat(F, axis=0).to(device=device, non_blocking=non_block)
-    if use_stress:
-        S = torch.cat(S, axis=0).to(device=device, non_blocking=non_block)
-
-    return {'x': x, 'dx': dx, 'da': da, 'n': n, 'E': E, 'F': F, 'S': S, 'sp_idx': sparse_index, 'struct_weight': struct_weight, 'tot_num': tot_num}
-
-
 
