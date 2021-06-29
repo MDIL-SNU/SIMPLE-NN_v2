@@ -126,4 +126,5 @@ def _calculate_pca_matrix(inputs, logfile, feature_list, scale):
                          np.dot(pca_temp.mean_, pca_temp.components_.T)]
 
         logfile.write('PCA complete\n')
-        
+    
+    return pca

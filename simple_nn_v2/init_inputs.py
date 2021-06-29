@@ -93,7 +93,7 @@ model_default_inputs = \
                 'loss_scale': 1.,
                 'optimizer': None,
 
-                'workers': 4, 
+                'workers': 0, 
 
                 # Loss function related
                 'E_loss_type': 0,
@@ -122,8 +122,10 @@ model_default_inputs = \
                 'clear_prev_status': False,  
                 'clear_prev_network': False,
                 'start_epoch': 0,
-                'read_potential':None
+                'read_potential':None,
 
+                'intra_op_parallelism_threads': 0,
+                'inter_op_parallelism_threads': 0
             }
         }
 
