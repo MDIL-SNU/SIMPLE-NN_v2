@@ -28,15 +28,15 @@ with open('simple_nn_v2/_version.py', 'w') as fp:
 # required module
 # TODO: version check
 install_requires = [
-    #'numpy<1.21.0',
-    #'scipy<1.3.0',
+    'numpy<1.17.0',
+    'scipy<1.3.0',
     'scikit-learn<0.21.0',
     'pyyaml>=3.10',
     'cffi>=1.0.0',
     'psutil',
     'tqdm',
     'braceexpand',
-    #'matplotlib<3.0',
+    'matplotlib<3.0',
 ]
 
 if sys.version_info >= (3,5):
@@ -44,12 +44,6 @@ if sys.version_info >= (3,5):
 else:
     install_requires.append('ase>=3.10.0,<3.18.0')
 
-install_requires += [
- 'matplotlib<3.0',
- 'scipy<1.3.0',
- 'numpy<1.21.0',
-]
-# Check the differece
 setup_requires = [
     'cffi>=1.0.0',
 ]
@@ -89,11 +83,6 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-#        'Programming Language :: Python :: 2',
-#        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.9',

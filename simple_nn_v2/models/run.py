@@ -149,8 +149,8 @@ def _convert_to_tensor(inputs, logfile, scale_factor, pca):
 def _load_dataset_list(inputs, logfile):
     device = _set_device()
     if inputs['neural_network']['test'] is False:
-        train_dataset_list = FilelistDataset(inputs['descriptor']['train_list'])
-        valid_dataset_list = FilelistDataset(inputs['descriptor']['valid_list']) 
+        train_dataset_list = FilelistDataset(inputs['descriptor']['train_list'], inputs['neural_network']['load_data_to_gpu'])
+        valid_dataset_list = FilelistDataset(inputs['descriptor']['valid_list'], inputs['neural_network']['load_data_to_gpu']) 
         try: #Check valid dataset exist
             valid_dataset_list[0] 
             logfile.write("Train & Valid dataset loaded\n")
@@ -158,7 +158,7 @@ def _load_dataset_list(inputs, logfile):
             valid_dataset_list = None
             logfile.write("Train dataset loaded, No valid set loaded\n")
     else:
-        train_dataset_list = FilelistDataset(inputs['descriptor']['test_list'])
+        train_dataset_list = FilelistDataset(inputs['descriptor']['test_list'], inputs['neural_network']['load_data_to_gpu'])
         valid_dataset_list = None
         logfile.write("Test dataset loaded\n")
 
@@ -169,21 +169,21 @@ def _load_structure(inputs, logfile, scale_factor, pca):
     device = _set_device()
     train_struct_dict = None
     valid_struct_dict = None
-    train_struct_dict = _set_struct_dict(inputs['descriptor']['train_list'])
+    train_struct_dict = _set_struct_dict(inputs['descriptor']['train_list'], inputs['neural_network']['load_data_to_gpu'])
 
     #Check valid list exist and test scheme
     if not inputs['neural_network']['test']:
-        valid_struct_dict = _set_struct_dict(inputs['descriptor']['valid_list']) 
+        valid_struct_dict = _set_struct_dict(inputs['descriptor']['valid_list'], inputs['neural_network']['load_data_to_gpu']) 
         #Dictionary Key merge (in train structure, not in valid structue)
         for t_key in train_struct_dict.keys():
             if not t_key in valid_struct_dict.keys():
                 #Set blank dataframe
-                valid_struct_dict[t_key] = StructlistDataset()
+                valid_struct_dict[t_key] = StructlistDataset(inputs['neural_network']['load_data_to_gpu'])
     else:
         valid_struct_dict = dict()
         for t_key in train_struct_dict.keys():
             #Set blank dataframe
-            valid_struct_dict[t_key] = StructlistDataset()
+            valid_struct_dict[t_key] = StructlistDataset(inputs['neural_network']['load_data_to_gpu'])
 
     #Loop for _make_dataloader
     for t_key in train_struct_dict.keys():
@@ -222,8 +222,8 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
     err_dict = _check_criteria(inputs, logfile)
     
     if inputs['neural_network']['save_result'] or inputs['descriptor']['add_NNP_ref']:
-        train_dataset_save = FilelistDataset(inputs['descriptor']['train_list'])
-        valid_dataset_save = FilelistDataset(inputs['descriptor']['valid_list'])
+        train_dataset_save = FilelistDataset(inputs['descriptor']['train_list'], inputs['neural_network']['load_data_to_gpu'])
+        valid_dataset_save = FilelistDataset(inputs['descriptor']['valid_list'], inputs['neural_network']['load_data_to_gpu'])
         if inputs['descriptor']['add_NNP_ref']:
             train_dataset_save.save_filename()
             valid_dataset_save.save_filename()
