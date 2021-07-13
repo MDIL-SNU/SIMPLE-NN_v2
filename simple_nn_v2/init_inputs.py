@@ -60,6 +60,8 @@ model_default_inputs = \
                 # Function related
                 'train': True,
                 'test': False,
+                'split_data': None,
+
                 
                 # Network related
                 'nodes': '30-30',
@@ -127,6 +129,7 @@ model_default_inputs = \
                 'inter_op_parallelism_threads': 0,
                 'intra_op_parallelism_threads': 0,
                 'load_data_to_gpu': False
+
             }
         }
 

@@ -6,6 +6,7 @@ from torch.nn import  Linear, Parameter
 import time
 import numpy as np
 
+from simple_nn_v2.features import preprocessing
 from simple_nn_v2.models.neural_network import FCNDict, FCN, read_lammps_potential
 from simple_nn_v2.models.data_handler import StructlistDataset, FilelistDataset, _set_struct_dict, _make_dataloader, filename_collate
 from simple_nn_v2.models.train import train, save_checkpoint, _show_structure_rmse, _save_nnp_result, _save_atomic_E
@@ -25,6 +26,8 @@ def train_NN(inputs, logfile, user_optimizer=None):
     scale_factor, pca = _load_scale_factor_and_pca(inputs, logfile, checkpoint)
 
     # Prepare data set
+    if inputs['neural_network']['split_data']:
+        preprocessing._split_train_list_and_valid_list(inputs, inputs['neural_network']['split_data'])
     train_dataset_list, valid_dataset_list = _load_dataset_list(inputs, logfile)
     if inputs['neural_network']['full_batch']:
         batch_size = len(train_dataset_list)
@@ -71,7 +74,7 @@ def _initialize_model(inputs, logfile, device):
     return model
 
 def _load_checkpoint(inputs, logfile, model, optimizer):
-    device = _set_device() if inputs['neural_network']['load_data_to_gpu'] else torch.device('cpu')
+    device = _set_device() #if inputs['neural_network']['load_data_to_gpu'] else torch.device('cpu')
     loss = float('inf')
     checkpoint = None
 
