@@ -29,7 +29,6 @@ def train(inputs, logfile, data_loader, model, optimizer=None, criterion=None, s
             loss.backward()
             optimizer.step()
         progress_dict['batch_time'].update(time.time() - end)
-        end = time.time()
     if test:
         logfile.write(progress.test())
     elif epoch % show_interval == 0:
@@ -159,37 +158,44 @@ def _struct_log(inputs, data_loader, model, valid=False, optimizer=None, criteri
 def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=False):
 
     dtype = torch.get_default_dtype()
-
+    #Declaration
     loss = 0.
     e_loss = 0.
     n_batch = item['E'].size(0) 
+    x = dict()
+    atomic_E = dict()
+    E_ = 0.
+    F_ = 0.
+    S_ = 0.
+    n_atoms = 0.
+ 
     #Set device
     device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device == torch.device('cuda'):
         non_block = True
     else:
         non_block = False
+     
+    #inputs information
+    use_force  = inputs['neural_network']['use_force']
+    use_stress = inputs['neural_network']['use_stress']
+    E_loss_type = inputs['neural_network']['E_loss_type']
+    F_loss_type = inputs['neural_network']['F_loss_type']
 
-   
     # Since the shape of input and intermediate state during forward is not fixed,
     # forward process is done by structure by structure manner.
-    x = dict()
-    atomic_E = dict()
+
     if struct_weight:
         weight = item['struct_weight'].to(device=device, non_blocking=non_block)
     else:
         weight = torch.ones(n_batch , device=device).to(device=device, non_blocking=non_block)
-    if inputs['neural_network']['use_force'] and (inputs['neural_network']['E_loss_type'] != 3):
+    
+    #Get Force, stress part
+    if use_force and (E_loss_type != 3):
         F = item['F'].type(dtype).to(device=device, non_blocking=non_block)
-    if inputs['neural_network']['use_stress'] and (inputs['neural_network']['E_loss_type'] != 3):
+    if use_stress and (E_loss_type != 3):
         S = item['S'].type(dtype).to(device=device, non_blocking=non_block)
 
-
-    E_ = 0.
-    F_ = 0.
-    S_ = 0.
-    n_atoms = 0.
- 
     #Loop for calculating energy
     for atype in inputs['atom_types']:
         x[atype] = item['x'][atype].to(device=device, non_blocking=non_block).requires_grad_(True)
@@ -203,11 +209,11 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
         n_atoms += item['n'][atype].to(device=device, non_blocking=non_block)
 
     #Energy loss + structure_weight
-    if inputs['neural_network']['E_loss_type'] == 1:
+    if E_loss_type == 1:
         e_loss = criterion(E_.squeeze() / n_atoms, item['E'].type(dtype).to(device=device, non_blocking=non_block) / n_atoms)*n_atoms
-    elif inputs['neural_network']['E_loss_type'] == 2:
+    elif E_loss_type == 2:
         e_loss = criterion(E_.squeeze(), item['E'].type(dtype).to(device=device, non_blocking=non_block))
-    elif inputs['neural_network']['E_loss_type'] == 3: #atomic e traning
+    elif E_loss_type == 3: #atomic e traning
         atype_loss = dict()
         for atype in inputs['atom_types']:
             if atomic_E[atype] is not None:
@@ -218,7 +224,9 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
     else:
         e_loss = criterion(E_.squeeze() / n_atoms, item['E'].type(dtype).to(device=device, non_blocking=non_block) / n_atoms)
 
-    if inputs['neural_network']['E_loss_type'] == 3: #atomic e loss
+
+    #Loss by atomic energy 
+    if E_loss_type == 3: 
         struct_weight_factor = None
         print_e_loss = list()
         atomic_loss = list()
@@ -232,7 +240,6 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
                 print_e_loss.append(atype_loss[atype])
                 atomic_loss.append(atype_loss[atype]*struct_weight_factor)
         print_e_loss = torch.mean(torch.cat(print_e_loss))
-        #TODO: add struct weight
         atomic_loss = torch.mean(torch.cat(atomic_loss))
         e_loss += atomic_loss
         progress_dict['e_err'].update(print_e_loss.detach().item(), n_batch)
@@ -242,40 +249,38 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
         progress_dict['e_err'].update(print_e_loss.detach().item(), n_batch)
 
     #Loop for force, stress
-    if (inputs['neural_network']['use_force'] or inputs['neural_network']['use_stress']) and (inputs['neural_network']['E_loss_type'] != 3):
+    if (use_force or use_stress) and (E_loss_type != 3):
         #Loop for elements type
         for atype in inputs['atom_types']:
             if x[atype].size(0) != 0:
                 dEdG = torch.autograd.grad(torch.sum(E_), x[atype], create_graph=True)[0]
-
                 tmp_force = list()
                 tmp_stress = list()
                 tmp_idx = 0
                 
                 for n,ntem in enumerate(item['n'][atype]):
-                    if inputs['neural_network']['use_force']: #force loop + structure_weight
+                    if use_force: 
                         if ntem != 0:
                             tmp_force.append(torch.einsum('ijkl,ij->kl', item['dx'][atype][n].to(device=device, non_blocking=non_block), dEdG[tmp_idx:(tmp_idx + ntem)]))
                         else:
                             tmp_force.append(torch.zeros(item['dx'][atype][n].size()[-2], item['dx'][atype][n].size()[-1]).to(device=device, non_blocking=non_block))
 
-                    if inputs['neural_network']['use_stress']: #stress loop
+                    if use_stress: #stress loop
                         if ntem != 0:
                             tmp_stress.append(torch.einsum('ijkl,ij->kl', item['da'][atype][n].to(device=device, non_blocking=non_block), dEdG[tmp_idx:(tmp_idx + ntem)]).sum(axis=0))
                         else:
                             tmp_stress.append(torch.zeros(item['da'][atype][n].size()[-1]).to(device=device, non_blocking=non_block))
-                    #Index sum
                     tmp_idx += ntem
 
-                if inputs['neural_network']['use_force']:
+                if use_force:
                     F_ -= torch.cat(tmp_force, axis=0)
 
-                if inputs['neural_network']['use_stress']:
+                if use_stress:
                     S_ -= torch.cat(tmp_stress, axis=0) / units.GPa * 10
 
         #Force loss part 
-        if inputs['neural_network']['use_force'] and (inputs['neural_network']['E_loss_type'] != 3):
-            if inputs['neural_network']['F_loss_type'] == 2:
+        if use_force and (E_loss_type != 3):
+            if F_loss_type == 2:
                 # check the scale value: current = norm(force difference)
                 # Force different scaling : larger force difference get higher weight !!
                 force_diffscale = torch.sqrt(torch.norm(F_ - F, dim=1, keepdim=True).detach())
@@ -295,7 +300,7 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
             progress_dict['f_err'].update(print_f_loss.detach().item(), F_.size(0))
 
         #Stress loss part
-        if inputs['neural_network']['use_stress'] and (inputs['neural_network']['E_loss_type'] != 3):
+        if use_stress and (E_loss_type != 3):
             s_loss = criterion(S_, S)
             print_s_loss = torch.mean(s_loss)
             batch_idx = 0

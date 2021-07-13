@@ -215,18 +215,6 @@ def atomic_e_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whi
     struct_weight = list()
     tot_num = list()
 
-    if load_data_to_gpu:
-        for atype in atom_types:
-            if scale_factor:
-                scale_factor[atype][0] = scale_factor[atype][0].to(device=device, non_blocking=non_blocking)
-                scale_factor[atype][1] = scale_factor[atype][1].to(device=device, non_blocking=non_blocking)
-            if pca:
-                pca[atype][0] = pca[atype][0].to(device=device, non_blocking=non_blocking)
-                pca[atype][1] = pca[atype][1].to(device=device, non_blocking=non_blocking)
-                pca[atype][2] = pca[atype][2].to(device=device, non_blocking=non_blocking)
-
-
-
     for item in batch:
         struct_weight.append(item['struct_weight'])
         tot_num.append(item['tot_num'])
