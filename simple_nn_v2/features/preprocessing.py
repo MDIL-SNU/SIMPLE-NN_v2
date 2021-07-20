@@ -116,7 +116,7 @@ def _calculate_pca_matrix(inputs, logfile, feature_list, scale):
         scale_process = None
 
         for elem in inputs['atom_types']:
-            pca_temp = PCA()
+            pca_temp = PCA(svd_solver='randomized',random_state= inputs['random_seed'])
             scale_process = (feature_list[elem] - scale[elem][0].reshape(1, -1) )  / scale[elem][1].reshape(1, -1)
             pca_temp.fit(scale_process)
             min_level = inputs['neural_network']['pca_min_whiten_level'] if inputs['neural_network']['pca_min_whiten_level'] else 0.0

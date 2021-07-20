@@ -128,7 +128,8 @@ model_default_inputs = \
                 #Parallelism
                 'inter_op_parallelism_threads': 0,
                 'intra_op_parallelism_threads': 0,
-                'load_data_to_gpu': False
+                'load_data_to_gpu': False,
+                'cuda_number': None
 
             }
         }

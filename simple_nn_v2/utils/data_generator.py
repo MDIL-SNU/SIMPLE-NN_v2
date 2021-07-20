@@ -175,7 +175,7 @@ def save_to_datafile(inputs, data, data_idx, logfile):
     try:
         if inputs['descriptor']['save_to_pickle'] == False:
             tmp_filename = os.path.join(data_dir, 'data{}.pt'.format(data_idx))
-            torch.save(data, tmp_filename)
+            torch.save(data, tmp_filename, pickle_protocol = 4)
         elif inputs['descriptor']['save_to_pickle'] == True:
             tmp_filename = os.path.join(data_dir, 'data{}.pickle'.format(data_idx))
             with open(tmp_filename, 'wb') as fil:

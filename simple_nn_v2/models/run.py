@@ -16,7 +16,7 @@ def train_NN(inputs, logfile, user_optimizer=None):
     if inputs['neural_network']['double_precision']: 
         torch.set_default_dtype(torch.float64)
 
-    device = _set_device()
+    device = _set_device(inputs['neural_network']['cuda_number'])
     model = _initialize_model(inputs, logfile, device)
     optimizer = _initialize_optimizer(inputs, model)
     criterion = torch.nn.MSELoss(reduction='none').to(device=device)    
@@ -74,7 +74,7 @@ def _initialize_model(inputs, logfile, device):
     return model
 
 def _load_checkpoint(inputs, logfile, model, optimizer):
-    device = _set_device() #if inputs['neural_network']['load_data_to_gpu'] else torch.device('cpu')
+    device = _set_device(inputs['neural_network']['cuda_number']) 
     loss = float('inf')
     checkpoint = None
 
@@ -100,7 +100,7 @@ def _load_checkpoint(inputs, logfile, model, optimizer):
     return checkpoint, loss
 
 def _load_scale_factor_and_pca(inputs, logfile, checkpoint):
-    device = _set_device()
+    device = _set_device(inputs['neural_network']['cuda_number'])
     scale_factor = None
     pca = None
 
@@ -135,7 +135,7 @@ def _load_lammps_potential(inputs, logfile, model, device):
  
 # Convert generated scale_factor, pca to pytorch tensor format 
 def _convert_to_tensor(inputs, logfile, scale_factor, pca):
-    device = _set_device() if inputs['neural_network']['load_data_to_gpu'] else torch.device('cpu')
+    device = _set_device(inputs['neural_network']['cuda_number']) if inputs['neural_network']['load_data_to_gpu'] else torch.device('cpu')
     for item in inputs['atom_types']:
         if scale_factor:
             max_plus_min  = torch.tensor(scale_factor[item][0,:], device=device)
@@ -149,10 +149,10 @@ def _convert_to_tensor(inputs, logfile, scale_factor, pca):
             logfile.write("Convert {0} PCA to tensor\n".format(item))
 
 def _load_dataset_list(inputs, logfile):
-    device = _set_device()
+    device = _set_device(inputs['neural_network']['cuda_number'])
     if inputs['neural_network']['test'] is False:
-        train_dataset_list = FilelistDataset(inputs['descriptor']['train_list'], inputs['neural_network']['load_data_to_gpu'])
-        valid_dataset_list = FilelistDataset(inputs['descriptor']['valid_list'], inputs['neural_network']['load_data_to_gpu']) 
+        train_dataset_list = FilelistDataset(inputs['descriptor']['train_list'], inputs)
+        valid_dataset_list = FilelistDataset(inputs['descriptor']['valid_list'], inputs) 
         try: #Check valid dataset exist
             valid_dataset_list[0] 
             logfile.write("Train & Valid dataset loaded\n")
@@ -160,7 +160,7 @@ def _load_dataset_list(inputs, logfile):
             valid_dataset_list = None
             logfile.write("Train dataset loaded, No valid set loaded\n")
     else:
-        train_dataset_list = FilelistDataset(inputs['descriptor']['test_list'], inputs['neural_network']['load_data_to_gpu'])
+        train_dataset_list = FilelistDataset(inputs['descriptor']['test_list'], inputs)
         valid_dataset_list = None
         logfile.write("Test dataset loaded\n")
 
@@ -168,14 +168,14 @@ def _load_dataset_list(inputs, logfile):
     
 #Load structure dictrionary for RMSE
 def _load_structure(inputs, logfile, scale_factor, pca):
-    device = _set_device()
+    device = _set_device(inputs['neural_network']['cuda_number'])
     train_struct_dict = None
     valid_struct_dict = None
-    train_struct_dict = _set_struct_dict(inputs['descriptor']['train_list'], inputs['neural_network']['load_data_to_gpu'])
+    train_struct_dict = _set_struct_dict(inputs['descriptor']['train_list'], inputs)
 
     #Check valid list exist and test scheme
     if not inputs['neural_network']['test']:
-        valid_struct_dict = _set_struct_dict(inputs['descriptor']['valid_list'], inputs['neural_network']['load_data_to_gpu']) 
+        valid_struct_dict = _set_struct_dict(inputs['descriptor']['valid_list'], inputs) 
         #Dictionary Key merge (in train structure, not in valid structue)
         for t_key in train_struct_dict.keys():
             if not t_key in valid_struct_dict.keys():
@@ -200,7 +200,7 @@ def _load_structure(inputs, logfile, scale_factor, pca):
 
 #Main traning part 
 def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, criterion, scale_factor, pca, best_loss, train_struct_dict=None, valid_struct_dict=None):
-    device = _set_device()
+    device = _set_device(inputs['neural_network']['cuda_number'])
     start_time = time.time()
 
     #Calculate total epoch, batch size
@@ -224,8 +224,8 @@ def _do_train(inputs, logfile, train_loader, valid_loader, model, optimizer, cri
     err_dict = _check_criteria(inputs, logfile)
     
     if inputs['neural_network']['save_result'] or inputs['descriptor']['add_NNP_ref']:
-        train_dataset_save = FilelistDataset(inputs['descriptor']['train_list'], inputs['neural_network']['load_data_to_gpu'])
-        valid_dataset_save = FilelistDataset(inputs['descriptor']['valid_list'], inputs['neural_network']['load_data_to_gpu'])
+        train_dataset_save = FilelistDataset(inputs['descriptor']['train_list'], inputs)
+        valid_dataset_save = FilelistDataset(inputs['descriptor']['valid_list'], inputs)
         if inputs['descriptor']['add_NNP_ref']:
             train_dataset_save.save_filename()
             valid_dataset_save.save_filename()
@@ -425,7 +425,10 @@ def _initialize_optimizer(inputs, model):
 
     return optimizer[optim_type](model.parameters(), lr=lr, weight_decay=regularization)
 
-def _set_device():
-    return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+def _set_device(cuda_num = None):
+    if cuda_num:
+        device = torch.device('cuda'+':'+str(cuda_num) if torch.cuda.is_available() else 'cpu')
+    else:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    return  device
 

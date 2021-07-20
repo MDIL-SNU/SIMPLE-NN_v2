@@ -33,6 +33,7 @@
 #include "memory.h"
 #include "error.h"
 #include "pointers.h"
+#include "utils.h"
 
 using namespace LAMMPS_NS;
 using namespace MathConst;
@@ -595,7 +596,7 @@ void PairNN::read_file(char *fname) {
 
     // strip comment, skip line if blank
     if ((ptr = strchr(line,'#'))) *ptr = '\0';
-    nwords = atom->count_words(line);
+    nwords = utils::count_words(line);
     if (nwords == 0) continue;
 
     // get all potential parameters
@@ -641,8 +642,7 @@ void PairNN::read_file(char *fname) {
       if (strncmp(tstr,"SYM",3) != 0)
         error->one(FLERR,"potential file error: missing info(# of symfunc)");
       nsym = atoi(strtok(NULL," \t\n\r\f"));
-      nets[nnet].slists = new Symc[nsym];
-      nets[nnet].powtwo = new double[nsym];
+      nets[nnet].slists = new Symc[nsym]();
       nets[nnet].scale = new double*[2];
       for (i=0; i<2; ++i) {
         nets[nnet].scale[i] = new double[nsym];
@@ -682,17 +682,17 @@ void PairNN::read_file(char *fname) {
       // Check for not implemented symfunc type.
       bool implemented = false;
       for (i=0; i < sizeof(IMPLEMENTED_TYPE) / sizeof(IMPLEMENTED_TYPE[0]); i++) {
-          if ((nets[nnet].slists[isym].stype) == IMPLEMENTED_TYPE[i]) {
-              implemented = true;
-              break;
-          }
+        if ((nets[nnet].slists[isym].stype) == IMPLEMENTED_TYPE[i]) {
+          implemented = true;
+          break;
+        }
       }
       if (!implemented) error->all(FLERR, "Not implemented symmetry function type!");
 
       if (nets[nnet].slists[isym].stype == 4 || nets[nnet].slists[isym].stype == 5) {
-        if (nets[nnet].slists[isym].coefs[2] < 1.0)
-            error->all(FLERR, "Zeta in G4/G5 must be greater or equal to 1.0!");
-        nets[nnet].powtwo[isym] = pow(2, 1-nets[nnet].slists[isym].coefs[2]);
+        if (nets[nnet].slists[isym].coefs[2] < 1.0) {
+          error->all(FLERR, "Zeta in G4/G5 must be greater or equal to 1.0!");
+        }
       }
     
       isym++;
@@ -713,12 +713,11 @@ void PairNN::read_file(char *fname) {
     } else if (stats == 5) { // network number setting
       //nets[nnet].nnode.push_back(nsym);
       tstr = strtok(line," \t\n\r\f");
-      // TODO: potential file change: NET [nlayer-2] [nnode] [nnode] ...
       nlayer = atoi(strtok(NULL," \t\n\r\f"));
       nlayer += 1;
       nets[nnet].nlayer = nlayer + 1;
 
-      nets[nnet].nnode = new int[nlayer];
+      nets[nnet].nnode = new int[nets[nnet].nlayer];
       nets[nnet].nnode[0] = nsym;
       ilayer = 1;
 
@@ -726,8 +725,6 @@ void PairNN::read_file(char *fname) {
         nets[nnet].nnode[ilayer] = atoi(tstr);
         ilayer++;
       }
-      nets[nnet].nnode[nlayer] = 1;
-      // TODO: fix the array size
       nets[nnet].nodes = new double*[nlayer];
       nets[nnet].dnodes = new double*[nlayer];
       nets[nnet].bnodes = new double*[nlayer];
@@ -799,8 +796,9 @@ void PairNN::read_file(char *fname) {
 
       if (nets[i].slists[tt].stype == 4 || \
           nets[i].slists[tt].stype == 5) {
-        if (nets[i].slists[tt].coefs[2] < 1.0)
-            error->all(FLERR, "Zeta in G4/G5 must be greater or equal to 1.0!");
+        if (nets[i].slists[tt].coefs[2] < 1.0) {
+          error->all(FLERR, "Zeta in G4/G5 must be greater or equal to 1.0!");
+        }
         nets[i].powtwo[tt] = pow(2, 1-nets[i].slists[tt].coefs[2]);
         // powint indicates whether zeta is (almost) integer so that we can treat it as integer and use pow_int.
         // This is used because pow_int is much faster than pow.

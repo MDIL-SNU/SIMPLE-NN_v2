@@ -42,9 +42,9 @@ class TorchStyleDataset(torch.utils.data.Dataset):
 
 #Open file contain directory of pytorch files and return them
 class FilelistDataset(torch.utils.data.Dataset):
-    def __init__(self, filename, load_data_to_gpu = False):
-        if load_data_to_gpu:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    def __init__(self, filename, inputs = None):
+        if inputs['neural_network']['load_data_to_gpu']:
+            self.device, _  = _get_dev(inputs['neural_network']['cuda_number'])
         else:
             self.device = torch.device('cpu')
         self.filelist = list()
@@ -69,16 +69,16 @@ class FilelistDataset(torch.utils.data.Dataset):
 
 #Used in Structure rmse 
 class StructlistDataset(FilelistDataset):
-    def __init__(self, load_data_to_gpu = False):
-        if load_data_to_gpu:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    def __init__(self, inputs = None):
+        if inputs['neural_network']['load_data_to_gpu']:
+            self.device, _ = _get_dev(inputs['neural_network']['cuda_number'])
         else:
             self.device = torch.device('cpu')
         self.filelist = list()
 
 
 #Function that set structure 
-def _set_struct_dict(filename, load_data_to_gpu = False):
+def _set_struct_dict(filename, inputs = None):
     structure_dict = dict()
     with open(filename) as fil:
         try: #Check valid set exist
@@ -94,15 +94,15 @@ def _set_struct_dict(filename, load_data_to_gpu = False):
             for item in temp_list:
                 tmp_name = TorchStyleDataset(item)['struct_type']
                 if not tmp_name in structure_dict.keys():
-                    structure_dict[tmp_name] =  StructlistDataset(load_data_to_gpu = load_data_to_gpu)
+                    structure_dict[tmp_name] =  StructlistDataset(inputs)
                 structure_dict[tmp_name].filelist.append(item)
 
     return structure_dict
 
 #Function to generate Iterator
-def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, use_stress=False, load_data_to_gpu=False):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    non_blocking = True if (load_data_to_gpu and torch.cuda.is_available()) else False 
+def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, use_stress=False, load_data_to_gpu=False, cuda_number=None):
+    device, non_blocking = _get_dev(cuda_number, load_data_to_gpu)
+ 
     x = dict()
     dx = dict()
     da = dict()
@@ -187,9 +187,9 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
     return {'x': x, 'dx': dx, 'da': da, 'n': n, 'E': E, 'F': F, 'S': S, 'sp_idx': sparse_index, 'struct_weight': struct_weight, 'tot_num': tot_num}
 
 #Function to generate Iterator
-def atomic_e_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, load_data_to_gpu=False):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    non_blocking = True if (load_data_to_gpu and torch.cuda.is_available()) else False 
+def atomic_e_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, load_data_to_gpu=False, cuda_number=None):
+    device, non_blocking = _get_device(cuda_number, load_data_to_gpu)
+ 
     x = dict()
     n = dict()
     sparse_index = dict()
@@ -253,8 +253,8 @@ def atomic_e_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whi
     return {'x': x,'n': n, 'E': E,'atomic_E' : atomic_E,'sp_idx': sparse_index, 'struct_weight': struct_weight, 'tot_num': tot_num, 'atomic_num' : atomic_num}
 
 #Function to generate Iterator
-def filename_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, use_stress=False, load_data_to_gpu=False):
-    tmp_dict = my_collate(batch, atom_types, scale_factor, pca, pca_min_whiten_level, use_stress, load_data_to_gpu)
+def filename_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, use_stress=False, load_data_to_gpu=False, cuda_number=None):
+    tmp_dict = my_collate(batch, atom_types, scale_factor, pca, pca_min_whiten_level, use_stress, load_data_to_gpu, cuda_number)
     tmp_dict['filename'] = list()
     for item in batch:
         tmp_dict['filename'].append(item['filename'])
@@ -280,7 +280,8 @@ def _make_dataloader(inputs, logfile, scale_factor, pca, train_dataset_list, val
         scale_factor=scale_factor, 
         pca=pca, 
         pca_min_whiten_level=inputs['neural_network']['pca_min_whiten_level'],
-        load_data_to_gpu=inputs['neural_network']['load_data_to_gpu'])
+        load_data_to_gpu=inputs['neural_network']['load_data_to_gpu'],
+        cuda_number=inputs['neural_network']['cuda_number'])
     else:
         partial_collate = partial(
         my_collate, 
@@ -289,7 +290,8 @@ def _make_dataloader(inputs, logfile, scale_factor, pca, train_dataset_list, val
         pca=pca, 
         pca_min_whiten_level=inputs['neural_network']['pca_min_whiten_level'],
         use_stress=inputs['neural_network']['use_stress'],
-        load_data_to_gpu=inputs['neural_network']['load_data_to_gpu'])
+        load_data_to_gpu=inputs['neural_network']['load_data_to_gpu'],
+        cuda_number=inputs['neural_network']['cuda_number'])
     
 
     train_loader = torch.utils.data.DataLoader(
@@ -315,4 +317,16 @@ def delete_key_in_pt(filename, key):
         if key in pt_dict.keys():
             del pt_dict[key]
         torch.save(pt_dict, f['filename'])
+
+
+
+def _get_dev(cuda_number = None, load_data_to_gpu = False):
+    if cuda_number:
+        device = torch.device('cuda'+':'+str(cuda_number) if torch.cuda.is_available() else 'cpu')
+    else:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    non_blocking = True if (load_data_to_gpu and torch.cuda.is_available()) else False 
+    
+    return device, non_blocking
+
 

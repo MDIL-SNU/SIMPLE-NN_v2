@@ -170,11 +170,7 @@ def _loop_for_loss(inputs, item, model, criterion, progress_dict, struct_weight=
     n_atoms = 0.
  
     #Set device
-    device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == torch.device('cuda'):
-        non_block = True
-    else:
-        non_block = False
+    device, non_block = _set_dev(inputs)
      
     #inputs information
     use_force  = inputs['neural_network']['use_force']
@@ -411,11 +407,8 @@ def _save_atomic_E(inputs, logfile, model, train_loader, valid_loader):
 
 def _loop_to_save_atomic_E(inputs, model, dataset_loader):
     #Set device
-    device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == torch.device('cuda'):
-        non_block = True
-    else:
-        non_block = False
+    device, non_block = _set_dev(inputs)
+
     dtype = torch.get_default_dtype()
  
     for i, item in enumerate(dataset_loader):
@@ -449,5 +442,19 @@ def _loop_to_save_atomic_E(inputs, model, dataset_loader):
                     pt_dict['atomic_E'][atype] = file_atomic_E.cpu().detach()
                     n_type[atype] += item['n'][atype][f] 
             torch.save(pt_dict, item['filename'][f])
+
+
+
+def _set_dev(inputs):
+    if inputs['neural_network']['cuda_number']:
+        device =  torch.device('cuda'+':'+str(inputs['neural_network']['cuda_number']) if torch.cuda.is_available() else 'cpu')
+    else:
+        device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if device == torch.device('cpu'):
+        non_block = False
+    else:
+        non_block = True
+    return device, non_block 
+
 
 
