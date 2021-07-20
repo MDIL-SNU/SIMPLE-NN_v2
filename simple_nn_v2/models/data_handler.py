@@ -188,7 +188,7 @@ def my_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_le
 
 #Function to generate Iterator
 def atomic_e_collate(batch, atom_types, scale_factor=None, pca=None, pca_min_whiten_level=None, load_data_to_gpu=False, cuda_number=None):
-    device, non_blocking = _get_device(cuda_number, load_data_to_gpu)
+    device, non_blocking = _get_dev(cuda_number, load_data_to_gpu)
  
     x = dict()
     n = dict()

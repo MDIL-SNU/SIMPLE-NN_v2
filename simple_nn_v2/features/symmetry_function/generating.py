@@ -12,6 +12,9 @@ from simple_nn_v2.utils import cffi as utils_ffi
 
 from simple_nn_v2.features.symmetry_function import utils  as utils_symf
 
+from simple_nn_v2.features.symmetry_function.mpi import DummyMPI, MPI4PY
+
+
 def generate(inputs, logfile):
     """ Generate structure data files(format: pickle/pt) that listed in "structure_list" file
 
@@ -33,13 +36,23 @@ def generate(inputs, logfile):
     atom_types = inputs['atom_types']
     structure_list = './structure_list'
     data_list = './total_list'
+    
+    #Load MPI 
+    try: 
+        comm = MPI4PY()
+        assert comm.size != 1
+        logfile.write("Use mpi in generate size {0}\n".format(comm.size))
+    except:
+        comm = DummyMPI()
+        logfile.write("Not use mpi in generate\n")
 
-    data_list_fil = open(data_list, 'w')
+    if comm.rank == 0:
+        data_list_fil = open(data_list, 'w')
     data_idx = 1
     
     # structure_tag_idx(int list): list of structure tag index of each structure file    ex) [1, 2, 2]  
     structure_tags, structure_weights, structure_file_list, structure_slicing_list, structure_tag_idx  = \
-                                data_generator.parse_structure_list(logfile, structure_list=structure_list)
+                                data_generator.parse_structure_list(logfile, structure_list=structure_list, comm=comm)
 
     symf_params_set = utils_symf._parse_symmetry_function_parameters(inputs, atom_types)
 
@@ -49,7 +62,7 @@ def generate(inputs, logfile):
         symf_params_set[element]['double_p'] = utils_ffi._gen_2Darray_for_ffi(symf_params_set[element]['double'], ffi)
 
     for structure_file, structure_slicing, tag_idx in zip(structure_file_list, structure_slicing_list, structure_tag_idx):
-        structures = data_generator.load_structures(inputs, structure_file, structure_slicing, logfile)
+        structures = data_generator.load_structures(inputs, structure_file, structure_slicing, logfile, comm)
 
         for structure in structures:
             # atom_type_idx(int list): list of type index for each atoms(start from 1)      ex) [1,1,2,2,2,2]
@@ -66,11 +79,23 @@ def generate(inputs, logfile):
 
             result = _initialize_result(atoms_per_type, structure_tags, structure_weights, tag_idx, atom_type_idx)
             
-            for _, element in enumerate(atom_types):
+            for idx, element in enumerate(atom_types):
+
+                #MPI part
+                mpi_quotient  = atoms_per_type[element] // comm.size
+                mpi_remainder = atoms_per_type[element] %  comm.size
+                #MPI index     
+                begin_idx = comm.rank * mpi_quotient + min(comm.rank , mpi_remainder) 
+                end_idx = begin_idx + mpi_quotient 
+                #Distribute mpi_remainder to mpi 
+                if mpi_remainder > comm.rank:
+                    end_idx += 1
+
+
                 # cal_atom_idx(int list): atom index for calculation    ex) [2,3,4]
                 # cal_atom_num(int): atom numbers for calculation       ex) 3
                 cal_atom_idx, cal_atom_num, x, dx, da = _initialize_symmetry_function_variables(atom_idx_per_type,\
-                    element, symf_params_set, atom_num)
+                    element, symf_params_set, atom_num, mpi_range = (begin_idx,end_idx) )
                 
                 # Convert cal_atom_idx, x, dx, da into C type data
                 cal_atom_idx_p = ffi.cast('int *', cal_atom_idx.ctypes.data)
@@ -83,26 +108,45 @@ def generate(inputs, logfile):
                                     atom_type_idx_p, atom_num, cal_atom_idx_p, cal_atom_num, \
                                     symf_params_set[element]['int_p'], symf_params_set[element]['double_p'], symf_params_set[element]['num'], \
                                     x_p, dx_p, da_p)
+                comm.barrier()
+                errnos = comm.gather(errno) #List of error number
+                errnos = comm.bcast(errnos)
+                for errno in errnos:
+                    if comm.rank == 0:
+                        if errno == 1:
+                            err = "Not implemented symmetry function type."
+                            logfie.write("\nError: {:}\n".format(err))
+                            raise NotImplementedError(err)
+                        elif errno == 2:
+                            err = "Zeta in G4/G5 must be greater or equal to 1.0."
+                            logfie.write("\nError: {:}\n".format(err))
+                            raise ValueError(err)
+                        else:
+                            assert errno == 0, "Unexpected error occred"             
+        
 
-                _set_calculated_result(result, x, dx, da, atoms_per_type, element, symf_params_set, atom_num)
+                _set_calculated_result(inputs, result, x, dx, da, atoms_per_type, element, symf_params_set, atom_num, comm)
             
-            E, F, S = _extract_EFS(inputs, structure, logfile)
+            E, F, S = _extract_EFS(inputs, structure, logfile, comm)
             result['E'] = torch.tensor(E)
             if inputs['neural_network']['use_force'] is True:
                 result['F'] = torch.tensor(F)
             if inputs['neural_network']['use_stress'] is True:
                 result['S'] = torch.tensor(S)
 
-            tmp_filename = data_generator.save_to_datafile(inputs, result, data_idx, logfile)
-            data_list_fil.write("{}:{}\n".format(tag_idx, tmp_filename))
-            data_idx += 1
-            tmp_endfile = tmp_filename
-
-        logfile.write(': ~{}\n'.format(tmp_endfile))
-
-    data_list_fil.close()
-    if inputs['descriptor']['compress_outcar']:
-        os.remove('./tmp_comp_OUTCAR')
+            if comm.rank == 0:
+                tmp_filename = data_generator.save_to_datafile(inputs, result, data_idx, logfile)
+                data_list_fil.write("{}:{}\n".format(tag_idx, tmp_filename))
+                data_idx += 1
+                tmp_endfile = tmp_filename
+        
+        if comm.rank == 0: 
+            logfile.write(': ~{}\n'.format(tmp_endfile))
+    
+    if comm.rank == 0:
+        data_list_fil.close()
+        if inputs['descriptor']['compress_outcar']:
+            os.remove('./tmp_comp_OUTCAR')
 
 
 # Extract structure information from structure (atom numbers, cart, scale, cell)
@@ -138,9 +182,9 @@ def _initialize_result(type_num, structure_tags, structure_weights, idx, atom_ty
     result['x'] = dict()
     result['dx'] = dict()
     result['da'] = dict()
-    result['dx_size'] = dict() ## ADDED
-    result['total'] = None ## ADDED
-    result['num'] = None ## ADDED
+    result['dx_size'] = dict() # due to sparse tensor
+    result['total'] = None 
+    result['num'] = None 
     result['N'] = type_num
     result['tot_num'] = np.sum(list(type_num.values()))
     result['struct_type'] = structure_tags[idx]
@@ -178,28 +222,36 @@ def _check_error(errnos, logfile):
             assert errno == 0    
 
 # Set resulatant Dictionary
-def _set_calculated_result(result, x, dx, da, type_num, element, symf_params_set, atom_num):
+def _set_calculated_result(inputs, result, x, dx, da, type_num, element, symf_params_set, atom_num, comm):
     if type_num[element] != 0:
-        result['x'][element] = np.array(x)
-        result['dx'][element] = np.array(dx)
-        result['da'][element] = np.array(da)
-        result['x'][element] = np.concatenate(result['x'][element], axis=0).\
+        result['x'][element] = np.array(comm.gather(x,root=0))
+        result['dx'][element] = np.array(comm.gather(dx,root=0))
+        result['da'][element] = np.array(comm.gather(da,root=0))
+        if comm.rank == 0:
+            result['x'][element] = np.concatenate(result['x'][element], axis=0).\
                             reshape([type_num[element], symf_params_set[element]['num']])
-        result['dx'][element] = np.concatenate(result['dx'][element], axis=0).\
+            result['dx'][element] = np.concatenate(result['dx'][element], axis=0).\
                             reshape([type_num[element], symf_params_set[element]['num'], atom_num, 3])
-        result['da'][element] = np.concatenate(result['da'][element], axis=0).\
+            result['da'][element] = np.concatenate(result['da'][element], axis=0).\
                             reshape([type_num[element], symf_params_set[element]['num'], 3, 6])
     else:
         result['x'][element] = np.zeros([0, symf_params_set[element]['num']])
         result['dx'][element] = np.zeros([0, symf_params_set[element]['num'], atom_num, 3])
         result['da'][element] = np.zeros([0, symf_params_set[element]['num'], 3, 6])
-        #For sparse tensor torch.tensor mappling need
-    result['x'][element] = torch.tensor(result['x'][element])
-    result['dx'][element] = torch.tensor(result['dx'][element])
-    result['da'][element] = torch.tensor(result['da'][element])
+    if  comm.rank == 0:
+        result['x'][element] = torch.tensor(result['x'][element])
+        #Sparse tensor mapping here
+        if inputs['descriptor']['dx_save_sparse']:
+            tmp_tensor = torch.tensor(result['dx'][element])
+            result['dx_size'][element] = tmp_tensor.size()
+            result['dx'][element] = tmp_tensor.reshape(-1).to_sparse()
+            tmp_tensor = None
+        else:
+            result['dx'][element] = torch.tensor(result['dx'][element])
+        result['da'][element] = torch.tensor(result['da'][element])
 
 # Check ase version, E, F, S extract from structure, Raise Error 
-def _extract_EFS(inputs, structure, logfile):
+def _extract_EFS(inputs, structure, logfile, comm):
     E = None
     F = None
     S = None
@@ -215,7 +267,8 @@ def _extract_EFS(inputs, structure, logfile):
                 F = structure.get_forces()
             except:
                 err = "There is not force information! Set 'use_force' = false"
-                logfile.write("\nError: {:}\n".format(err))
+                if comm.rank == 0:
+                    logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)
 
         if inputs['neural_network']['use_stress'] is True:
@@ -225,7 +278,8 @@ def _extract_EFS(inputs, structure, logfile):
                 S = S[[0, 1, 2, 5, 3, 4]]
             except:
                 err = "There is not stress information! Set 'use_stress' = false"
-                logfile.write("\nError: {:}\n".format(err))
+                if comm.rank == 0:
+                    logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)
 
     return E, F, S
