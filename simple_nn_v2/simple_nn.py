@@ -8,7 +8,7 @@ from ._version import __version__, __git_sha__
 
 from simple_nn_v2.init_inputs import initialize_inputs
 from simple_nn_v2.features import preprocess
-from simple_nn_v2.models import train_NN 
+from simple_nn_v2.models import train
 
 #from models import neural_network
 
@@ -29,7 +29,7 @@ def run(input_file_name):
         preprocess(inputs, logfile)
 
     if inputs['train_model']:
-        train_NN(inputs, logfile)
+        train(inputs, logfile)
 
 from simple_nn_v2.features.symmetry_function import generate as symf_generator
 
