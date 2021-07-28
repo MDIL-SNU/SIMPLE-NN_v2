@@ -11,6 +11,7 @@ default_inputs = {
     'train_model': True,
     'atom_types': [],
     'random_seed': None,
+    'train_replica': False,
 }
 symmetry_function_descriptor_default_inputs = \
         {'descriptor': 
@@ -19,6 +20,7 @@ symmetry_function_descriptor_default_inputs = \
                 'train_list': './train_list', 
                 'valid_list': './valid_list', 
                 'test_list': './test_list',
+                'ref_list': './ref_list',
 
                 'params': dict(),
                 'refdata_format': 'vasp-out',
@@ -39,7 +41,6 @@ symmetry_function_descriptor_default_inputs = \
                 'read_stress': True, #Read stress in non-vasp files(ex. LAMMPS) Not implimented
                 'dx_save_sparse': True, 
 
-                'add_NNP_ref': False, # atom E 
                 'add_atom_idx': True, # For backward compatability
                 
                 #Not implement yet
@@ -60,8 +61,6 @@ model_default_inputs = \
                 # Function related
                 'train': True,
                 'test': False,
-                'split_data': None,
-
                 
                 # Network related
                 'nodes': '30-30',
@@ -128,11 +127,16 @@ model_default_inputs = \
                 #Parallelism
                 'inter_op_parallelism_threads': 0,
                 'intra_op_parallelism_threads': 0,
-                'load_data_to_gpu': False,
-                'cuda_number': None
-
+                'load_data_to_gpu': False
             }
         }
+replica_default_inputs = \
+ {
+         'add_NNP_ref': False,
+         'train_atomic_E': False
+ }
+
+
 
 def initialize_inputs(input_file_name, logfile):
     with open(input_file_name) as input_file:
@@ -144,6 +148,7 @@ def initialize_inputs(input_file_name, logfile):
     descriptor_default_inputs = get_descriptor_default_inputs(logfile, descriptor_type=descriptor_type)
     inputs = _deep_update(inputs, descriptor_default_inputs)
     inputs = _deep_update(inputs, model_default_inputs)
+    inputs = _deep_update(inputs, replica_default_inputs)
 
     # update inputs using 'input.yaml'
     inputs = _deep_update(inputs, input_yaml, warn_new_key=True, logfile=logfile)

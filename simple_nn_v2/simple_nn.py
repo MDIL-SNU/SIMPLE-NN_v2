@@ -8,7 +8,7 @@ from ._version import __version__, __git_sha__
 
 from simple_nn_v2.init_inputs import initialize_inputs
 from simple_nn_v2.features import preprocess
-from simple_nn_v2.models import train_NN 
+from simple_nn_v2.models import train
 
 #from models import neural_network
 
@@ -29,7 +29,7 @@ def run(input_file_name):
         preprocess(inputs, logfile)
 
     if inputs['train_model']:
-        train_NN(inputs, logfile)
+        train(inputs, logfile)
 
 from simple_nn_v2.features.symmetry_function import generate as symf_generator
 
@@ -53,6 +53,17 @@ def _close_log(logfile):
 def _log_header(logfile):
     # TODO: make the log header (low priority)
     logfile.write("SIMPLE_NN v{0:} ({1:})\n".format(__version__, __git_sha__))
+    logfile.write("{}\n".format('-'*94))
+
+    logfile.write("{:^94}\n".format("  _____ _ _      _ _ ___  _     _____       __    _ __    _"))
+    logfile.write("{:^94}\n".format(" / ____| | \    / | '__ \| |   |  ___|     |  \  | |  \  | |"))
+    logfile.write("{:^94}\n".format("| |___ | |  \  /  | |__) | |   | |___  ___ |   \ | |   \ | |"))
+    logfile.write("{:^94}\n".format(" \___ \| |   \/   |  ___/| |   |  ___||___|| |\ \| | |\ \| |"))
+    logfile.write("{:^94}\n".format(" ____| | | |\  /| | |    | |___| |___      | | \   | | \   |"))
+    logfile.write("{:^94}\n".format("|_____/|_|_| \/ |_|_|    |_____|_____|     |_|  \__|_|  \__|"))
+
+    logfile.write("{:^94}\n".format("                                                    ver2.0.0"))
+    logfile.write("{}\n\n".format('-'*94))
 
 def write_inputs(inputs):
     """

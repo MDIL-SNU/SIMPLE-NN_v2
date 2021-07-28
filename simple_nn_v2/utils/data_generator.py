@@ -13,7 +13,7 @@ import torch
     save_to_datafile(inputs, data, data_idx, logfile): save results to pickle or pt files
 """
 
-def parse_structure_list(logfile, structure_list='./structure_list'):
+def parse_structure_list(logfile, structure_list='./structure_list',comm=None):
     """ Parsing "structure_list" file (default="./structure_list")
 
     ex) "structure_list" file format:
@@ -63,10 +63,12 @@ def parse_structure_list(logfile, structure_list='./structure_list'):
                 
                 if weight < 0:
                     err = "Structure weight must be greater than or equal to zero."
-                    logfile.write("Error: {:}\n".format(err))
+                    if comm and comm.rank == 0:
+                        logfile.write("Error: {:}\n".format(err))
                     raise ValueError(err)
                 elif np.isclose(weight, 0):
-                    logfile.write("Warning: Structure weight for '{:}' is set to zero.\n".format(tag))
+                    if comm and comm.rank == 0:
+                        logfile.write("Warning: Structure weight for '{:}' is set to zero.\n".format(tag))
 
                 # If the same structure tags are given multiple times with different weights,
                 # other than first value will be ignored!
@@ -76,8 +78,9 @@ def parse_structure_list(logfile, structure_list='./structure_list'):
                     structure_weights.append(weight)    
                 else:                   
                     existent_weight = structure_weights[structure_tags.index(tag)]
-                    if not np.isclose(existent_weight - weight, 0):
-                        logfile.write("Warning: Structure weight for '{:}' is set to {:} (previously set to {:}). New value will be ignored\n"\
+                    if comm and comm.rank == 0:
+                        if not np.isclose(existent_weight - weight, 0):
+                            logfile.write("Warning: Structure weight for '{:}' is set to {:} (previously set to {:}). New value will be ignored\n"\
                                                     .format(tag, weight, existent_weight))
                 continue
             # 2. Extract STRUCTURE_PATH and INDEX, then set structure tag index
@@ -115,7 +118,7 @@ def _get_tag_and_weight(text):
         
     return tag, weight
 
-def load_structures(inputs, structure_file, structure_slicing, logfile):
+def load_structures(inputs, structure_file, structure_slicing, logfile,comm=None):
     """ Read structure file and load structures using ase.io.read() method
 
     Handle inputs['refdata_format']: 'vasp-out' vs else
@@ -139,14 +142,16 @@ def load_structures(inputs, structure_file, structure_slicing, logfile):
 
     if inputs['descriptor']['refdata_format'] == 'vasp-out':
         if inputs['descriptor']['compress_outcar']:
-            file_path = compress_outcar(structure_file)
+            if comm and comm.rank == 0:
+                file_path = compress_outcar(structure_file)
 
         if ase.__version__ >= '3.18.0':
             structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'])
         else:
             structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'], force_consistent=True)
     else:
-        logfile.write("Warning: Structure format is not OUTCAR(['refdata_format'] : {:}). Unexpected error can occur.\n"\
+        if comm and comm.rank == 0:
+            logfile.write("Warning: Structure format is not OUTCAR(['refdata_format'] : {:}). Unexpected error can occur.\n"\
                                                     .format(inputs['descriptor']['refdata_format']))
         structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'])
     
@@ -175,7 +180,7 @@ def save_to_datafile(inputs, data, data_idx, logfile):
     try:
         if inputs['descriptor']['save_to_pickle'] == False:
             tmp_filename = os.path.join(data_dir, 'data{}.pt'.format(data_idx))
-            torch.save(data, tmp_filename, pickle_protocol = 4)
+            torch.save(data, tmp_filename)
         elif inputs['descriptor']['save_to_pickle'] == True:
             tmp_filename = os.path.join(data_dir, 'data{}.pickle'.format(data_idx))
             with open(tmp_filename, 'wb') as fil:

@@ -112,11 +112,19 @@ def _calculate_scale(inputs, logfile, feature_list):
 # Make PCA matrix with using scikitlearn modules
 def _calculate_pca_matrix(inputs, logfile, feature_list, scale):
     if inputs['neural_network']['pca']:
+        for elem in inputs['atom_types']:
+            with open(inputs['descriptor']['params'][elem], 'r') as f:
+                tmp_symf = f.readlines()
+                input_size = len(tmp_symf)
+            if len(feature_list[elem]) < input_size:
+                err = "Number of [{}] feature point[{}] is less than input size[{}]. This cause error during calculate PCA matirx".format(elem, len(feature_list[elem]), input_size)
+                raise ValueError(err)
+
         pca = dict()
         scale_process = None
 
         for elem in inputs['atom_types']:
-            pca_temp = PCA(svd_solver='randomized',random_state= inputs['random_seed'])
+            pca_temp = PCA()
             scale_process = (feature_list[elem] - scale[elem][0].reshape(1, -1) )  / scale[elem][1].reshape(1, -1)
             pca_temp.fit(scale_process)
             min_level = inputs['neural_network']['pca_min_whiten_level'] if inputs['neural_network']['pca_min_whiten_level'] else 0.0

@@ -1,6 +1,8 @@
 import torch
+from torch.nn import Linear
 import numpy as np
 import shutil
+from simple_nn_v2.models import weight_initializers
 
 class FCNDict(torch.nn.Module):
     def __init__(self, nets):
@@ -46,7 +48,7 @@ class FCNDict(torch.nn.Module):
                     format(int(ctem[0]), ctem[3], ctem[4], ctem[5], ctem[6], tmp_types))
 
             if scale_factor is None:
-                with open(inputs['descriptor']['params'][item],'r') as f:
+                with open(inputs['descriptor']['params'],'r') as f:
                     tmp = f.readlines()
                 input_dim= len(tmp) #open params read input number of symmetry functions
                 FIL.write('scale1 {}\n'.format(' '.join(np.zeros(input_dim).astype(np.str))))
@@ -102,7 +104,6 @@ class FCNDict(torch.nn.Module):
                     FIL.write('b{} {}\n'.format(k, biases[j][k]))
 
             FIL.write('\n')
-
         FIL.close()
         
 class FCN(torch.nn.Module):
@@ -135,7 +136,6 @@ class FCN(torch.nn.Module):
     def forward(self, x):
         return self.lin(x)
 
-
 class swish(torch.nn.Module):
     def __init__(self):
         super(swish, self).__init__()
@@ -143,6 +143,62 @@ class swish(torch.nn.Module):
     def forward(self, x):
         return x * torch.sigmoid(x)
 
+def _initialize_model_and_weights(inputs, logfile, device):
+    logfile.write(f"Use {device} in model\n")
+
+    model = {}
+    for element in inputs['atom_types']:
+        hidden_layer_nodes = [int(nodes) for nodes in inputs['neural_network']['nodes'].split('-')]
+
+        # change if calculating input_nodes method is changed
+        with open(inputs['descriptor']['params'][element], 'r') as f:
+            tmp_symf = f.readlines()
+            input_nodes = len(tmp_symf)
+ 
+        model[element] = FCN(input_nodes, hidden_layer_nodes,\
+            acti_func=inputs['neural_network']['acti_func'],
+            dropout=inputs['neural_network']['dropout'])
+
+        weights_initialize_log = _initialize_weights(inputs, logfile, model[element])
+
+    logfile.write(weights_initialize_log)
+    model = FCNDict(model) #Make full model with elementized dictionary model
+    model.to(device=device)
+    logfile.write("Initialize pytorch model\n")
+
+    return model
+
+def _initialize_weights(inputs, logfile, model):
+    try:
+        init_dic = inputs['neural_network']['weight_initializer']
+        init_name = init_dic['type']
+        init_params = init_dic['params']
+        acti_func = inputs['neural_network']['acti_func']
+        init_params['gain'] = weight_initializers._define_gain(logfile, acti_func, init_name, init_params)
+    except:
+        init_dic = None
+
+    # implimented_init = ['xavier uniform', 'xavier normal', 'normal', 'constant', 'kaiming normal', 'he normal', 'kaiming uniform', 'he uniform', 'orthogonal']
+    implimented_initializer = weight_initializers._get_implemented_initializer_list()
+    
+    try:
+        if init_dic is None:
+            weight_log = "No weight initializer infomation in input file\n"
+        elif init_name not in implimented_initializer:
+            weight_log = f"{init_name} weight initializer infomation is not implemented\n".format()
+        else:
+            weight_initializer, kwarg = weight_initializers._get_initializer_and_kwarg(init_name, init_params)
+            for lin in model.lin:
+                if lin == Linear:
+                    weight_initializer(lin.weight, **kwarg)
+                    weight_initializer(lin.bias, **kwarg)
+            weight_log = "{} weight initializer : {}\n".format(init_name, kwarg)
+    except:
+        import sys
+        print(sys.exc_info())
+        weight_log = "During weight initialization error occured. Default Initializer used\n"
+
+    return  weight_log
 
 def read_lammps_potential(filename):
     def _read_until(fil, stop_tag):

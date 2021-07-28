@@ -1,1 +1,2 @@
-from .run import train_NN
+from .run import train
+from .replica import replica_run
