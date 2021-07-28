@@ -25,7 +25,6 @@ def _init_meters(use_force, use_stress, atomic_e):
 def calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, weighted, dtype, use_force, use_stress, atomic_e):
     n_batch = item['E'].size(0) 
     weight = item['struct_weight'].to(device=device) if weighted else torch.ones(n_batch).to(device=device)
-    weight.to(device=device, non_blocking=non_block)
     calc_results = dict()
 
     x, atomic_E, E_, n_atoms = calculate_E(inputs['atom_types'], item, model, device, non_block)
