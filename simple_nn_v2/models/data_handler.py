@@ -184,14 +184,7 @@ def _preprocess_scaling_pca_to_dx_da(tmp_dx, atype, scale_factor, pca, pca_min_w
     return tmp_dx
 
 def _set_tensor_to_device(tensor, device, non_blocking, load_data_to_gpu):
-<<<<<<< HEAD
     return tensor.to(device=device, non_blocking=non_blocking) if load_data_to_gpu else tensor
-=======
-    if load_data_to_gpu:
-        tensor.to(device=device, non_blocking=non_blocking)
-
-    return tensor
->>>>>>> 524bdaf1df5e8aa74472423048a397fa53443554
 
 #Function to generate Iterator
 def filename_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_whiten_level=None, use_stress=False, load_data_to_gpu=False):
