@@ -38,10 +38,27 @@ class TimeMeter(object):
     def update(self, val):
         self.val += val
 
+def _init_meters(use_force, use_stress, atomic_e):
+    ## Setting LOG with progress meter
+    losses = AverageMeter('loss', ':8.4e')
+    e_err = AverageMeter('E err', ':6.4e', sqrt=True)
+    batch_time = TimeMeter('time', ':6.3f')
+    data_time = TimeMeter('data', ':6.3f')
+    total_time = TimeMeter('total time', ':8.4e')
+    progress_dict = {'batch_time': batch_time, 'data_time': data_time, 'losses': losses, 'e_err': e_err, 'total_time': total_time}
+
+    if use_force and not atomic_e:
+        f_err = AverageMeter('F err', ':6.4e', sqrt=True)
+        progress_dict['f_err'] = f_err
+    if use_stress and not atomic_e:
+        s_err = AverageMeter('S err', ':6.4e', sqrt=True)
+        progress_dict['s_err'] = s_err
+
+    return progress_dict
+
 #Show avg rmse
 def _show_avg_rmse(inputs, logfile, epoch, lr, total_time, train_progress_dict, valid_progress_dict=None):
     log = '-' * 94
-    print(log)
     logfile.write(log+'\n')
 
     log=''
@@ -61,11 +78,9 @@ def _show_avg_rmse(inputs, logfile, epoch, lr, total_time, train_progress_dict, 
         log += 'Data load: {0:.4e} s/epoch'.format(train_progress_dict['data_time'].val)
         log += ' Total load: {0:.4e} s/epoch'.format(train_progress_dict['batch_time'].val)
     log += ' Elapsed: {0:.4e} s'.format(total_time)
-    print(log)
     logfile.write(log+'\n')
 
     log = '-' * 94
-    print(log)
     logfile.write(log+'\n')
 
 def _formatting_avg_rmse(key, title, t_progress_dict, v_progress_dict):
@@ -96,7 +111,6 @@ def _show_structure_rmse(inputs, logfile, labeled_train_loader, labeled_valid_lo
                 keys.append(labeled_valid_loader[key])
 
     for key in keys:
-        valid_progress_dict = None
         log = ''
         train_epoch_result = run.progress_epoch(inputs, labeled_train_loader[key], model, optimizer, criterion, 0, dtype, device, non_block, valid=True, atomic_e=atomic_e)
         if labeled_valid_loader and labeled_valid_loader[key] is not None:
@@ -110,11 +124,9 @@ def _show_structure_rmse(inputs, logfile, labeled_train_loader, labeled_valid_lo
             log += _formatting_structure_rmse('f_err', train_epoch_result, valid_epoch_result)
         if inputs['neural_network']['use_stress']:
             log += _formatting_structure_rmse('s_err', train_epoch_result, valid_epoch_result)
-        print(log)
         logfile.write(log+'\n')
 
     log = '-' * 94
-    print(log)
     logfile.write(log+'\n')
 
 def _formatting_structure_rmse(key, t_progress_dict, v_progress_dict):

@@ -1,8 +1,11 @@
 import torch
 from torch.nn import Linear
+
 import numpy as np
 import shutil
+
 from simple_nn_v2.models import weight_initializers
+
 
 class FCNDict(torch.nn.Module):
     def __init__(self, nets):
@@ -19,7 +22,6 @@ class FCNDict(torch.nn.Module):
         return res
 
     def write_lammps_potential(self, filename, inputs, scale_factor=None, pca=None):
-        
         # TODO: get the parameter info from initial batch generting processs
         atom_type_str = ' '.join(inputs['atom_types'])
 
@@ -48,17 +50,15 @@ class FCNDict(torch.nn.Module):
                     format(int(ctem[0]), ctem[3], ctem[4], ctem[5], ctem[6], tmp_types))
 
             if scale_factor is None:
-                with open(inputs['descriptor']['params'],'r') as f:
+                with open(inputs['descriptor']['params'], 'r') as f:
                     tmp = f.readlines()
-                input_dim= len(tmp) #open params read input number of symmetry functions
+                input_dim = len(tmp) #open params read input number of symmetry functions
                 FIL.write('scale1 {}\n'.format(' '.join(np.zeros(input_dim).astype(np.str))))
                 FIL.write('scale2 {}\n'.format(' '.join(np.ones(input_dim).astype(np.str))))
             else:
                 FIL.write('scale1 {}\n'.format(' '.join(scale_factor[item][0].cpu().numpy().astype(np.str))))
                 FIL.write('scale2 {}\n'.format(' '.join(scale_factor[item][1].cpu().numpy().astype(np.str))))
 
-            #weights = sess.run(self.models[item].weights)
-            #nlayers = len(self.nodes[item])
             # An extra linear layer is used for PCA transformation.
             nodes = list()
             weights = list()
@@ -68,7 +68,6 @@ class FCNDict(torch.nn.Module):
                     nodes.append(i.weight.size(0))
                     weights.append(i.weight.detach().cpu().numpy())
                     biases.append(i.bias.detach().cpu().numpy())
-            #nodes.append(1)
             nlayers = len(nodes)
             if pca is not None:
                 nodes = [pca[item][0].cpu().numpy().shape[1]] + nodes
@@ -198,7 +197,7 @@ def _initialize_weights(inputs, logfile, model):
         print(sys.exc_info())
         weight_log = "During weight initialization error occured. Default Initializer used\n"
 
-    return  weight_log
+    return weight_log
 
 def read_lammps_potential(filename):
     def _read_until(fil, stop_tag):
@@ -215,7 +214,7 @@ def read_lammps_potential(filename):
     with open(filename) as fil:
         atom_types = fil.readline().replace('\n', '').split()[1:]
         for item in atom_types:
-            weights[item] = dict()            
+            weights[item] = dict()
 
             dims = list()
             dims.append(int(_read_until(fil, 'SYM').split()[1]))

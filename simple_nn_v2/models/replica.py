@@ -3,12 +3,13 @@
 # Also, 'potential_saved' file
 
 import torch
+
 from simple_nn_v2.models import data_handler
 from simple_nn_v2.models import optimizers
 from simple_nn_v2.models.run import _get_torch_device, _set_pararrelism, _load_model_weights_and_optimizer_from_checkpoint, _load_scale_factor_and_pca, train_model
 from simple_nn_v2.models import utils
 from simple_nn_v2.models import neural_network
-from simple_nn_v2.models import run
+
 
 def replica_run(inputs, logfile):
     if inputs['neural_network']['double_precision']:
@@ -20,7 +21,7 @@ def replica_run(inputs, logfile):
         # Todo: Log for start save_atomic_e
         model = neural_network._initialize_model_and_weights(inputs, logfile, device)
         optimizer = optimizers._initialize_optimizer(inputs, model)
-        checkpoint = run._load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, optimizer, device)
+        checkpoint = _load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, optimizer, device)
         scale_factor, pca = _load_scale_factor_and_pca(inputs, logfile, checkpoint)
 
         data_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='add_NNP_ref')

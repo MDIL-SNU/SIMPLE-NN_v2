@@ -69,8 +69,8 @@ def _load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, op
         for element in potential_params.keys():
             for name, lin in model.nets[element].lin.named_modules():
                 if name in potential_params[element].keys():
-                    lin.weight.data = torch.transpose(torch.tensor(potential_params[element][name]['weight']).to(device=device), -1,0)
-                    lin.bias.data = torch.transpose(torch.tensor(potential_params[element][name]['bias']).to(device=device), -1,0)
+                    lin.weight.data = torch.transpose(torch.tensor(potential_params[element][name]['weight']).to(device=device), -1, 0)
+                    lin.bias.data = torch.transpose(torch.tensor(potential_params[element][name]['bias']).to(device=device), -1, 0)
         logfile.write("Load model parameters from [potential_saved]\n")
     elif inputs['neural_network']['continue']: # load pytorch type checkpoint
         checkpoint = torch.load(inputs['neural_network']['continue'])
@@ -111,14 +111,13 @@ def _load_scale_factor_and_pca(inputs, logfile, checkpoint):
 
     return scale_factor, pca
 
-# Convert generated scale_factor, pca to pytorch tensor format 
 def _convert_scale_factor_and_pca_to_tensor(inputs, logfile, scale_factor, pca):
     device = _get_torch_device_optional(inputs)
     for element in inputs['atom_types']:
         if scale_factor:
-            max_plus_min  = torch.tensor(scale_factor[element][0,:], device=device)
+            max_plus_min = torch.tensor(scale_factor[element][0,:], device=device)
             max_minus_min = torch.tensor(scale_factor[element][1,:], device=device)
-            scale_factor[element] = [max_plus_min, max_minus_min] #To list format
+            scale_factor[element] = [max_plus_min, max_minus_min]
         if pca:
             pca[element][0] = torch.tensor(pca[element][0], device=device)
             pca[element][1] = torch.tensor(pca[element][1], device=device)
@@ -197,7 +196,7 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
                 model.write_lammps_potential(filename='./potential_saved_criterion', inputs=inputs, scale_factor=scale_factor, pca=pca)
                 logfile.write("checkpoint_criterion.pth.tar & potential_saved_criterion written\n")
                 break
-        
+
         # Update scheduler
         if inputs['neural_network']['lr_decay']:
             scheduler.step()
@@ -207,7 +206,7 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
 def progress_epoch(inputs, data_loader, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=False):
     use_force = inputs['neural_network']['use_force'] if not atomic_e else False
     use_stress = inputs['neural_network']['use_stress'] if not atomic_e else False
-    epoch_result = utils._init_meters(use_force, use_stress, atomic_e)
+    epoch_result = logger._init_meters(use_force, use_stress, atomic_e)
 
     weighted = False if valid else True
     back_prop = False if valid else True
@@ -244,7 +243,7 @@ def _set_stop_rmse_criteria(inputs, logfile):
 
     return criteria_dict
 
-def save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint.pth.tar'):
+def save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename):
     state ={'epoch': epoch + 1,
             'loss': loss,
             'model': model.state_dict(),
@@ -262,7 +261,7 @@ def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader
 
     use_force = inputs['neural_network']['use_force']
     use_stress = inputs['neural_network']['use_stress']
-    epoch_result = utils._init_meters(use_force, use_stress, atomic_e=False)
+    epoch_result = logger._init_meters(use_force, use_stress, atomic_e=False)
     res_dict = _initialize_test_result_dict(inputs)
     model.eval()
 
@@ -271,7 +270,7 @@ def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader
         _, calc_results = utils.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, False, dtype, use_force, use_stress, atomic_e=False)
         _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress)
 
-    torch.save(res_dict, 'result_saved')
+    torch.save(res_dict, 'test_result')
     logfile.write(f"DFT, NNP result saved at 'result_saved'\n")
 
     # show RMSE
