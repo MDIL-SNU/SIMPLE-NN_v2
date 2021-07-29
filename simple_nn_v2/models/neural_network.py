@@ -48,7 +48,7 @@ class FCNDict(torch.nn.Module):
                     format(int(ctem[0]), ctem[3], ctem[4], ctem[5], ctem[6], tmp_types))
 
             if scale_factor is None:
-                with open(inputs['descriptor']['params'],'r') as f:
+                with open(inputs['descriptor']['params'][item],'r') as f:
                     tmp = f.readlines()
                 input_dim= len(tmp) #open params read input number of symmetry functions
                 FIL.write('scale1 {}\n'.format(' '.join(np.zeros(input_dim).astype(np.str))))

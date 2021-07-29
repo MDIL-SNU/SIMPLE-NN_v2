@@ -22,14 +22,17 @@ symmetry_function_descriptor_default_inputs = \
                 'test_list': './test_list',
                 'ref_list': './ref_list',
 
+                'split': True
+                'shuffle': True,
+
                 'params': dict(),
                 'refdata_format': 'vasp-out',
                 'compress_outcar': True,
 
                 'valid_rate': 0.1,
-                'shuffle': True,
 
                 'calc_scale': True, 
+                'calc_pca': True, 
                 'scale_type': 'minmax',
                 'scale_scale': 1.0,
                 'scale_rho': None,
@@ -127,7 +130,8 @@ model_default_inputs = \
                 #Parallelism
                 'inter_op_parallelism_threads': 0,
                 'intra_op_parallelism_threads': 0,
-                'load_data_to_gpu': False
+                'load_data_to_gpu': False,
+                'cuda_number': None,
             }
         }
 replica_default_inputs = \

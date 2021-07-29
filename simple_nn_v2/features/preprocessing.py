@@ -22,7 +22,7 @@ def preprocess(inputs, logfile):
 
     data_list = './total_list'
     pickle_format = inputs['descriptor']['save_to_pickle']   #boolean
-    make_pca_matrix = inputs['neural_network']['pca']   # boolean
+    make_pca_matrix = inputs['descriptor']['cal_pca']   # boolean
 
     _split_train_list_and_valid_list(inputs, data_list)
 
@@ -45,7 +45,7 @@ def preprocess(inputs, logfile):
 
 # Split train/valid data names that saved in data_list
 def _split_train_list_and_valid_list(inputs, data_list='./total_list'):
-    if not inputs['neural_network']['continue']:
+    if inputs['descriptor']['split']:
        train_list_file = open(inputs['descriptor']['train_list'], 'w')
        valid_list_file = open(inputs['descriptor']['valid_list'], 'w')
 
