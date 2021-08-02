@@ -158,7 +158,7 @@ def get_s_loss(S_, S, criterion, progress_dict, n_batch, item, weight):
     s_loss = criterion(S_, S)
     batch_idx = 0
     for n in range(n_batch): #Make structure_weighted force
-        tmp_idx = item['tot_num'][n].item()
+        tmp_idx = 6
         s_loss[batch_idx:(batch_idx+tmp_idx)] = s_loss[batch_idx:(batch_idx+tmp_idx)] * weight[n].item()
         batch_idx += tmp_idx
 
