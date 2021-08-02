@@ -231,7 +231,7 @@ def _load_dataset(inputs, logfile, scale_factor, pca, device, mode):
     dataset_list = FilelistDataset(args[mode]['data_list'], device, inputs['neural_network']['load_data_to_gpu'])
     if mode == 'add_NNP_ref':
         dataset_list.save_filename()
-    data_loader = _make_dataloader(inputs, dataset_list, scale_factor, pca, device, args[mode]['use_stress'], args[mode]['valid'], args[mode]['my_collate'])
+    data_loader = _make_dataloader(inputs, dataset_list, scale_factor, pca, device, args[mode]['use_force'], args[mode]['use_stress'], args[mode]['valid'], args[mode]['my_collate'])
     logfile.write("{} dataset loaded\n".format(mode))
 
     return data_loader
