@@ -1,0 +1,61 @@
+atom_types:
+- Ge
+- Sb
+- Te
+generate_features: true
+preprocess: true
+train_model: true
+
+neural_network:
+  load_data_to_gpu: true
+  save_result: false
+  pca: true
+  pca_whiten: true
+  weight_initializer:
+    type: orthogonal
+  batch_size: 20
+  double_precision: true
+
+  energy_coeff: 1.0
+  force_coeff:  0.1
+  stress_coeff: 0.0001
+  full_batch: true
+
+  learning_rate: 0.0001
+  loss_scale: 1.0
+  acti_func: tanh
+  method: Adam
+  nodes: 30-30
+  optimizer: {}
+  print_structure_rmse: true
+  regularization: 1.0e-6
+  save_interval: 20
+  dropout: 0.5
+  E_loss_type: 1
+  energy_criteria: 100
+  force_criteria: 100
+  stress_criteria: 0.5
+  show_interval: 5
+  test: false
+  continue: false #1000iter.pth.tar
+  clear_prev_status: false
+  total_epoch: 5
+  train: true
+  use_force: true
+  use_stress: true
+descriptor:
+  type: symmetry_function
+  add_NNP_ref: true
+  compress_outcar: true
+  shuffle: false
+  params:
+    Ge: params_Ge
+    Sb: params_Sb
+    Te: params_Te
+  remain_pickle: true
+  valid_rate: 0.4
+#  scale_type: uniform gas
+#  scale_rho:
+#    Ag: 0.0367
+#    Au: 0.0285
+#    F: 0.06

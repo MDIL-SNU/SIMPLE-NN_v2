@@ -1,0 +1,23 @@
+generate_features: false
+preprocess: true
+train_model: false
+atom_types:
+ - Si
+ - O
+
+descriptor:
+  type: symmetry_function
+  params:
+    Si: ./test_input/params_Si
+    O: ./test_input/params_O
+  valid_rate: 0.4
+  remain_pickle: True
+  compress_outcar: True
+  save_to_pickle: False
+  save_directory: ./test_input/test_preprocess
+
+neural_network:
+  continue: false
+  use_force: true
+  use_stress: true
+  pca: true

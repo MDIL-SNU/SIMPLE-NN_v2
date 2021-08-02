@@ -22,7 +22,7 @@ def preprocess(inputs, logfile):
 
     data_list = './total_list'
     pickle_format = inputs['descriptor']['save_to_pickle']   #boolean
-    make_pca_matrix = inputs['descriptor']['cal_pca']   # boolean
+    make_pca_matrix = inputs['descriptor']['calc_pca']   # boolean
 
     _split_train_list_and_valid_list(inputs, data_list)
 
@@ -45,24 +45,23 @@ def preprocess(inputs, logfile):
 
 # Split train/valid data names that saved in data_list
 def _split_train_list_and_valid_list(inputs, data_list='./total_list'):
-    if inputs['descriptor']['split']:
-       train_list_file = open(inputs['descriptor']['train_list'], 'w')
-       valid_list_file = open(inputs['descriptor']['valid_list'], 'w')
+   train_list_file = open(inputs['descriptor']['train_list'], 'w')
+   valid_list_file = open(inputs['descriptor']['valid_list'], 'w')
 
-       for file_list in util_feature._make_str_data_list(data_list):
-           if inputs['descriptor']['shuffle'] is True:
-               np.random.shuffle(file_list)
-           num_pickle = len(file_list)
-           num_valid = int(num_pickle * inputs['descriptor']['valid_rate'])
+   for file_list in util_feature._make_str_data_list(data_list):
+       if inputs['descriptor']['shuffle'] is True:
+           np.random.shuffle(file_list)
+       num_pickle = len(file_list)
+       num_valid = int(num_pickle * inputs['descriptor']['valid_rate'])
 
-           for i,elem in enumerate(file_list):
-               if i < num_valid:
-                   valid_list_file.write(elem + '\n')
-               else:
-                   train_list_file.write(elem + '\n')
-                   
-       train_list_file.close()
-       valid_list_file.close()
+       for i,elem in enumerate(file_list):
+           if i < num_valid:
+               valid_list_file.write(elem + '\n')
+           else:
+               train_list_file.write(elem + '\n')
+               
+   train_list_file.close()
+   valid_list_file.close()
 
 # Calculate scale factor and save as "scale_factor" data (.pt format)
 def _calculate_scale(inputs, logfile, feature_list):

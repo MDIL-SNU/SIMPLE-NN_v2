@@ -1,0 +1,78 @@
+KEY of input.yaml
+generate_features    :    True
+preprocess    :    False
+train_model    :    False
+atom_types    :    ['Ge', 'Sb', 'Te']
+random_seed    :    None
+symmetry_function    :    {'params': {'Ge': 'params_Ge', 'Sb': 'params_Sb', 'Te': 'params_Te'}, 'refdata_format': 'vasp-out', 'compress_outcar': True, 'data_per_tfrecord': 6000, 'valid_rate': 0.4, 'shuffle': True, 'add_NNP_ref': False, 'remain_pickle': True, 'continue': False, 'add_atom_idx': True, 'num_parallel_calls': 40, 'atomic_weights': {'type': 'gdf', 'params': {'sigma': 0.07}}, 'weight_modifier': {'type': 'modified sigmoid', 'params': {'Sb': {'b': 1.0, 'c': 100.0}, 'Te': {'b': 1.0, 'c': 150.0}}}, 'scale_facotr': True, 'scale_type': 'minmax', 'scale_scale': 1.0, 'scale_rho': None, 'save_to_pickle': False, 'save_directory': './data', 'read_force': True, 'read_stress': True, 'dx_save_sparse': True, 'single_file': False}
+neural_network    :    {'train': True, 'test': False, 'continue': False, 'nodes': '30-30', 'regularization': {'type': 'l2', 'params': {'coeff': 1e-08}}, 'use_force': True, 'use_stress': True, 'double_precision': True, 'weight_initializer': {'type': 'he normal', 'params': {'stddev': 0.3}}, 'acti_func': 'tanh', 'dropout': None, 'method': 'Adam', 'batch_size': 20, 'full_batch': False, 'total_iteration': 50000, 'learning_rate': 0.0001, 'stress_coeff': 1e-06, 'force_coeff': 0.1, 'energy_coeff': 1.0, 'loss_scale': 1.0, 'optimizer': {}, 'weight_decay': 1e-08, 'workers': 4, 'force_diffscale': False, 'E_loss': 0, 'F_loss': 1, 'save_interval': 200, 'show_interval': 200, 'save_criteria': [], 'break_max': 10, 'print_structure_rmse': True, 'inter_op_parallelism_threads': 2, 'intra_op_parallelism_threads': 20, 'cache': False, 'pca': True, 'pca_whiten': True, 'pca_min_whiten_level': 1e-08, 'NNP_to_pickle': False, 'evaluate': False, 'resume': None, 'clear_prev_status': False, 'clear_prev_network': False, 'start_epoch': 0}
+
+KEY of symmeytry_function
+params    :    {'Ge': 'params_Ge', 'Sb': 'params_Sb', 'Te': 'params_Te'}
+refdata_format    :    vasp-out
+compress_outcar    :    True
+data_per_tfrecord    :    6000
+valid_rate    :    0.4
+shuffle    :    True
+add_NNP_ref    :    False
+remain_pickle    :    True
+continue    :    False
+add_atom_idx    :    True
+num_parallel_calls    :    40
+atomic_weights    :    {'type': 'gdf', 'params': {'sigma': 0.07}}
+weight_modifier    :    {'type': 'modified sigmoid', 'params': {'Sb': {'b': 1.0, 'c': 100.0}, 'Te': {'b': 1.0, 'c': 150.0}}}
+scale_facotr    :    True
+scale_type    :    minmax
+scale_scale    :    1.0
+scale_rho    :    None
+save_to_pickle    :    False
+save_directory    :    ./data
+read_force    :    True
+read_stress    :    True
+dx_save_sparse    :    True
+single_file    :    False
+
+KEY of neural_network
+train    :    True
+test    :    False
+continue    :    False
+nodes    :    30-30
+regularization    :    {'type': 'l2', 'params': {'coeff': 1e-08}}
+use_force    :    True
+use_stress    :    True
+double_precision    :    True
+weight_initializer    :    {'type': 'he normal', 'params': {'stddev': 0.3}}
+acti_func    :    tanh
+dropout    :    None
+method    :    Adam
+batch_size    :    20
+full_batch    :    False
+total_iteration    :    50000
+learning_rate    :    0.0001
+stress_coeff    :    1e-06
+force_coeff    :    0.1
+energy_coeff    :    1.0
+loss_scale    :    1.0
+optimizer    :    {}
+weight_decay    :    1e-08
+workers    :    4
+force_diffscale    :    False
+E_loss    :    0
+F_loss    :    1
+save_interval    :    200
+show_interval    :    200
+save_criteria    :    []
+break_max    :    10
+print_structure_rmse    :    True
+inter_op_parallelism_threads    :    2
+intra_op_parallelism_threads    :    20
+cache    :    False
+pca    :    True
+pca_whiten    :    True
+pca_min_whiten_level    :    1e-08
+NNP_to_pickle    :    False
+evaluate    :    False
+resume    :    None
+clear_prev_status    :    False
+clear_prev_network    :    False
+start_epoch    :    0

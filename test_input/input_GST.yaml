@@ -1,0 +1,15 @@
+atom_types:
+- Ge
+- Sb
+- Te
+generate_features: true
+preprocess: true
+train_model: false
+symmetry_function:
+  compress_outcar: true
+  params:
+    Ge: ./test_input/params_Ge
+    Sb: ./test_input/params_Sb
+    Te: ./test_input/params_Te
+  remain_pickle: true
+  valid_rate: 0.1
