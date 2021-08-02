@@ -22,7 +22,6 @@ symmetry_function_descriptor_default_inputs = \
                 'test_list': './test_list',
                 'ref_list': './ref_list',
 
-                'split': True
                 'shuffle': True,
 
                 'params': dict(),
@@ -64,7 +63,8 @@ model_default_inputs = \
                 # Function related
                 'train': True,
                 'test': False,
-                
+
+                'split_data': None,
                 # Network related
                 'nodes': '30-30',
                 'regularization': 1e-6, #L2 regularization
