@@ -1,26 +1,6 @@
 import torch
-import time
 from ase import units
-from simple_nn_v2.models.logger import AverageMeter, TimeMeter
 
-
-def _init_meters(use_force, use_stress, atomic_e):
-    ## Setting LOG with progress meter
-    losses = AverageMeter('loss', ':8.4e')
-    e_err = AverageMeter('E err', ':6.4e', sqrt=True)
-    batch_time = TimeMeter('time', ':6.3f')
-    data_time = TimeMeter('data', ':6.3f')
-    total_time = TimeMeter('total time', ':8.4e')
-    progress_dict = {'batch_time': batch_time, 'data_time': data_time, 'losses': losses, 'e_err': e_err, 'total_time': total_time}
-
-    if use_force and not atomic_e:
-        f_err = AverageMeter('F err', ':6.4e', sqrt=True)
-        progress_dict['f_err'] = f_err
-    if use_stress and not atomic_e:
-        s_err = AverageMeter('S err', ':6.4e', sqrt=True)
-        progress_dict['s_err'] = s_err
-
-    return progress_dict
 
 def calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, weighted, dtype, use_force, use_stress, atomic_e):
     n_batch = item['E'].size(0) 
@@ -37,7 +17,7 @@ def calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoc
         if use_force:
             F_ = calculate_F(inputs['atom_types'], x, dEdG, item, device, non_block)
             F = item['F'].type(dtype).to(device=device, non_blocking=non_block)
-            f_loss = get_f_loss(inputs['neural_network']['F_loss_type'], F_, F, criterion, epoch_result, n_batch, item, weight)
+            f_loss = get_f_loss(inputs['neural_network']['F_loss_type'], F_, F, criterion, epoch_result)
             batch_loss += inputs['neural_network']['force_coeff'] * f_loss
             calc_results['F'] = F_
 
@@ -111,6 +91,7 @@ def calculate_S(atom_types, x, dEdG, item, device, non_block):
                     tmp_stress.append(torch.einsum('ijkl,ij->kl', item['da'][atype][n].to(device=device, non_blocking=non_block), dEdG[atype][tmp_idx:(tmp_idx + ntem)]).sum(axis=0))
                 else:
                     tmp_stress.append(torch.zeros(item['da'][atype][n].size()[-1]).to(device=device, non_blocking=non_block))
+                tmp_idx += ntem
 
             S_ -= torch.cat(tmp_stress, axis=0) / units.GPa * 10
 
@@ -157,7 +138,7 @@ def get_e_loss(atom_types, loss_type, atomic_E, E_, n_atoms, item, criterion, pr
 
     return w_e_loss
 
-def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight):
+def get_f_loss(loss_type, F_, F, criterion, progress_dict):
     if loss_type == 2:
         # check the scale value: current = norm(force difference)
         # Force different scaling : larger force difference get higher weight !!
@@ -166,14 +147,9 @@ def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight
         #aw_factor need
     else:
         f_loss = criterion(F_, F)
-        batch_idx = 0
-        for n in range(n_batch): #Make structure_weighted force
-            tmp_idx = item['tot_num'][n].item()
-            f_loss[batch_idx:(batch_idx+tmp_idx)] = f_loss[batch_idx:(batch_idx+tmp_idx)] * weight[n].item()
-            batch_idx += tmp_idx
 
     w_f_loss = torch.mean(f_loss)
-    print_f_loss = torch.mean(criterion(F_, F))
+    print_f_loss = torch.mean(criterion(F_, F)) * 3
     progress_dict['f_err'].update(print_f_loss.detach().item(), F_.size(0))
 
     return w_f_loss
@@ -182,12 +158,12 @@ def get_s_loss(S_, S, criterion, progress_dict, n_batch, item, weight):
     s_loss = criterion(S_, S)
     batch_idx = 0
     for n in range(n_batch): #Make structure_weighted force
-        tmp_idx = item['tot_num'][n].item()
+        tmp_idx = 6
         s_loss[batch_idx:(batch_idx+tmp_idx)] = s_loss[batch_idx:(batch_idx+tmp_idx)] * weight[n].item()
         batch_idx += tmp_idx
 
     w_s_loss = torch.mean(s_loss)
-    s_loss = torch.mean(criterion(S_, S))
+    s_loss = torch.mean(criterion(S_, S)) * 6
     progress_dict['s_err'].update(s_loss.detach().item(), n_batch)
 
     return w_s_loss
