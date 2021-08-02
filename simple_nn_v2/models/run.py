@@ -8,6 +8,7 @@ from simple_nn_v2.models import utils
 from simple_nn_v2.models import data_handler
 from simple_nn_v2.models import optimizers
 from simple_nn_v2.models import logger
+from simple_nn_v2.features.preprocessing import _split_train_list_and_valid_list
 
 
 def train(inputs, logfile):
@@ -15,6 +16,9 @@ def train(inputs, logfile):
         torch.set_default_dtype(torch.float64)
     device = _get_torch_device(inputs)
     _set_pararrelism(inputs, logfile)
+
+    if inputs['neural_network']['split_data']:
+        _split_train_list_and_valid_list(inputs, data_list=inputs['neural_network']['split_data'])
 
     model = neural_network._initialize_model_and_weights(inputs, logfile, device)
     optimizer = optimizers._initialize_optimizer(inputs, model)
