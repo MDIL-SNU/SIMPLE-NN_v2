@@ -226,6 +226,7 @@ def progress_epoch(inputs, data_loader, model, optimizer, criterion, epoch, dtyp
             batch_loss.backward()
             optimizer.step()
         epoch_result['batch_time'].update(time.time() - end) # save batch calculation time
+        end = time.time()
 
     return epoch_result
 
