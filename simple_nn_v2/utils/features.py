@@ -4,6 +4,7 @@ import torch
 import numpy as np
 from six.moves import cPickle as pickle
 
+
 def load_data(data_file, pickle_format=False):
     if pickle_format:
         with open(data_file, 'rb') as fil:
@@ -13,6 +14,13 @@ def load_data(data_file, pickle_format=False):
 
     return tmp_data
 
+def convert_pickle_to_pt(filename):
+    if os.path.exists(filename):
+        out_name = filename.split('.')[0]+'.pt'
+        with open(filename, 'rb') as fil:
+            tmp_data = pickle.load(fil, encoding='latin1')
+        torch.save(tmp_data, out_name) 
+ 
 def _gen_2Darray_for_ffi(arr, ffi, cdata='double'):
     # Function to generate 2D pointer for cffi  
     shape = arr.shape
@@ -87,3 +95,10 @@ def _make_str_data_list(filename):
                 data_list[group_id] = []
             data_list[group_id].append(file_name)
     return data_list.values()
+
+
+
+
+
+
+

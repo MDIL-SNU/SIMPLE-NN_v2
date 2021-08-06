@@ -3,12 +3,14 @@ import os
 import yaml
 import functools
 import atexit
+import time 
 #from simple_nn_v2.utils import modified_sigmoid, _generate_gdf_file
 from ._version import __version__, __git_sha__
 
-from simple_nn_v2.init_inputs import initialize_inputs
+from simple_nn_v2.init_inputs import initialize_inputs, check_inputs
 from simple_nn_v2.features import preprocess
 from simple_nn_v2.models import train
+from simple_nn_v2.features.symmetry_function.mpi import DummyMPI, MPI4PY
 
 #from models import neural_network
 
@@ -19,17 +21,38 @@ def run(input_file_name):
     atexit.register(_close_log, logfile)
     _log_header(logfile)
 
-    inputs = initialize_inputs(input_file_name, logfile)
+    #Load MPI 
+    try: 
+        comm = MPI4PY()
+        assert comm.size != 1
+        logfile.write("Use mpi with size {0}\n".format(comm.size))
+    except:
+        comm = DummyMPI()
+        logfile.write("Not use mpi \n")
 
+    inputs = initialize_inputs(input_file_name, logfile)
     if inputs['generate_features'] is True:
+        start_time = time.time()
+        if comm.rank == 0:
+            check_inputs(inputs, logfile,'generate')
         generate = get_generate_function(logfile, descriptor_type=inputs['descriptor']['type'])
-        generate(inputs, logfile)
+        generate(inputs, logfile, comm)
     
     if inputs['preprocess'] is True:
-        preprocess(inputs, logfile)
+        if comm.rank == 0:
+            check_inputs(inputs, logfile,'preprocess')
+        preprocess(inputs, logfile, comm)
 
-    if inputs['train_model']:
-        train(inputs, logfile)
+    if inputs['train_model'] is True:
+        if comm.rank == 0:
+            check_inputs(inputs, logfile,'train_model')
+            train(inputs, logfile)
+        else: 
+            comm.free()
+
+    if inputs['train_replica'] is True:
+        pass
+
 
 from simple_nn_v2.features.symmetry_function import generate as symf_generator
 

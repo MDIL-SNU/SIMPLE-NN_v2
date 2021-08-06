@@ -30,7 +30,7 @@ class FCNDict(torch.nn.Module):
 
         for item in inputs['atom_types']:
             params = list()
-            with open(inputs['descriptor']['params'][item]) as fil:
+            with open(inputs['params'][item]) as fil:
                 for line in fil:
                     tmp = line.split()
                     params += [list(map(float, tmp))]
@@ -50,7 +50,7 @@ class FCNDict(torch.nn.Module):
                     format(int(ctem[0]), ctem[3], ctem[4], ctem[5], ctem[6], tmp_types))
 
             if scale_factor is None:
-                with open(inputs['descriptor']['params'][item],'r') as f:
+                with open(inputs['params'][item],'r') as f:
                     tmp = f.readlines()
                 input_dim = len(tmp) #open params read input number of symmetry functions
                 FIL.write('scale1 {}\n'.format(' '.join(np.zeros(input_dim).astype(np.str))))
@@ -81,7 +81,7 @@ class FCNDict(torch.nn.Module):
                 FIL.write('LAYER 0 linear PCA\n')
                 pca_mat = np.copy(pca[item][0].cpu().numpy())
                 pca_mean = np.copy(pca[item][2].cpu().numpy())
-                if inputs['neural_network']['pca_min_whiten_level'] is not None:
+                if inputs['preprocessing']['pca_min_whiten_level'] is not None:
                     pca_mat /= pca[item][1].cpu().numpy().reshape([1, -1])
                     pca_mean /= pca[item][1].cpu().numpy()
 
@@ -150,7 +150,7 @@ def _initialize_model_and_weights(inputs, logfile, device):
         hidden_layer_nodes = [int(nodes) for nodes in inputs['neural_network']['nodes'].split('-')]
 
         # change if calculating input_nodes method is changed
-        with open(inputs['descriptor']['params'][element], 'r') as f:
+        with open(inputs['params'][element], 'r') as f:
             tmp_symf = f.readlines()
             input_nodes = len(tmp_symf)
  

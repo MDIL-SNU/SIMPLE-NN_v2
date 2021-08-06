@@ -6,11 +6,11 @@ from ase import io
 import os
 import torch
 
-""" In this module, functions handles structure list file and OUTCAR files for making data set(format: pickle or torch)
+""" In this module, functions handles structure list file and OUTCAR files for making data set(format: torch.save)
 
     parse_structure_list(logfile, structure_list): Parsing "structure_list" file (default="./str_list")
     load_snapshots(inputs, item, logfile): Read structure file and load snapshots using ase.io.read() method
-    save_to_datafile(inputs, data, data_idx, logfile): save results to pickle or pt files
+    save_to_datafile(inputs, data, data_idx, logfile): save results to pt files
 """
 
 def parse_structure_list(logfile, structure_list='./structure_list',comm=None):
@@ -178,18 +178,10 @@ def save_to_datafile(inputs, data, data_idx, logfile):
         os.makedirs(data_dir)
 
     try:
-        if inputs['descriptor']['save_to_pickle'] == False:
-            tmp_filename = os.path.join(data_dir, 'data{}.pt'.format(data_idx))
-            torch.save(data, tmp_filename)
-        elif inputs['descriptor']['save_to_pickle'] == True:
-            tmp_filename = os.path.join(data_dir, 'data{}.pickle'.format(data_idx))
-            with open(tmp_filename, 'wb') as fil:
-                pickle.dump(data, fil, protocol=2)
+        tmp_filename = os.path.join(data_dir, 'data{}.pt'.format(data_idx))
+        torch.save(data, tmp_filename)
     except:
-        if inputs['descriptor']['save_to_pickle'] == False:
-            err = "Unexpected error during save data to .pt file"
-        else:
-            err = "Unexpected error during save data to .pickle file"
+        err = "Unexpected error during save data to .pt file"
         logfile.write("\nError: {:}\n".format(err))
         raise NotImplementedError(err)
 

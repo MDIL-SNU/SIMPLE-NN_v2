@@ -7,7 +7,7 @@ import torch
 from simple_nn_v2.models import data_handler
 from simple_nn_v2.models import optimizers
 from simple_nn_v2.models.run import _get_torch_device, _set_pararrelism, _load_model_weights_and_optimizer_from_checkpoint, _load_scale_factor_and_pca, train_model
-from simple_nn_v2.models import utils
+from simple_nn_v2.models import loss
 from simple_nn_v2.models import neural_network
 
 
@@ -53,7 +53,7 @@ def save_atomic_E(inputs, logfile, model, data_loader, device):
         n_type = dict()
         for atype in inputs['atom_types']:
             n_type[atype] = 0
-        x, atomic_E, _, _ = utils.calculate_E(inputs['atom_types'], item, model, device, non_block)
+        x, atomic_E, _, _ = loss.calculate_E(inputs['atom_types'], item, model, device, non_block)
                 
         #Save    
         for f in range(n_batch): 

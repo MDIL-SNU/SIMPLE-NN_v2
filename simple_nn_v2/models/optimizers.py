@@ -7,7 +7,7 @@ def _initialize_optimizer(inputs, model):
 
     optimizer = {
         'Adam': torch.optim.Adam,
-        'SGD': torch.optim.SGD
+        'SGD': torch.optim.SGD,
         'AdamW': torch.optim.AdamW,
     }
     kwarg = {

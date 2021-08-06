@@ -8,6 +8,12 @@ class DummyMPI(object):
     def barrier(self):
         pass
 
+    def disconnet(self):
+        pass
+
+    def free(self):
+        pass
+
     def gather(self, data, root=0):
         return [data]
 
@@ -27,6 +33,11 @@ class MPI4PY(object):
 
     def barrier(self):
         self.comm.barrier()
+
+    def disconnect(self):
+        self.comm.Disconnect()
+    def free(self):
+        self.comma.Free()
 
     def gather(self, data, root=0):
         return self.comm.gather(data, root=0)

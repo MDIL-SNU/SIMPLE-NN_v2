@@ -2,6 +2,7 @@ from __future__ import print_function
 from __future__ import division
 import os, sys
 import torch
+import time
 import numpy as np
 from ase import io
 from ase import units
@@ -12,10 +13,8 @@ from simple_nn_v2.utils import cffi as utils_ffi
 
 from simple_nn_v2.features.symmetry_function import utils  as utils_symf
 
-from simple_nn_v2.features.symmetry_function.mpi import DummyMPI, MPI4PY
 
-
-def generate(inputs, logfile):
+def generate(inputs, logfile, comm):
     """ Generate structure data files(format: pickle/pt) that listed in "structure_list" file
 
     1. Get structure list from parsing "structure_list" file
@@ -32,20 +31,11 @@ def generate(inputs, logfile):
     5. Calculate symmetry functon values using C implemented code
     6. Save to data file (format: pickle or pt)
     """
-
+    start_time = time.time()
     atom_types = inputs['atom_types']
     structure_list = './structure_list'
     data_list = './total_list'
     
-    #Load MPI 
-    try: 
-        comm = MPI4PY()
-        assert comm.size != 1
-        logfile.write("Use mpi in generate size {0}\n".format(comm.size))
-    except:
-        comm = DummyMPI()
-        logfile.write("Not use mpi in generate\n")
-
     if comm.rank == 0:
         data_list_fil = open(data_list, 'w')
     data_idx = 1
@@ -129,9 +119,9 @@ def generate(inputs, logfile):
             
             E, F, S = _extract_EFS(inputs, structure, logfile, comm)
             result['E'] = torch.tensor(E)
-            if inputs['neural_network']['use_force'] is True:
+            if inputs['descriptor']['read_force'] is True:
                 result['F'] = torch.tensor(F)
-            if inputs['neural_network']['use_stress'] is True:
+            if inputs['descriptor']['read_stress'] is True:
                 result['S'] = torch.tensor(S)
 
             if comm.rank == 0:
@@ -147,8 +137,8 @@ def generate(inputs, logfile):
         data_list_fil.close()
         if inputs['descriptor']['compress_outcar']:
             os.remove('./tmp_comp_OUTCAR')
-
-
+        logfile.write(f"generate done. {time.time()-start_time} seconds elapsed\n")
+    
 # Extract structure information from structure (atom numbers, cart, scale, cell)
 # Return variables related to structure information (atom_type_idx, type_num, type_atom_idx)
 def _get_structure_coordination_info(structure):
@@ -262,7 +252,7 @@ def _extract_EFS(inputs, structure, logfile, comm):
         else:
             E = structure.get_total_energy()
 
-        if inputs['neural_network']['use_force'] is True:
+        if inputs['descriptor']['read_force'] is True:
             try:
                 F = structure.get_forces()
             except:
@@ -271,7 +261,7 @@ def _extract_EFS(inputs, structure, logfile, comm):
                     logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)
 
-        if inputs['neural_network']['use_stress'] is True:
+        if inputs['descriptor']['read_stress'] is True:
             try:
                 # ASE returns the stress tensor by voigt order xx yy zz yz zx xy
                 S = -structure.get_stress()/units.GPa*10

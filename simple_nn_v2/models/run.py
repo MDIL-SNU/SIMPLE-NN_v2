@@ -2,9 +2,10 @@ import torch
 from torch.optim.lr_scheduler import ExponentialLR
 
 import time
+import os
 
 from simple_nn_v2.models import neural_network
-from simple_nn_v2.models import utils
+from simple_nn_v2.models import loss
 from simple_nn_v2.models import data_handler
 from simple_nn_v2.models import optimizers
 from simple_nn_v2.models import logger
@@ -30,9 +31,13 @@ def train(inputs, logfile):
 
     if inputs['neural_network']['train']:
         train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='train')
-        valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='valid')
         labeled_train_loader = data_handler._load_labeled_dataset(inputs, logfile, scale_factor, pca, device, mode='train')
-        labeled_valid_loader = data_handler._load_labeled_dataset(inputs, logfile, scale_factor, pca, device, mode='valid')
+        if os.path.exists(inputs['neural_network']['valid_list']):
+            valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='valid')
+            labeled_valid_loader = data_handler._load_labeled_dataset(inputs, logfile, scale_factor, pca, device, mode='valid')
+        else:
+            valid_loader = None
+            labeled_valid_loader = None 
 
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, loss, \
             train_loader, valid_loader, labeled_train_loader, labeled_valid_loader)
@@ -75,7 +80,6 @@ def _load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, op
                 if name in potential_params[element].keys():
                     lin.weight.data = torch.transpose(torch.tensor(potential_params[element][name]['weight']).to(device=device), -1, 0)
                     lin.bias.data = torch.transpose(torch.tensor(potential_params[element][name]['bias']).to(device=device), -1, 0)
-        logfile.write("Load model parameters from [potential_saved]\n")
     elif inputs['neural_network']['continue']: # load pytorch type checkpoint
         checkpoint = torch.load(inputs['neural_network']['continue'])
         model.load_state_dict(checkpoint['model'])
@@ -85,11 +89,9 @@ def _load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, op
             optimizer.load_state_dict(checkpoint['optimizer'])
             for pg in optimizer.param_groups:
                 pg['lr'] = inputs['neural_network']['learning_rate']
-            logfile.write("Load previous optimizer, learning rate\n")
 
         if not inputs['neural_network']['clear_prev_status']:
             inputs['neural_network']['start_epoch'] = checkpoint['epoch']
-            logfile.write("Load previous epoch : {}\n".format(checkpoint['epoch']))
 
     return checkpoint
 
@@ -98,19 +100,23 @@ def _load_scale_factor_and_pca(inputs, logfile, checkpoint):
     pca = None
 
     if checkpoint:  # load from checkpoint file
-        if inputs['descriptor']['calc_scale']:
+        if inputs['neural_network']['scale']:
             scale_factor = checkpoint['scale_factor']
             logfile.write("Load scale factor from checkpoint\n")
         if inputs['neural_network']['pca']:
             pca = checkpoint['pca']
             logfile.write("Load pca from checkpoint\n")
     else:  # load from 'scale_factor', 'pca' file
-        if inputs['descriptor']['calc_scale']:
-            scale_factor = torch.load('./scale_factor')
-            logfile.write("Load scale factor from [scale_factor]\n")
+        if inputs['neural_network']['scale']:
+            if type(inputs['neural_network']['scale']) is not bool:
+                scale_factor = torch.load(inputs['scale']['scale'])
+            else:
+                scale_factor = torch.load('./scale_factor')
         if inputs['neural_network']['pca']:
-            pca = torch.load('./pca')
-            logfile.write("Load pca from [pca]]\n")
+            if type(inputs['neural_network']['pca']) is not bool:
+                pca = torch.load(inputs['neural_network']['pca'])
+            else:
+                pca = torch.load('./pca')
         _convert_scale_factor_and_pca_to_tensor(inputs, logfile, scale_factor, pca)
 
     return scale_factor, pca
@@ -137,7 +143,6 @@ def _set_initial_loss(inputs, logfile, checkpoint):
 
 def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, best_loss, train_loader, valid_loader,\
      labeled_train_loader=None, labeled_valid_loader=None, atomic_e=False):
-    logfile.write("Training model \n")
     dtype = torch.get_default_dtype()
     non_block = False if (device == torch.device('cpu')) else True
 
@@ -150,6 +155,7 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
 
     criteria_dict = _set_stop_rmse_criteria(inputs, logfile)
     best_epoch = inputs['neural_network']['start_epoch']
+
     if inputs['neural_network']['lr_decay']:
         scheduler = ExponentialLR(optimizer=optimizer, gamma=inputs['neural_network']['lr_decay'])
 
@@ -205,6 +211,8 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
         if inputs['neural_network']['lr_decay']:
             scheduler.step()
 
+        logfile.flush()
+
     logfile.write("Best loss lammps potential written at {0} epoch\n".format(best_epoch))
 
 def progress_epoch(inputs, data_loader, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=False):
@@ -219,7 +227,7 @@ def progress_epoch(inputs, data_loader, model, optimizer, criterion, epoch, dtyp
     end = time.time()
     for i, item in enumerate(data_loader):
         epoch_result['data_time'].update(time.time() - end) # save data loading time
-        batch_loss, _ = utils.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, weighted, dtype, use_force, use_stress, atomic_e)
+        batch_loss, _ = loss.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, weighted, dtype, use_force, use_stress, atomic_e)
 
         if back_prop: 
             optimizer.zero_grad()
@@ -272,7 +280,7 @@ def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader
 
     for i, item in enumerate(test_loader):
         n_batch = item['E'].size(0)
-        _, calc_results = utils.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, False, dtype, use_force, use_stress, atomic_e=False)
+        _, calc_results = loss.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, False, dtype, use_force, use_stress, atomic_e=False)
         _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress)
 
     torch.save(res_dict, 'test_result')

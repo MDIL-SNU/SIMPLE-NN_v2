@@ -4,13 +4,13 @@ train_model: false
 atom_types:
  - Si
  - O
-
+params:
+  Si: params_Si
+  O: params_O
+ 
 descriptor:
   type: symmetry_function
-  params:
-    Si: params_Si
-    O: params_O
-  valid_rate: 0.1
+ valid_rate: 0.1
   remain_pickle: True
   compress_outcar: True
   save_to_pickle: False
