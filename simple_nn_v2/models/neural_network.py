@@ -143,7 +143,7 @@ class swish(torch.nn.Module):
         return x * torch.sigmoid(x)
 
 def _initialize_model_and_weights(inputs, logfile, device):
-    logfile.write(f"Use {device} in model\n")
+    logfile.write(f"USE {device} IN MODEL\n")
 
     model = {}
     for element in inputs['atom_types']:
@@ -160,10 +160,9 @@ def _initialize_model_and_weights(inputs, logfile, device):
 
         weights_initialize_log = _initialize_weights(inputs, logfile, model[element])
 
-    logfile.write(weights_initialize_log)
     model = FCNDict(model) #Make full model with elementized dictionary model
     model.to(device=device)
-    logfile.write("Initialize pytorch model\n")
+    logfile.write("INITIALIZATION MODEL DONE.\n")
 
     return model
 
@@ -182,20 +181,20 @@ def _initialize_weights(inputs, logfile, model):
     
     try:
         if init_dic is None:
-            weight_log = "No weight initializer infomation in input file\n"
+            weight_log = ""
         elif init_name not in implimented_initializer:
-            weight_log = f"{init_name} weight initializer infomation is not implemented\n".format()
+            weight_log = f"Warning : {init_name} weight initializer infomation is not implemented\n".format()
         else:
             weight_initializer, kwarg = weight_initializers._get_initializer_and_kwarg(init_name, init_params)
             for lin in model.lin:
                 if lin == Linear:
                     weight_initializer(lin.weight, **kwarg)
                     weight_initializer(lin.bias, **kwarg)
-            weight_log = "{} weight initializer : {}\n".format(init_name, kwarg)
+            weight_log = ""
     except:
         import sys
         print(sys.exc_info())
-        weight_log = "During weight initialization error occured. Default Initializer used\n"
+        raise Exception("During weight initialization error occured. Default Initializer used\n")
 
     return weight_log
 

@@ -1,6 +1,7 @@
 import cffi
 
 ffibuilder = cffi.FFI()
+
 ffibuilder.cdef(
     """void calculate_gdf(double **, int, double **, int, int, double, double *);"""
 )

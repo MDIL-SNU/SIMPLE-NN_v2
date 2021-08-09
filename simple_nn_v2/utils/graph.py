@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 from six.moves import cPickle as pickle
 import itertools
 from tqdm import tqdm
-from ..utils import pickle_load
 import logging
+import torch
 
 def plot_gdfinv_density(gdfinv_list, atom_types, bins=100, auto_c=None):
 
@@ -95,7 +95,7 @@ def plot_Gdistance_vs_Ferror(G_list, F_list, atom_types, use_scale=True, bins=20
     if use_scale:
         #with open('scale_factor') as fil:
         #    scale = pickle.load(fil)
-        scale = pickle_load('scale_factor')
+        scale = torch.load('scale_factor')
 
     for item in atom_types:
         logging.info('**** {} ****'.format(item))
@@ -312,7 +312,7 @@ def plot_correlation_graph(test_result='test_result', atom_types=None):
         plt.xlabel(xlabel) if xlabel != None else xlabel
         plt.title(title) if title != None else title
 
-    res = pickle_load(test_result)
+    res = torch.load(test_result)
 
     force_tag = ('NN_F' in res) and ('DFT_F' in res)
 

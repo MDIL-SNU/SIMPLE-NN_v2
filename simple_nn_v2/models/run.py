@@ -1,8 +1,10 @@
 import torch
 from torch.optim.lr_scheduler import ExponentialLR
+import numpy as np
 
 import time
 import os
+from tqdm import tqdm
 
 from simple_nn_v2.models import neural_network
 from simple_nn_v2.models import loss
@@ -30,17 +32,17 @@ def train(inputs, logfile):
     loss = _set_initial_loss(inputs, logfile, checkpoint)
 
     if inputs['neural_network']['train']:
-        train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='train')
+        train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='train', gdf=inputs['neural_network']['gdf'])
         labeled_train_loader = data_handler._load_labeled_dataset(inputs, logfile, scale_factor, pca, device, mode='train')
         if os.path.exists(inputs['neural_network']['valid_list']):
-            valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='valid')
+            valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='valid', gdf=inputs['neural_network']['gdf'])
             labeled_valid_loader = data_handler._load_labeled_dataset(inputs, logfile, scale_factor, pca, device, mode='valid')
         else:
             valid_loader = None
             labeled_valid_loader = None 
 
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, loss, \
-            train_loader, valid_loader, labeled_train_loader, labeled_valid_loader)
+            train_loader, valid_loader, labeled_train_loader, labeled_valid_loader )
 
     if inputs['neural_network']['test']:
         test_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='test')
@@ -117,12 +119,13 @@ def _load_scale_factor_and_pca(inputs, logfile, checkpoint):
                 pca = torch.load(inputs['neural_network']['pca'])
             else:
                 pca = torch.load('./pca')
-        _convert_scale_factor_and_pca_to_tensor(inputs, logfile, scale_factor, pca)
+    _convert_to_tensor(inputs, logfile, scale_factor, pca)
 
     return scale_factor, pca
 
-def _convert_scale_factor_and_pca_to_tensor(inputs, logfile, scale_factor, pca):
+def _convert_to_tensor(inputs, logfile, scale_factor, pca):
     device = _get_torch_device_optional(inputs)
+    gdf_scale = dict()
     for element in inputs['atom_types']:
         if scale_factor:
             max_plus_min = torch.tensor(scale_factor[element][0,:], device=device)
@@ -132,6 +135,7 @@ def _convert_scale_factor_and_pca_to_tensor(inputs, logfile, scale_factor, pca):
             pca[element][0] = torch.tensor(pca[element][0], device=device)
             pca[element][1] = torch.tensor(pca[element][1], device=device)
             pca[element][2] = torch.tensor(pca[element][2], device=device)
+            #cutoff_for_log = inputs['weight_modifier']['params'][item]['c']
 
 def _set_initial_loss(inputs, logfile, checkpoint):
     loss = float('inf')
@@ -160,7 +164,7 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
         scheduler = ExponentialLR(optimizer=optimizer, gamma=inputs['neural_network']['lr_decay'])
 
     start_time = time.time()
-    for epoch in range(inputs['neural_network']['start_epoch'], total_epoch+1):
+    for epoch in tqdm(range(inputs['neural_network']['start_epoch'], total_epoch+1)):
         # Main loop for one epoch
         train_epoch_result = progress_epoch(inputs, train_loader, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=atomic_e)
         train_loss = train_epoch_result['losses'].avg
@@ -243,13 +247,10 @@ def _set_stop_rmse_criteria(inputs, logfile):
     criteria_dict = dict()
     if inputs['neural_network']['energy_criteria']:
         criteria_dict['e_err'] = [float('inf') , float(inputs['neural_network']['energy_criteria'])]
-        logfile.write("Energy criteria used : {0:4}  \n".format(float(inputs['neural_network']['energy_criteria'])))
     if inputs['neural_network']['force_criteria'] and inputs['neural_network']['use_force']:
         criteria_dict['f_err'] = [float('inf'), float(inputs['neural_network']['force_criteria'])]
-        logfile.write("Force criteria used : {0:4}\n".format(float(inputs['neural_network']['force_criteria'])))
     if inputs['neural_network']['stress_criteria'] and inputs['neural_network']['use_stress']:
         criteria_dict['s_err'] = [float('inf'), float(inputs['neural_network']['stress_criteria'])]
-        logfile.write("Stress criteria used : {0:4}\n".format(float(inputs['neural_network']['stress_criteria'])))    
 
     if len(criteria_dict.keys()) == 0:
         criteria_dict = None

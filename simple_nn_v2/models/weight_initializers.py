@@ -5,9 +5,6 @@ def _define_gain(logfile, acti_fn, init_name, init_params):
         #Nonlinear functions that gain defined
         if acti_fn in ['sigmoid', 'tanh', 'relu', 'selu']:
             init_params['gain'] = init.calculate_gain(acti_fn)
-        else:
-            if init_params['gain'] is None:
-                logfile.write("gain must be defined for using '{}' initializer with '{}' activation function".format(init_name, acti_fn))
 
 def _get_implemented_initializer_list():
     implemented_init = ['xavier uniform', 'xavier normal', 'normal', 'constant', 'kaiming normal', 'he normal', 'kaiming uniform', 'he uniform', 'orthogonal']

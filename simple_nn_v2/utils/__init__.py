@@ -1,6 +1,5 @@
 from __future__ import print_function
 import six
-from six.moves import cPickle as pickle
 import numpy as np
 #from ._libgdf import lib, ffi
 import os, sys, psutil, shutil
@@ -12,13 +11,16 @@ from collections import OrderedDict
 #from tensorflow.python.ops import array_ops, control_flow_ops, tensor_array_ops
 from .mpiclass import DummyMPI, MPI4PY
 from scipy.integrate import nquad
+
 import ase
 import torch
 from ase.geometry import get_distances
 
+from simple_nn_v2.utils.features import _gen_2Darray_for_ffi
+from ._libgdf import lib, ffi
 
 
-def _generate_gdf_file(ref_list, scale, atom_types, idx_list, target_list=None, filename=None, noscale=False, sigma=0.02, comm=DummyMPI()):
+def _generate_gdf_file(ref_list, scale, atom_types, idx_list, target_list=None, noscale=False, sigma=0.02, comm=DummyMPI()):
     gdf = dict()
     auto_c = dict()
     auto_sigma = dict()
@@ -83,9 +85,6 @@ def _generate_gdf_file(ref_list, scale, atom_types, idx_list, target_list=None, 
                 gdf[item][:,0] /= np.mean(gdf[item][:,0])
             """
 
-    if (filename != None) and (comm.rank == 0):
-        with open(filename, 'wb') as fil:
-            pickle.dump(gdf, fil, protocol=2)
 
     return gdf, auto_sigma, auto_c
 

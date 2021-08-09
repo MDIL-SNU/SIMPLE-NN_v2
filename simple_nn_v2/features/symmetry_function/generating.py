@@ -9,7 +9,7 @@ from ase import units
 import ase
 from ._libsymf import lib, ffi
 from simple_nn_v2.utils import data_generator
-from simple_nn_v2.utils import cffi as utils_ffi
+from simple_nn_v2.utils.features import _gen_2Darray_for_ffi
 
 from simple_nn_v2.features.symmetry_function import utils  as utils_symf
 
@@ -48,8 +48,8 @@ def generate(inputs, logfile, comm):
 
     # Convert values into C type data
     for element in atom_types:
-        symf_params_set[element]['int_p'] = utils_ffi._gen_2Darray_for_ffi(symf_params_set[element]['int'], ffi, 'int')
-        symf_params_set[element]['double_p'] = utils_ffi._gen_2Darray_for_ffi(symf_params_set[element]['double'], ffi)
+        symf_params_set[element]['int_p'] = _gen_2Darray_for_ffi(symf_params_set[element]['int'], ffi, 'int')
+        symf_params_set[element]['double_p'] = _gen_2Darray_for_ffi(symf_params_set[element]['double'], ffi)
 
     for structure_file, structure_slicing, tag_idx in zip(structure_file_list, structure_slicing_list, structure_tag_idx):
         structures = data_generator.load_structures(inputs, structure_file, structure_slicing, logfile, comm)
@@ -63,9 +63,9 @@ def generate(inputs, logfile, comm):
 
             # Convert values into C type data
             atom_type_idx_p = ffi.cast('int *', atom_type_idx.ctypes.data)
-            cart_p  = utils_ffi._gen_2Darray_for_ffi(cart, ffi)
-            scale_p = utils_ffi._gen_2Darray_for_ffi(scale, ffi)
-            cell_p  = utils_ffi._gen_2Darray_for_ffi(cell, ffi)
+            cart_p  = _gen_2Darray_for_ffi(cart, ffi)
+            scale_p = _gen_2Darray_for_ffi(scale, ffi)
+            cell_p  = _gen_2Darray_for_ffi(cell, ffi)
 
             result = _initialize_result(atoms_per_type, structure_tags, structure_weights, tag_idx, atom_type_idx)
             
@@ -89,9 +89,9 @@ def generate(inputs, logfile, comm):
                 
                 # Convert cal_atom_idx, x, dx, da into C type data
                 cal_atom_idx_p = ffi.cast('int *', cal_atom_idx.ctypes.data)
-                x_p = utils_ffi._gen_2Darray_for_ffi(x, ffi)
-                dx_p = utils_ffi._gen_2Darray_for_ffi(dx, ffi)
-                da_p = utils_ffi._gen_2Darray_for_ffi(da, ffi)        
+                x_p = _gen_2Darray_for_ffi(x, ffi)
+                dx_p = _gen_2Darray_for_ffi(dx, ffi)
+                da_p = _gen_2Darray_for_ffi(da, ffi)        
 
                 # 5. Calculate symmetry functon using C type data
                 errno = lib.calculate_sf(cell_p, cart_p, scale_p, \

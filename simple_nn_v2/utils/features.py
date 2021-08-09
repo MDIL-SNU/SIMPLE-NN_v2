@@ -5,15 +5,6 @@ import numpy as np
 from six.moves import cPickle as pickle
 
 
-def load_data(data_file, pickle_format=False):
-    if pickle_format:
-        with open(data_file, 'rb') as fil:
-            tmp_data = pickle.load(fil, encoding='latin1')
-    else:
-        tmp_data = torch.load(data_file)
-
-    return tmp_data
-
 def convert_pickle_to_pt(filename):
     if os.path.exists(filename):
         out_name = filename.split('.')[0]+'.pt'
@@ -29,7 +20,7 @@ def _gen_2Darray_for_ffi(arr, ffi, cdata='double'):
         arr_p[i] = ffi.cast(cdata + " *", arr[i].ctypes.data)
     return arr_p
 
-def _make_full_featurelist(filelist, feature_tag, atom_types=None, pickle_format=False):
+def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False):
     """
     Args:
         filelist(str): name of file list ex) "pickle_train_list", "pickle_valid_list"
@@ -42,34 +33,61 @@ def _make_full_featurelist(filelist, feature_tag, atom_types=None, pickle_format
         feature_list(dict): feature list of feature_tag
     """
 
-    data_list = _make_data_list(filelist)
+    data_list = sum(_make_str_data_list(filelist), [])
     feature_list = dict()
+    idx_list = dict()
+    directory_list = list()
     
     if atom_types == None:
         for i,item in enumerate(data_list):
-            tmp_data = load_data(item)
+            tmp_data = torch.load(item)
+            directory_list.append(item)
             feature_list.append(tmp_data[feature_tag])
 
         feature_list = np.concatenate(feature_list, axis=0)
 
     else:
-        for item in atom_types:
-            feature_list[item] = list()
+        if use_idx:
+            for item in atom_types:
+                feature_list[item] = list()
+                idx_list[item] = list()
+    
+            for i,item in enumerate(data_list):
+                tmp_data = torch.load(item)
+                directory_list.append(item)
+                for j, jtem in enumerate(atom_types):
+                    if jtem in tmp_data[feature_tag]:
+                        feature_list[jtem].append(tmp_data[feature_tag][jtem])
 
-        for i,item in enumerate(data_list):
-            tmp_data = load_data(item)
-            for jtem in atom_types:
-                if jtem in tmp_data[feature_tag]:
-                    feature_list[jtem].append(tmp_data[feature_tag][jtem])
+                   
+                    idx_list[jtem].append([i]*len(tmp_data['atom_idx'][tmp_data['atom_idx'] == j+1]))
             
-        for item in atom_types:
-            if len(feature_list[item]) > 0:
-                feature_list[item] = np.concatenate(feature_list[item], axis=0)
+            for item in atom_types:
+                if len(feature_list[item]) > 0:
+                    feature_list[item] = np.concatenate(feature_list[item], axis=0)
+                if len(idx_list[item]) > 0:
+                    idx_list[item] = np.concatenate(idx_list[item], axis=0)
+    
+        else:
+            for item in atom_types:
+                feature_list[item] = list()
+                idx_list[item] = list()
+    
+            for i,item in enumerate(data_list):
+                tmp_data = torch.load(item)
+                directory_list.append(item)
+                for jtem in atom_types:
+                    if jtem in tmp_data[feature_tag]:
+                        feature_list[jtem].append(tmp_data[feature_tag][jtem])
+                        idx_list[jtem].append([i]*tmp_data['N'][jtem])
+                
+            for item in atom_types:
+                if len(feature_list[item]) > 0:
+                    feature_list[item] = np.concatenate(feature_list[item], axis=0)
+                    idx_list[item] = np.concatenate(idx_list[item], axis=0)
 
-    return feature_list
+    return feature_list, idx_list, directory_list
 
-def _make_data_list(filename):
-    return sum(_make_str_data_list(filename), [])
 
 def _make_str_data_list(filename):
     """

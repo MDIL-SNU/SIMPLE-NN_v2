@@ -17,7 +17,7 @@ def calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoc
         if use_force:
             F_ = calculate_F(inputs['atom_types'], x, dEdG, item, device, non_block)
             F = item['F'].type(dtype).to(device=device, non_blocking=non_block)
-            f_loss = get_f_loss(inputs['neural_network']['F_loss_type'], F_, F, criterion, epoch_result, n_batch, item, weight)
+            f_loss = get_f_loss(inputs['neural_network']['F_loss_type'], F_, F, criterion, epoch_result, n_batch, item, weight, gdf=inputs['neural_network']['gdf'])
             batch_loss += inputs['neural_network']['force_coeff'] * f_loss
             calc_results['F'] = F_
 
@@ -138,7 +138,7 @@ def get_e_loss(atom_types, loss_type, atomic_E, E_, n_atoms, item, criterion, pr
 
     return w_e_loss
 
-def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight):
+def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight, gdf=False):
     if loss_type == 2:
         # check the scale value: current = norm(force difference)
         # Force different scaling : larger force difference get higher weight !!
@@ -149,12 +149,18 @@ def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight
         f_loss = criterion(F_, F)
     
     #Not gdf
-    batch_idx = 0
-    for n in range(n_batch): #Make structure_weighted force
-        tmp_idx = item['tot_num'][n].item()
-        f_loss[batch_idx:(batch_idx+tmp_idx)] = f_loss[batch_idx:(batch_idx+tmp_idx)] * weight[n].item()
-        batch_idx += tmp_idx
-    #GDF part (later)
+    if gdf:
+        batch_idx = 0
+        for n in range(n_batch): #Make structure_weighted force
+            tmp_idx = item['tot_num'][n].item()
+            f_loss[batch_idx:(batch_idx+tmp_idx)] = f_loss[batch_idx:(batch_idx+tmp_idx)] * weight[n].item() #* weight for hgdf
+            batch_idx += tmp_idx
+    else:
+        batch_idx = 0
+        for n in range(n_batch): #Make structure_weighted force
+            tmp_idx = item['tot_num'][n].item()
+            f_loss[batch_idx:(batch_idx+tmp_idx)] = f_loss[batch_idx:(batch_idx+tmp_idx)] * weight[n].item()
+            batch_idx += tmp_idx
 
     w_f_loss = torch.mean(f_loss)
     print_f_loss = torch.mean(criterion(F_, F)) * 3
