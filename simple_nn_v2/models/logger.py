@@ -38,20 +38,27 @@ class TimeMeter(object):
     def update(self, val):
         self.val += val
 
-def _init_meters(use_force, use_stress, atomic_e):
+def _init_meters(struct_labels, use_force, use_stress, atomic_e):
     ## Setting LOG with progress meter
-    losses = AverageMeter('loss', ':8.4e')
-    e_err = AverageMeter('E err', ':6.4e', sqrt=True)
     batch_time = TimeMeter('time', ':6.3f')
     data_time = TimeMeter('data', ':6.3f')
     total_time = TimeMeter('total time', ':8.4e')
-    progress_dict = {'batch_time': batch_time, 'data_time': data_time, 'losses': losses, 'e_err': e_err, 'total_time': total_time}
+    losses = AverageMeter('loss', ':8.4e')
+    e_err = dict()
+    for label in struct_labels:
+        e_err[label] = AverageMeter('E err', ':6.4e', sqrt=True)
 
+    progress_dict = {'batch_time': batch_time, 'data_time': data_time, 'losses': losses, 'e_err': e_err, 'total_time': total_time, 'struct_labels': struct_labels}
+    
     if use_force and not atomic_e:
-        f_err = AverageMeter('F err', ':6.4e', sqrt=True)
+        f_err = dict()
+        for label in struct_labels:
+            f_err[label] = AverageMeter('F err', ':6.4e', sqrt=True)
         progress_dict['f_err'] = f_err
     if use_stress and not atomic_e:
-        s_err = AverageMeter('S err', ':6.4e', sqrt=True)
+        s_err = dict()
+        for label in struct_labels:
+            s_err[label] = AverageMeter('F err', ':6.4e', sqrt=True)
         progress_dict['s_err'] = s_err
 
     return progress_dict
@@ -84,17 +91,30 @@ def _show_avg_rmse(inputs, logfile, epoch, lr, total_time, train_progress_dict, 
     logfile.write(log+'\n')
 
 def _formatting_avg_rmse(key, title, t_progress_dict, v_progress_dict):
+    # calc average rmse
+    t_sum = 0
+    t_count = 0
+    for label in t_progress_dict['struct_labels']:
+        t_sum += t_progress_dict[key][label].sum
+        t_count += t_progress_dict[key][label].count
+    t_rmse = (t_sum / t_count) ** 0.5
+
+    if v_progress_dict:
+        v_sum = 0
+        v_count = 0
+        for label in v_progress_dict['struct_labels']:
+            v_sum += v_progress_dict[key][label].sum
+            v_count += v_progress_dict[key][label].count
+        v_rmse = (v_sum / v_count) ** 0.5
+
     if v_progress_dict != None:
-        log = ' {}(T V) {:.4e} {:.4e}'.format(title, t_progress_dict[key].sqrt_avg, v_progress_dict[key].sqrt_avg)
+        log = ' {}(T V) {:.4e} {:.4e}'.format(title, t_rmse, v_rmse)
     else:
-        log = ' {}(T V) {:.4e} {:>10}'.format(title, t_progress_dict[key].sqrt_avg, '-')
+        log = ' {}(T V) {:.4e} {:>10}'.format(title, t_rmse, '-')
     return log
 
 #Show structure rmse
-def _show_structure_rmse(inputs, logfile, labeled_train_loader, labeled_valid_loader, model, device, optimizer=None, criterion=None, atomic_e=False):
-    dtype = torch.get_default_dtype()
-    non_block = False if (device == torch.device('cpu')) else True
-
+def _show_structure_rmse(inputs, logfile, train_epoch_result, valid_epoch_result):
     logfile.write('structural breakdown:\n')
     log = '  {:<20}'.format('label')
     log += '   E_RMSE(T)   E_RMSE(V)'
@@ -104,34 +124,25 @@ def _show_structure_rmse(inputs, logfile, labeled_train_loader, labeled_valid_lo
         log += '   S_RMSE(T)   S_RMSE(V)'
     logfile.write(log+'\n')
 
-    keys = labeled_train_loader.keys()
-    if labeled_valid_loader:
-        for key in labeled_valid_loader.keys():
-            if key not in keys:
-                keys.append(labeled_valid_loader[key])
-
-    for key in keys:
+    for label in train_epoch_result['struct_labels']:
         log = ''
-        train_epoch_result = run.progress_epoch(inputs, labeled_train_loader[key], model, optimizer, criterion, 0, dtype, device, non_block, valid=True, atomic_e=atomic_e)
-        if labeled_valid_loader and labeled_valid_loader[key] is not None:
-            valid_epoch_result = run.progress_epoch(inputs, labeled_valid_loader[key], model, optimizer, criterion, 0, dtype, device, non_block, valid=True, atomic_e=atomic_e)
-        else:
-            valid_epoch_result = None
-
-        log += '  {0:20}'.format(key)
-        log += _formatting_structure_rmse('e_err', train_epoch_result, valid_epoch_result)
+        log += '  {0:20}'.format(label)
+        log += _formatting_structure_rmse('e_err', label, train_epoch_result, valid_epoch_result)
         if inputs['neural_network']['use_force']:
-            log += _formatting_structure_rmse('f_err', train_epoch_result, valid_epoch_result)
+            log += _formatting_structure_rmse('f_err', label, train_epoch_result, valid_epoch_result)
         if inputs['neural_network']['use_stress']:
-            log += _formatting_structure_rmse('s_err', train_epoch_result, valid_epoch_result)
+            log += _formatting_structure_rmse('s_err', label, train_epoch_result, valid_epoch_result)
         logfile.write(log+'\n')
 
     log = '-' * 94
     logfile.write(log+'\n')
 
-def _formatting_structure_rmse(key, t_progress_dict, v_progress_dict):
-    t_val = '{:>10}'.format('-') if t_progress_dict == None else '{:.4e}'.format(t_progress_dict[key].sqrt_avg)
-    v_val = '{:>10}'.format('-') if v_progress_dict == None else '{:.4e}'.format(v_progress_dict[key].sqrt_avg)
-    log = '  {}  {}'.format(t_val, v_val)
+def _formatting_structure_rmse(key, label, t_progress_dict, v_progress_dict):
+    t_val = '{:>10}'.format('-') if t_progress_dict[key][label].sum == 0 else '{:.4e}'.format(t_progress_dict[key][label].sqrt_avg)
+    if v_progress_dict:
+        v_val = '{:>10}'.format('-') if v_progress_dict[key][label].sum == 0 else '{:.4e}'.format(v_progress_dict[key][label].sqrt_avg)
+        log = '  {}  {}'.format(t_val, v_val)
+    else:
+        log = '  {}'.format(t_val)
 
     return log

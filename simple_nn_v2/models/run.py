@@ -1,7 +1,8 @@
 import torch
 from torch.optim.lr_scheduler import ExponentialLR
-import numpy as np
+from torchsummary import summary
 
+import numpy as np
 import time
 import os
 from tqdm import tqdm
@@ -33,16 +34,12 @@ def train(inputs, logfile):
 
     if inputs['neural_network']['train']:
         train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='train', gdf=inputs['neural_network']['gdf'])
-        labeled_train_loader = data_handler._load_labeled_dataset(inputs, logfile, scale_factor, pca, device, mode='train')
         if os.path.exists(inputs['neural_network']['valid_list']):
             valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='valid', gdf=inputs['neural_network']['gdf'])
-            labeled_valid_loader = data_handler._load_labeled_dataset(inputs, logfile, scale_factor, pca, device, mode='valid')
         else:
             valid_loader = None
-            labeled_valid_loader = None 
 
-        train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, loss, \
-            train_loader, valid_loader, labeled_train_loader, labeled_valid_loader )
+        train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, loss, train_loader, valid_loader)
 
     if inputs['neural_network']['test']:
         test_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='test')
@@ -87,7 +84,7 @@ def _load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, op
         model.load_state_dict(checkpoint['model'])
         logfile.write("Load pytorch model from [{0}]\n".format(inputs['neural_network']['continue']))
 
-        if not inputs['neural_network']['clear_prev_network']:
+        if not inputs['neural_network']['clear_prev_optimizer']:
             optimizer.load_state_dict(checkpoint['optimizer'])
             for pg in optimizer.param_groups:
                 pg['lr'] = inputs['neural_network']['learning_rate']
@@ -128,8 +125,8 @@ def _convert_to_tensor(inputs, logfile, scale_factor, pca):
     gdf_scale = dict()
     for element in inputs['atom_types']:
         if scale_factor:
-            max_plus_min = torch.tensor(scale_factor[element][0,:], device=device)
-            max_minus_min = torch.tensor(scale_factor[element][1,:], device=device)
+            max_plus_min = torch.tensor(scale_factor[element][0], device=device)
+            max_minus_min = torch.tensor(scale_factor[element][1], device=device)
             scale_factor[element] = [max_plus_min, max_minus_min]
         if pca:
             pca[element][0] = torch.tensor(pca[element][0], device=device)
@@ -145,8 +142,8 @@ def _set_initial_loss(inputs, logfile, checkpoint):
 
     return loss
 
-def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, best_loss, train_loader, valid_loader,\
-     labeled_train_loader=None, labeled_valid_loader=None, atomic_e=False):
+def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, best_loss, train_loader, valid_loader, atomic_e=False):
+    struct_labels = _get_structure_labels(train_loader, valid_loader)
     dtype = torch.get_default_dtype()
     non_block = False if (device == torch.device('cpu')) else True
 
@@ -166,12 +163,13 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
     start_time = time.time()
     for epoch in tqdm(range(inputs['neural_network']['start_epoch'], total_epoch+1)):
         # Main loop for one epoch
-        train_epoch_result = progress_epoch(inputs, train_loader, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=atomic_e)
+        train_epoch_result = progress_epoch(inputs, train_loader, struct_labels, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=atomic_e)
         train_loss = train_epoch_result['losses'].avg
         if valid_loader:
-            valid_epoch_result = progress_epoch(inputs, valid_loader, model, optimizer, criterion, epoch, dtype, device, non_block, valid=True, atomic_e=atomic_e)
+            valid_epoch_result = progress_epoch(inputs, valid_loader, struct_labels, model, optimizer, criterion, epoch, dtype, device, non_block, valid=True, atomic_e=atomic_e)
             loss = valid_epoch_result['losses'].avg
         else:
+            valid_epoch_result = None
             loss = train_loss
 
         # save checkpoint if best loss is renewed
@@ -185,8 +183,8 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
         if (epoch % inputs['neural_network']['show_interval'] == 0):
             total_time = time.time() - start_time
             logger._show_avg_rmse(inputs, logfile, epoch, optimizer.param_groups[0]['lr'], total_time, train_epoch_result, valid_epoch_result)
-            if inputs['neural_network']['print_structure_rmse'] and labeled_train_loader:
-                logger._show_structure_rmse(inputs, logfile, labeled_train_loader, labeled_valid_loader, model, device, optimizer=optimizer, criterion=criterion, atomic_e=atomic_e)
+            if inputs['neural_network']['print_structure_rmse']:
+                logger._show_structure_rmse(inputs, logfile, train_epoch_result, valid_epoch_result)
 
         # save checkpoint for each checkpoint_interval
         if inputs['neural_network']['checkpoint_interval'] and (epoch % inputs['neural_network']['checkpoint_interval'] == 0):
@@ -219,10 +217,23 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
 
     logfile.write("Best loss lammps potential written at {0} epoch\n".format(best_epoch))
 
-def progress_epoch(inputs, data_loader, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=False):
+def _get_structure_labels(train_loader, valid_loader=None):
+    labels = []
+    for i, item in enumerate(train_loader):
+        for str_type in item['struct_type']:
+            if str_type not in labels:
+                labels.append(str_type)
+    if valid_loader:
+        for i, item in enumerate(valid_loader):
+            for str_type in item['struct_type']:
+                if str_type not in labels:
+                    labels.append(str_type)
+    return sorted(labels)
+
+def progress_epoch(inputs, data_loader, struct_labels, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=False):
     use_force = inputs['neural_network']['use_force'] if not atomic_e else False
     use_stress = inputs['neural_network']['use_stress'] if not atomic_e else False
-    epoch_result = logger._init_meters(use_force, use_stress, atomic_e)
+    epoch_result = logger._init_meters(struct_labels, use_force, use_stress, atomic_e)
 
     weighted = False if valid else True
     back_prop = False if valid else True
@@ -247,10 +258,13 @@ def _set_stop_rmse_criteria(inputs, logfile):
     criteria_dict = dict()
     if inputs['neural_network']['energy_criteria']:
         criteria_dict['e_err'] = [float('inf') , float(inputs['neural_network']['energy_criteria'])]
+        logfile.write("Energy criteria used : {0:4}  \n" .format(float(inputs['neural_network']['energy_criteria'])))
     if inputs['neural_network']['force_criteria'] and inputs['neural_network']['use_force']:
         criteria_dict['f_err'] = [float('inf'), float(inputs['neural_network']['force_criteria'])]
+        logfile.write("Force criteria used : {0:4}  \n" .format(float(inputs['neural_network']['force_criteria'])))
     if inputs['neural_network']['stress_criteria'] and inputs['neural_network']['use_stress']:
         criteria_dict['s_err'] = [float('inf'), float(inputs['neural_network']['stress_criteria'])]
+        logfile.write("Stress criteria used : {0:4}  \n" .format(float(inputs['neural_network']['stress_criteria'])))
 
     if len(criteria_dict.keys()) == 0:
         criteria_dict = None

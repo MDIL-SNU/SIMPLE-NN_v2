@@ -111,9 +111,8 @@ model_default_inputs = \
                 'F_loss_type': 1,
 
                 # Logging & saving related (Epoch)
-                'save_interval': 100, 
                 'show_interval': 10,
-                'checkpoint_interval': None,
+                'checkpoint_interval': 100,
                 'energy_criteria':None,
                 'force_criteria':None,
                 'stress_criteria':None,
@@ -131,7 +130,7 @@ model_default_inputs = \
                 #RESUME parameters
                 'continue': None, 
                 'clear_prev_status': False,  
-                'clear_prev_network': False,
+                'clear_prev_optimizer': False,
                 'start_epoch': 0,
                 #Parallelism
                 'inter_op_parallelism_threads': 0,
@@ -175,13 +174,13 @@ def initialize_inputs(input_file_name, logfile):
         assert not (inputs['descriptor']['read_stress'] is False) and (inputs['neural_network']['use_stress'] is True)\
         , f"read_stress : false, use_stress : true is not valid setting please set descriptor.read_force to true"
 
-    if inputs['preprocess'] and inputs['train_model']:
-        assert not (inputs['preprocessing']['calc_scale'] is False) and (inputs['neural_network']['scale'] is not False)\
-        , f"calc_scale : false, scale : true is not valid setting please set preprocessing.calc_pca to true"
-        assert not (inputs['preprocessing']['calc_pca'] is False) and (inputs['neural_network']['pca'] is not False)\
-        , f"calc_pca : false, pca : true is not valid setting please set preprocessing.calc_scale to true"
-        assert not (inputs['preprocessing']['calc_gdf'] is False) and (inputs['neural_network']['gdf'] is not False)\
-        , f"calc_gdf : false, gdf : true is not valid setting please set preprocessing.calc_gdf to true"
+#    if inputs['preprocess'] and inputs['train_model']:
+#        assert not (inputs['preprocessing']['calc_scale'] is False) and (inputs['neural_network']['scale'] is not False)\
+#        , f"calc_scale : false, scale : true is not valid setting please set preprocessing.calc_pca to true"
+#        assert not (inputs['preprocessing']['calc_pca'] is False) and (inputs['neural_network']['pca'] is not False)\
+#        , f"calc_pca : false, pca : true is not valid setting please set preprocessing.calc_scale to true"
+#        assert not (inputs['preprocessing']['calc_gdf'] is False) and (inputs['neural_network']['gdf'] is not False)\
+#        , f"calc_gdf : false, gdf : true is not valid setting please set preprocessing.calc_gdf to true"
 
     if len(inputs['atom_types']) == 0:
         raise KeyError
@@ -385,17 +384,17 @@ def check_inputs(inputs, logfile, run_type):
             logfile.write("No specific params for weight initializer\n")
         logfile.write(f"use pca in traning          : {neural_network['pca']}\n")
 
-        if neural_network['pca']:
-            if type(neural_network['pca']) is not bool:
-                assert os.path.exists(neural_network['pca']), f"{neural_network['pca']} file not exist.. set pca = False or make pca file\n"
-            else:
-                assert  os.path.exists('./pca'), f"./pca file not exist.. set pca = False or make pca file\n"
+#        if neural_network['pca']:
+#            if type(neural_network['pca']) is not bool:
+#                assert os.path.exists(neural_network['pca']), f"{neural_network['pca']} file not exist.. set pca = False or make pca file\n"
+#            else:
+#                assert  os.path.exists('./pca'), f"./pca file not exist.. set pca = False or make pca file\n"
         logfile.write(f"use scale in traning        : {neural_network['scale']}\n")
-        if neural_network['scale']:
-            if type(neural_network['scale']) is not bool:
-                assert  os.path.exists(neural_network['scale']), f"{neural_network['scale']} file not exist.. set pca = False or make pca file\n"
-            else:
-                assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale factor file\n"
+#        if neural_network['scale']:
+#            if type(neural_network['scale']) is not bool:
+#                assert  os.path.exists(neural_network['scale']), f"{neural_network['scale']} file not exist.. set pca = False or make pca file\n"
+#            else:
+#                assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale factor file\n"
         logfile.write(f"use gdf in traning          : {neural_network['gdf']}\n")
         logfile.write("\n  OPTIMIZATION\n")
         logfile.write(f"optimization method         : {neural_network['method']}\n")
@@ -418,7 +417,6 @@ def check_inputs(inputs, logfile, run_type):
         logfile.write(f"energy loss function type       : {neural_network['E_loss_type']}\n")
         logfile.write(f"force  loss function type       : {neural_network['F_loss_type']}\n")
         logfile.write("\n  LOGGING & SAVING\n")
-        logfile.write(f"interval (epoch) for save       : {neural_network['save_interval']}\n")
         logfile.write(f"interval (epoch) for show       : {neural_network['show_interval']}\n")
         if neural_network['checkpoint_interval']:
             logfile.write(f"interval (epoch) for checkpoint     : {neural_network['checkpoint_interval']}\n")
@@ -443,7 +441,7 @@ def check_inputs(inputs, logfile, run_type):
             else:
                 assert os.path.exists(neural_network['continue']), "Cannot find checkpoint file : {neural_network['continue']}. Please set file right or neural_network.contiue : false " 
             logfile.write(f"clear previous status (epoch)   : {neural_network['clear_prev_status']}\n")
-            logfile.write(f"clear previous network          : {neural_network['clear_prev_network']}\n")
+            logfile.write(f"clear previous optimizer          : {neural_network['clear_prev_optimizer']}\n")
             if not neural_network["clear_prev_status"]:
                 assert neural_network['start_epoch'].is_integer(), "Invalid start_epoch : {neural_network['start_epoch']}"
                 logfile.write(f"start epoch         : {neural_network['start_epoch']}\n")

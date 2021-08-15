@@ -178,7 +178,7 @@ def save_to_datafile(inputs, data, data_idx, logfile):
         os.makedirs(data_dir)
 
     try:
-        tmp_filename = os.path.join(data_dir, 'data{}.pt'.format(data_idx))
+        tmp_filename = os.path.join(os.getcwd(), data_dir, 'data{}.pt'.format(data_idx))
         torch.save(data, tmp_filename)
     except:
         err = "Unexpected error during save data to .pt file"

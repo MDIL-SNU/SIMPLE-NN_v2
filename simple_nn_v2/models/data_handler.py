@@ -43,19 +43,11 @@ class FilelistDataset(torch.utils.data.Dataset):
             tmp_dict['filename'] = f
             torch.save(tmp_dict, f)
 
-#Used in Structure rmse 
-class StructlistDataset(FilelistDataset):
-    def __init__(self, device, load_data_to_gpu=False):
-        if load_data_to_gpu:
-            self.device = device
-        else:
-            self.device = torch.device('cpu')
-        self.filelist = list()
-
 #Function to generate Iterator
 def my_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_whiten_level=None, use_force=True, use_stress=False, load_data_to_gpu=False):
     non_blocking = True if (load_data_to_gpu and torch.cuda.is_available()) else False 
-
+    
+    struct_type = list()
     struct_weight = list()
     tot_num = list()
     E = list()
@@ -69,6 +61,7 @@ def my_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_w
     sparse_index = _make_empty_dict(atom_types)
     
     for item in batch:
+        struct_type.append(item['struct_type'])
         struct_weight.append(item['struct_weight'])
         tot_num.append(item['tot_num'])
         
@@ -108,7 +101,7 @@ def my_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_w
     if use_stress:
         S = torch.cat(S, axis=0)
 
-    return {'x': x, 'dx': dx, 'da': da, 'n': n, 'E': E, 'F': F, 'S': S, 'sp_idx': sparse_index, 'struct_weight': struct_weight, 'tot_num': tot_num}
+    return {'x': x, 'dx': dx, 'da': da, 'n': n, 'E': E, 'F': F, 'S': S, 'sp_idx': sparse_index, 'struct_type': struct_type, 'struct_weight': struct_weight, 'tot_num': tot_num}
 
 #Function to generate Iterator
 def atomic_e_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_whiten_level=None, use_force=False, use_stress=False, load_data_to_gpu=False):
@@ -168,11 +161,6 @@ def filename_collate(batch, atom_types, device, scale_factor=None, pca=None, pca
 def gdf_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_whiten_level=None, use_force=False, use_stress=False, load_data_to_gpu=False):
     tmp_dict = my_collate(batch, atom_types, device, scale_factor, pca, pca_min_whiten_level, use_force, use_stress, load_data_to_gpu)
     return tmp_dict
-
-
-
-
-
 
 def _make_empty_dict(atom_types):
     dic = dict()
@@ -244,22 +232,6 @@ def _make_dataloader(inputs, dataset_list, scale_factor, pca, device, use_force,
 
     return data_loader
 
-#Function that set structure 
-def _set_struct_dict(filename, device, load_data_to_gpu=False):
-    structure_dict = dict()
-    with open(filename) as fil:
-        for line in fil:
-            temp_list = glob(line.strip())
-            temp_list.sort()
-            ## Weight check and copy
-            for item in temp_list:
-                tmp_name = TorchStyleDataset(item)['struct_type']
-                if not tmp_name in structure_dict.keys():
-                    structure_dict[tmp_name] = StructlistDataset(device, load_data_to_gpu=load_data_to_gpu)
-                structure_dict[tmp_name].filelist.append(item)
-
-    return structure_dict
-
 def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf):
     # mode: ['train', 'valid', 'test', 'add_NNP_ref', 'atomic_E_train', 'atomic_E_valid']
     args = {
@@ -279,7 +251,6 @@ def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf):
          'use_stress': inputs['neural_network']['use_stress'], 'valid': False, 'my_collate': gdf_collate},
         'gdf_valid': {'data_list': inputs['neural_network']['valid_list'], 'use_force': inputs['neural_network']['use_force'],\
          'use_stress': inputs['neural_network']['use_stress'], 'valid': True, 'my_collate': gdf_collate},
- 
     }
 
     dataset_list = FilelistDataset(args[mode]['data_list'], device, inputs['neural_network']['load_data_to_gpu'])
@@ -290,25 +261,3 @@ def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf):
     data_loader = _make_dataloader(inputs, dataset_list, scale_factor, pca, device, args[mode]['use_force'], args[mode]['use_stress'], args[mode]['valid'], args[mode]['my_collate'])
 
     return data_loader
-
-
-def _load_labeled_dataset(inputs, logfile, scale_factor, pca, device, mode):
-    # mode: ['train', 'valid', 'test', 'atomic_E_train', 'atomic_E_valid']
-    args = {
-        'train': {'data_list': inputs['neural_network']['train_list'], 'use_force': inputs['neural_network']['use_force'], 'use_stress': inputs['neural_network']['use_stress'], 'valid': False, 'my_collate': my_collate},
-        'valid': {'data_list': inputs['neural_network']['valid_list'], 'use_force': inputs['neural_network']['use_force'], 'use_stress': inputs['neural_network']['use_stress'], 'valid': True, 'my_collate': my_collate},
-        'test': {'data_list': inputs['neural_network']['test_list'], 'use_force': inputs['neural_network']['use_force'], 'use_stress': inputs['neural_network']['use_stress'], 'valid': True, 'my_collate': my_collate},
-        'atomic_E_train': {'data_list': inputs['neural_network']['train_list'], 'use_force': False, 'use_stress': False, 'valid': False, 'my_collate': atomic_e_collate},
-        'atomic_E_valid': {'data_list': inputs['neural_network']['valid_list'], 'use_force': False, 'use_stress': False, 'valid': True, 'my_collate': atomic_e_collate}
-    }
-    
-    labeled_dataset_dict = _set_struct_dict(args[mode]['data_list'], device, inputs['neural_network']['load_data_to_gpu'])
-    labeled_data_loader = dict()
-
-    for key in labeled_dataset_dict.keys():
-        labeled_data_loader[key] = _make_dataloader(inputs, labeled_dataset_dict[key], scale_factor, pca, device, \
-            args[mode]['use_force'], args[mode]['use_stress'], args[mode]['valid'], args[mode]['my_collate'])
-
-    return labeled_data_loader
-
-

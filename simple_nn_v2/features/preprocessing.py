@@ -54,7 +54,7 @@ def preprocess(inputs, logfile, comm):
         logfile.flush()
 
     # calculate gdf
-    _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list, train_dir_list, scale, comm)
+#    _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list, train_dir_list, scale, comm)
     logfile.flush()
 
 # Split train/valid data names that saved in data_list
@@ -234,7 +234,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
         for item in inputs['atom_types']:
             if modifier != None and callable(modifier[item]):
                 atomic_weights_valid[item][:,0] = modifier[item](atomic_weights_valid[item][:,0])
-        _save_gdf_to_pt(inputs['atom_types'], dir_list_valid, atomic_weights_valid)
+#        _save_gdf_to_pt(inputs['atom_types'], dir_list_valid, atomic_weights_valid)
 
     if atomic_weights_train is None:
         aw_tag = False

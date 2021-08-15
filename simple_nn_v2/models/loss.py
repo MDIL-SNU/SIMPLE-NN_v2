@@ -108,8 +108,9 @@ def get_e_loss(atom_types, loss_type, atomic_E, E_, n_atoms, item, criterion, pr
             e_loss = criterion(E_.squeeze() / n_atoms, item['E'].type(dtype).to(device=device, non_blocking=non_block) / n_atoms)
 
         w_e_loss = torch.mean(e_loss * weight)
-        e_loss = torch.mean(e_loss)
-        progress_dict['e_err'].update(e_loss.detach().item(), n_batch)
+        for i, el in enumerate(e_loss):
+            label = item['struct_type'][i]
+            progress_dict['e_err'][label].update(e_loss[i].detach().item())
     else: # atomic E using at replica train
         atype_loss = dict()
         for atype in atom_types:
@@ -153,18 +154,20 @@ def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight
         batch_idx = 0
         for n in range(n_batch): #Make structure_weighted force
             tmp_idx = item['tot_num'][n].item()
+            label = item['struct_type'][n]
+            progress_dict['f_err'][label].update(torch.mean(f_loss[batch_idx:(batch_idx+tmp_idx)] * 3).detach().item(), tmp_idx)
             f_loss[batch_idx:(batch_idx+tmp_idx)] = f_loss[batch_idx:(batch_idx+tmp_idx)] * weight[n].item() #* weight for hgdf
             batch_idx += tmp_idx
     else:
         batch_idx = 0
         for n in range(n_batch): #Make structure_weighted force
             tmp_idx = item['tot_num'][n].item()
+            label = item['struct_type'][n]
+            progress_dict['f_err'][label].update(torch.mean(f_loss[batch_idx:(batch_idx+tmp_idx)] * 3).detach().item(), tmp_idx)
             f_loss[batch_idx:(batch_idx+tmp_idx)] = f_loss[batch_idx:(batch_idx+tmp_idx)] * weight[n].item()
             batch_idx += tmp_idx
 
     w_f_loss = torch.mean(f_loss)
-    print_f_loss = torch.mean(criterion(F_, F)) * 3
-    progress_dict['f_err'].update(print_f_loss.detach().item(), F_.size(0))
 
     return w_f_loss
 
@@ -173,11 +176,11 @@ def get_s_loss(S_, S, criterion, progress_dict, n_batch, item, weight):
     batch_idx = 0
     for n in range(n_batch): #Make structure_weighted stress
         tmp_idx = 6
+        label = item['struct_type'][n]
+        progress_dict['s_err'][label].update(torch.mean(s_loss[batch_idx:(batch_idx+tmp_idx)] * 6).detach().item(), tmp_idx)
         s_loss[batch_idx:(batch_idx+tmp_idx)] = s_loss[batch_idx:(batch_idx+tmp_idx)] * weight[n].item()
         batch_idx += tmp_idx
 
     w_s_loss = torch.mean(s_loss)
-    s_loss = torch.mean(criterion(S_, S)) * 6
-    progress_dict['s_err'].update(s_loss.detach().item(), n_batch)
 
     return w_s_loss
