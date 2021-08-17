@@ -1,0 +1,20 @@
+[OUTCAR1]
+../test_data/OUTCAR_1 ::3
+../test_data/OUTCAR_11 ::
+../test_data/OUTCAR_111 ::
+[OUTCAR2:3]
+../test_data/OUTCAR_1 ::3
+../test_data/OUTCAR_11 ::
+../test_data/OUTCAR_111 ::
+[OUTCAR3 : 3]
+../test_data/OUTCAR_1 ::3
+../test_data/OUTCAR_11 ::
+../test_data/OUTCAR_111 ::
+[OUTCAR4 : 4]
+../test_data/OUTCAR_1 ::3
+../test_data/OUTCAR_11 ::
+../test_data/OUTCAR_111 ::
+[OUTCAR5 : 5]
+../test_data/OUTCAR_1 ::3
+../test_data/OUTCAR_11 ::
+../test_data/OUTCAR_111 ::

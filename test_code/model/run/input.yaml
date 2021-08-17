@@ -1,0 +1,44 @@
+generate_features: true
+preprocess: false
+train_model: false
+atom_types:
+ - Si
+ - O
+
+descriptor:
+  type: symmetry_function
+  params:
+    Si: params_Si
+    O: params_O
+  valid_rate: 0.1
+  remain_pickle: True
+  compress_outcar: True
+  save_to_pickle: False
+  save_directory: data
+
+neural_network:
+  continue: false
+  use_force: true
+  use_stress: true
+
+  # initialize model
+  intra_op_parallelism_threads: 1
+  inter_op_parallelism_threads: 1
+  #acti_func: swish
+  #dropout: 0.5
+  weight_initializer:
+      type: he normal
+
+  # initialize optimizer
+  method: SGD
+  learning_rate: 0.0001
+  regularization: 1e-6
+
+  # load checkpoint
+  continue: false #epoch_20.pth.tar
+  clear_prev_network: True
+  clear_prev_status: True
+  start_epoch: 10
+
+  # load scale, pca
+  pca: true
