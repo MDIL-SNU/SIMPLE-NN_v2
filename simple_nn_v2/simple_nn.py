@@ -1,18 +1,12 @@
-import sys
-import os
-import yaml
-import functools
-import atexit
-import time 
-#from simple_nn_v2.utils import modified_sigmoid, _generate_gdf_file
+import sys, os, time
+import yaml, functools, atexit
 from ._version import __version__, __git_sha__
 
 from simple_nn_v2.init_inputs import initialize_inputs, check_inputs
 from simple_nn_v2.features import preprocess
 from simple_nn_v2.models import train
 from simple_nn_v2.features.symmetry_function.mpi import DummyMPI, MPI4PY
-
-#from models import neural_network
+from simple_nn_v2.features.symmetry_function import generate as symf_generator
 
 #input parameter descriptor
 def run(input_file_name):
@@ -34,25 +28,23 @@ def run(input_file_name):
     inputs = initialize_inputs(input_file_name, logfile)
     if inputs['generate_features'] is True:
         start_time = time.time()
-        if comm.rank == 0:
-            check_inputs(inputs, logfile,'generate')
+        #if comm.rank == 0:
+        #    check_inputs(inputs, logfile,'generate')
         generate = get_generate_function(logfile, descriptor_type=inputs['descriptor']['type'])
         generate(inputs, logfile, comm)
     
     if inputs['preprocess'] is True:
-        if comm.rank == 0:
-            check_inputs(inputs, logfile,'preprocess')
+        #if comm.rank == 0:
+        #    check_inputs(inputs, logfile,'preprocess')
         preprocess(inputs, logfile, comm)
 
     if inputs['train_model'] is True:
-        check_inputs(inputs, logfile,'train_model')
+        #check_inputs(inputs, logfile,'train_model')
         train(inputs, logfile)
 
     if inputs['train_replica'] is True:
         pass
 
-
-from simple_nn_v2.features.symmetry_function import generate as symf_generator
 
 def get_generate_function(logfile, descriptor_type='symmetry_function'):
     generator = {

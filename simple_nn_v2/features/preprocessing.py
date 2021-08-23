@@ -1,20 +1,12 @@
-import os, sys
-import six
+import os, sys, six, time
 import numpy as np
-import time
-import torch
-import functools
-
+import torch, functools
+from sklearn.decomposition import PCA
 
 from simple_nn_v2.utils import modified_sigmoid, _generate_gdf_file
 from simple_nn_v2.utils import features as util_feature
 from simple_nn_v2.utils import scale as util_scale
 from simple_nn_v2.utils import graph as grp
-
-from simple_nn_v2.features.symmetry_function.mpi import DummyMPI, MPI4PY
-
-from sklearn.decomposition import PCA
- 
 
 def preprocess(inputs, logfile, comm):
     """
@@ -27,9 +19,7 @@ def preprocess(inputs, logfile, comm):
         logfile(file obj): logfile object
     """ 
 
-
     data_list = inputs['preprocessing']['data_list']
-
     _split_train_list_and_valid_list(inputs, data_list)
 
     # Extract specific feature values('x') from generated data files
@@ -41,27 +31,28 @@ def preprocess(inputs, logfile, comm):
 
     # scale[atom_type][0]: (mid_range or mean) of each features
     # scale[atom_type][1]: (width or standard_deviation) of each features
-    scale = _calculate_scale(inputs, logfile, train_feature_list, comm)
-    torch.save(scale, 'scale_factor')
-    logfile.flush()
-
-    # pca[atom_type][0]: principle axis matrix
-    # pca[atom_type][1]: variance in each axis
-    # pca[atom_type][2]: 
-    if inputs['preprocessing']['calc_pca'] and scale:   # boolean :
-        pca = _calculate_pca_matrix(inputs, train_feature_list, scale)
-        torch.save(pca, 'pca')
+    if inputs['preprocessing']['calc_scale']:
+        scale = _calculate_scale(inputs, logfile, train_feature_list, comm)
+        torch.save(scale, 'scale_factor')
         logfile.flush()
 
-    # calculate gdf
-    if inputs['preprocessing']['calc_gdf'] and scale:
-        _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list, train_dir_list, scale, comm)
-    logfile.flush()
-
+        # pca[atom_type][0]: principle axis matrix
+        # pca[atom_type][1]: variance in each axis
+        # pca[atom_type][2]: 
+        if inputs['preprocessing']['calc_pca']:   # boolean :
+            pca = _calculate_pca_matrix(inputs, train_feature_list, scale)
+            torch.save(pca, 'pca')
+            logfile.flush()
+    
+        # calculate gdf
+        if inputs['preprocessing']['calc_gdf']:
+            _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list, train_dir_list, scale, comm)
+        logfile.flush()
+    
 # Split train/valid data names that saved in data_list
-def _split_train_list_and_valid_list(inputs, data_list='./total_list'):
-   train_list_file = open(inputs['preprocessing']['train_list'], 'w')
-   valid_list_file = open(inputs['preprocessing']['valid_list'], 'w')
+def _split_train_list_and_valid_list(inputs, data_list='./total_list', append=False):
+   train_list_file = open(inputs['preprocessing']['train_list'], 'wa' if append else 'w')
+   valid_list_file = open(inputs['preprocessing']['valid_list'], 'wa' if append else 'w')
 
    for file_list in util_feature._make_str_data_list(data_list):
        if inputs['preprocessing']['shuffle'] is True:
@@ -146,7 +137,6 @@ def _calculate_pca_matrix(inputs, feature_list, scale):
                      np.sqrt(pca_temp.explained_variance_ + min_level),
                      np.dot(pca_temp.mean_, pca_temp.components_.T)]
     pca['pca_whiten'] =  inputs['preprocessing']['pca_min_whiten_level'] if inputs['preprocessing']['pca_whiten'] else None
-
     
     return pca
 
@@ -208,35 +198,37 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
 
         #GDF for valid list 
         #make featurelist for valid
-        feature_list_valid, idx_list_valid, dir_list_valid = util_feature._make_full_featurelist(inputs['preprocessing']['valid_list'], 'x', inputs['atom_types'], use_idx=False)
-
-        local_target_list = dict()
-        local_idx_list = dict()
-
-        for item in inputs['atom_types']:
-            q = feature_list_valid[item].shape[0] // comm.size
-            r = feature_list_valid[item].shape[0]  % comm.size
-
-            begin = comm.rank * q + min(comm.rank, r)
-            end = begin + q
-            if r > comm.rank:
-                end += 1
-
-            local_target_list[item] = feature_list_valid[item][begin:end]
-            local_idx_list[item] = idx_list_valid[item][begin:end]
-
-        atomic_weights_valid, _ , _  = get_atomic_weights(feature_list_train, scale, inputs['atom_types'], local_idx_list,\
-         target_list=local_target_list, sigma=dict_sigma, comm=comm, **kwargs)
+        if inputs['preprocessing']['valid_rate'] != 0.0:
+            feature_list_valid, idx_list_valid, dir_list_valid = util_feature._make_full_featurelist(inputs['preprocessing']['valid_list'], 'x', inputs['atom_types'], use_idx=False)
+    
+            local_target_list = dict()
+            local_idx_list = dict()
+    
+            for item in inputs['atom_types']:
+                q = feature_list_valid[item].shape[0] // comm.size
+                r = feature_list_valid[item].shape[0]  % comm.size
+    
+                begin = comm.rank * q + min(comm.rank, r)
+                end = begin + q
+                if r > comm.rank:
+                    end += 1
+    
+                local_target_list[item] = feature_list_valid[item][begin:end]
+                local_idx_list[item] = idx_list_valid[item][begin:end]
+    
+            atomic_weights_valid, _ , _  = get_atomic_weights(feature_list_train, scale, inputs['atom_types'], local_idx_list,\
+             target_list=local_target_list, sigma=dict_sigma, comm=comm, **kwargs)
+            if comm.rank == 0: 
+                for item in inputs['atom_types']:
+                    if modifier != None and callable(modifier[item]):
+                        atomic_weights_valid[item][:,0] = modifier[item](atomic_weights_valid[item][:,0])
+                _save_gdf_to_pt(inputs['atom_types'], dir_list_valid, atomic_weights_valid)
+        else:
+            atomic_weights_valid = None
     elif isinstance(get_atomic_weights, six.string_types):
         atomic_weights_train = torch.load(get_atomic_weights)
         atomic_weights_valid = 'ones'
     
-    if comm.rank == 0: 
-        for item in inputs['atom_types']:
-            if modifier != None and callable(modifier[item]):
-                atomic_weights_valid[item][:,0] = modifier[item](atomic_weights_valid[item][:,0])
-        _save_gdf_to_pt(inputs['atom_types'], dir_list_valid, atomic_weights_valid)
-
     if atomic_weights_train is None:
         aw_tag = False
     else:

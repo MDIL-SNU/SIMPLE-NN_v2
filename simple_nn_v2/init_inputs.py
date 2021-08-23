@@ -18,14 +18,16 @@ symmetry_function_descriptor_default_inputs = \
         {'descriptor': 
             {
                 'type': 'symmetry_function',
+                'struct_list': './structure_list',
                 'save_list': './total_list',
                 'refdata_format': 'vasp-out',
                 'compress_outcar': True,
                 'save_directory': './data', 
-                'read_force': True, #Read force in non-vasp files(ex. LAMMPS) Not implemented
-                'read_stress': False, #Read stress in non-vasp files(ex. LAMMPS) Not implimented
+                'read_force': True, 
+                'read_stress': False, 
                 'dx_save_sparse': True, 
-                'add_atom_idx': True, # For backward compatability
+                'add_atom_idx': True, 
+                'absolute_path': True,
             }
         }
 preprocess_default_inputs = \
@@ -169,9 +171,9 @@ def initialize_inputs(input_file_name, logfile):
 
     #Default setting for generate & preprocess & train
     if inputs['generate_features'] and inputs['train_model']:
-        assert not (inputs['descriptor']['read_force'] is False) and (inputs['neural_network']['use_force'] is True)\
+        assert not ((inputs['descriptor']['read_force'] is False) and (inputs['neural_network']['use_force'] is True))\
         , f"read_force : false, use_force : true is not valid setting please set descriptor.read_force to true"
-        assert not (inputs['descriptor']['read_stress'] is False) and (inputs['neural_network']['use_stress'] is True)\
+        assert not ((inputs['descriptor']['read_stress'] is False) and (inputs['neural_network']['use_stress'] is True))\
         , f"read_stress : false, use_stress : true is not valid setting please set descriptor.read_force to true"
 
     if inputs['preprocess'] and inputs['train_model']:
@@ -268,12 +270,14 @@ def check_inputs(inputs, logfile, run_type):
                 logfile.write(f"{atype} parameters directory : {params[atype]}\n")
         logfile.write(f"reference data format    : {descriptor['refdata_format']}\n")
         logfile.write(f"compress outcar          : {descriptor['compress_outcar']}\n")
+        assert os.path.exists(descriptor['struct_list']) ,f"structure list to generate : {descriptor['struct_list']} not exists." 
+        logfile.write(f"structure list           : {descriptor['struct_list']}\n")
         logfile.write(f"save directory           : {descriptor['save_directory']}\n")
         logfile.write(f"save output list         : {descriptor['save_list']}\n")
+        logfile.write(f"save file absolute path  : {descriptor['absolute_path']}\n")
         logfile.write(f"read force from data     : {descriptor['read_force']}\n")
         logfile.write(f"read stress from data    : {descriptor['read_stress']}\n")
         logfile.write(f"save dx as sparse tensor : {descriptor['dx_save_sparse']}\n")
-        #logfile.write(f" {descriptor[]}\n")
     #Check prerpcess input is valid and write log
     elif run_type  == 'preprocess':
         preprocessing = inputs['preprocessing']
@@ -289,6 +293,7 @@ def check_inputs(inputs, logfile, run_type):
                 else:
                     logfile.write(f"{atype} parameters directory : {params[atype]}\n")
         logfile.write(f"total data list         : {preprocessing['data_list']}\n")
+        assert os.path.exists(preprocessing['data_list']), f"data list : {preprocessing['data_list']} not exists."
         logfile.write(f"splited train list      : {preprocessing['train_list']}\n")
         logfile.write(f"splited valid list      : {preprocessing['train_list']}\n")
         logfile.write(f"valid rate              : {preprocessing['valid_rate']}\n")
@@ -443,7 +448,6 @@ def check_inputs(inputs, logfile, run_type):
             logfile.write(f"clear previous status (epoch)   : {neural_network['clear_prev_status']}\n")
             logfile.write(f"clear previous optimizer          : {neural_network['clear_prev_optimizer']}\n")
             if not neural_network["clear_prev_status"]:
-                assert neural_network['start_epoch'].is_integer(), "Invalid start_epoch : {neural_network['start_epoch']}"
                 logfile.write(f"start epoch         : {neural_network['start_epoch']}\n")
         logfile.write("\n  PARALLELISM\n")
         logfile.write(f"load data directly to gpu       : {neural_network['load_data_to_gpu']}\n")

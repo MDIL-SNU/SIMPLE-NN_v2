@@ -1,18 +1,20 @@
 from __future__ import print_function
 from __future__ import division
-import os, sys
+import os, sys, time
 import torch
-import time
 import numpy as np
-from ase import io
-from ase import units
+from ase import io, units
 import ase
-from ._libsymf import lib, ffi
-from simple_nn_v2.utils import data_generator
+from simple_nn_v2.features import data_generator
 from simple_nn_v2.utils.features import _gen_2Darray_for_ffi
 
 from simple_nn_v2.features.symmetry_function import utils  as utils_symf
 
+try:
+    from ._libsymf import lib, ffi
+except:
+    raise Exception("libsymf library not exists. Run libsymf_builder.py")    
+    os.abort()
 
 def generate(inputs, logfile, comm):
     """ Generate structure data files(format: pickle/pt) that listed in "structure_list" file
@@ -33,11 +35,15 @@ def generate(inputs, logfile, comm):
     """
     start_time = time.time()
     atom_types = inputs['atom_types']
-    structure_list = './structure_list'
-    data_list = './total_list'
+    structure_list = inputs['descriptor']['struct_list'] #Default ./structure_list
+    data_list = inputs['descriptor']['save_list'] #Default ./total_list
     
+    #Create pt file directory
     if comm.rank == 0:
+        if not os.path.exists(inputs['descriptor']['save_directory']):
+            os.makedirs(inputs['descriptor']['save_directory'])
         data_list_fil = open(data_list, 'w')
+
     data_idx = 1
     
     # structure_tag_idx(int list): list of structure tag index of each structure file    ex) [1, 2, 2]  
@@ -81,7 +87,6 @@ def generate(inputs, logfile, comm):
                 if mpi_remainder > comm.rank:
                     end_idx += 1
 
-
                 # cal_atom_idx(int list): atom index for calculation    ex) [2,3,4]
                 # cal_atom_num(int): atom numbers for calculation       ex) 3
                 cal_atom_idx, cal_atom_num, x, dx, da = _initialize_symmetry_function_variables(atom_idx_per_type,\
@@ -113,7 +118,6 @@ def generate(inputs, logfile, comm):
                             raise ValueError(err)
                         else:
                             assert errno == 0, "Unexpected error occred"             
-        
 
                 _set_calculated_result(inputs, result, x, dx, da, atoms_per_type, element, symf_params_set, atom_num, comm)
             
@@ -194,8 +198,6 @@ def _initialize_symmetry_function_variables(type_atom_idx, element, symf_params_
     dx = np.zeros([cal_atom_num, symf_params_set[element]['num'] * atom_num * 3], dtype=np.float64, order='C')
     da = np.zeros([cal_atom_num, symf_params_set[element]['num'] * 3 * 6], dtype=np.float64, order='C')
 
-    da = np.zeros([cal_atom_num, symf_params_set[element]['num'] * 3 * 6], dtype=np.float64, order='C')
-
     return cal_atom_idx, cal_atom_num, x, dx, da
 
 def _check_error(errnos, logfile):   
@@ -273,5 +275,4 @@ def _extract_EFS(inputs, structure, logfile, comm):
                 raise NotImplementedError(err)
 
     return E, F, S
-
 
