@@ -126,8 +126,7 @@ model_default_inputs = \
                 'gdf': False,
 
                 # Write atomic energies to pickle
-                'NNP_to_pickle': False,
-                'save_result': False,
+                'NNP_to_pt': False,
 
                 #RESUME parameters
                 'continue': None, 
@@ -143,8 +142,10 @@ model_default_inputs = \
         }
 replica_default_inputs = \
  {
+     'replica':{
          'add_NNP_ref': False,
          'train_atomic_E': False
+     }
  }
 
 
@@ -252,7 +253,7 @@ def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, p
             source = {key: overrides[key]}
     return source
 
-def check_inputs(inputs, logfile, run_type):
+def check_inputs(inputs, logfile, run_type, error=False):
     logfile.write('\n')
     atom_types = inputs['atom_types']
     #Check input valid and write log
@@ -262,7 +263,7 @@ def check_inputs(inputs, logfile, run_type):
         descriptor = inputs['descriptor']
         logfile.write(f"Descriptor type          : {descriptor['type']}\n")
         params = inputs['params']
-        assert set(atom_types)  == set(params.keys()), f"atom_types not consistant with params : {set(atom_types).symmetric_difference(params.keys())} "
+        if error: assert set(atom_types)  == set(params.keys()), f"atom_types not consistant with params : {set(atom_types).symmetric_difference(params.keys())} "
         for atype in atom_types:
             if not os.path.exists(params[atype]):
                 raise Exception(f"In params {params[atype]} file not exist for {atype}")
@@ -270,7 +271,7 @@ def check_inputs(inputs, logfile, run_type):
                 logfile.write(f"{atype} parameters directory : {params[atype]}\n")
         logfile.write(f"reference data format    : {descriptor['refdata_format']}\n")
         logfile.write(f"compress outcar          : {descriptor['compress_outcar']}\n")
-        assert os.path.exists(descriptor['struct_list']) ,f"structure list to generate : {descriptor['struct_list']} not exists." 
+        if error: assert os.path.exists(descriptor['struct_list']) ,f"structure list to generate : {descriptor['struct_list']} not exists." 
         logfile.write(f"structure list           : {descriptor['struct_list']}\n")
         logfile.write(f"save directory           : {descriptor['save_directory']}\n")
         logfile.write(f"save output list         : {descriptor['save_list']}\n")
@@ -285,7 +286,7 @@ def check_inputs(inputs, logfile, run_type):
         logfile.write('Input for preprocessing\n\n')
         if not inputs['generate_features']: #Already checked if use generate
             params = inputs['params']
-            assert set(atom_types)  == set(params.keys()), f"atom_types not consistant with params : \
+            if error: assert set(atom_types)  == set(params.keys()), f"atom_types not consistant with params : \
             {set(atom_types).symmetric_difference(params.keys())} "
             for atype in atom_types:
                 if not os.path.exists(params[atype]):
@@ -293,7 +294,7 @@ def check_inputs(inputs, logfile, run_type):
                 else:
                     logfile.write(f"{atype} parameters directory : {params[atype]}\n")
         logfile.write(f"total data list         : {preprocessing['data_list']}\n")
-        assert os.path.exists(preprocessing['data_list']), f"data list : {preprocessing['data_list']} not exists."
+        if error: assert os.path.exists(preprocessing['data_list']), f"data list : {preprocessing['data_list']} not exists."
         logfile.write(f"splited train list      : {preprocessing['train_list']}\n")
         logfile.write(f"splited valid list      : {preprocessing['train_list']}\n")
         logfile.write(f"valid rate              : {preprocessing['valid_rate']}\n")
@@ -305,7 +306,7 @@ def check_inputs(inputs, logfile, run_type):
             logfile.write(f"scale rho value         : {preprocessing['scale_rho']}\n")
         logfile.write(f"calculate pca matrix    : {preprocessing['calc_pca']}\n")
         if preprocessing['calc_pca']:
-            assert preprocessing['calc_scale'] is not False,\
+            if error: assert preprocessing['calc_scale'] is not False,\
              f"calculating PCA matrix must need scale factor. use calc_factor : true or filename to load"
             logfile.write(f"use pca whitening       : {preprocessing['pca_whiten']}\n")
             if preprocessing['pca_whiten']:
@@ -342,7 +343,7 @@ def check_inputs(inputs, logfile, run_type):
         logfile.write('Input for neural_network\n\n')
         if not inputs['generate_features'] and not inputs['preprocess']: #Already checked if use generate or preprocess
             params = inputs['params']
-            assert set(atom_types)  == set(params.keys()), f"atom_types not consistant with params : \
+            if error: assert set(atom_types)  == set(params.keys()), f"atom_types not consistant with params : \
             {set(atom_types).symmetric_difference(params.keys())} "
             for atype in atom_types:
                 if not os.path.exists(params[atype]):
@@ -354,24 +355,24 @@ def check_inputs(inputs, logfile, run_type):
         logfile.write(f"train                       : {neural_network['train']}\n")
         if inputs['preprocess'] is False and neural_network['train']:
             logfile.write(f"train list          : {neural_network['train_list']}\n")
-            assert os.path.exists(neural_network['train_list']), f"No train_list file for training set :{neural_network['train_list']}"
+            if error: assert os.path.exists(neural_network['train_list']), f"No train_list file for training set :{neural_network['train_list']}"
             if os.path.exists(neural_network['valid_list']):
                 logfile.write(f"valid list          : {neural_network['valid_list']}\n")
             if neural_network['split_data']:
                 logfile.write(f"split data from list    : {neural_network['split_data']}\n")
-                assert os.path.exists(neural_network['split_data']), f"split_data file is not exist : {neural_network['split_data']}."
-                assert type(inputs['preprocessing']['valid_rate']) is float , f"split_data need valid rate please set preprocessing.valid_rate."
+                if error: assert os.path.exists(neural_network['split_data']), f"split_data file is not exist : {neural_network['split_data']}."
+                if error: assert type(inputs['preprocessing']['valid_rate']) is float , f"split_data need valid rate please set preprocessing.valid_rate."
         logfile.write(f"test                        : {neural_network['test']}\n")
         if neural_network['test']:   
             logfile.write(f"test_list           : {neural_network['test_list']}\n")
-        assert neural_network['train'] is True or neural_network['test'] is True, f"In valid mode train : false, test : false. Check your input"
+        if error: assert neural_network['train'] is True or neural_network['test'] is True, f"In valid mode train : false, test : false. Check your input"
         if inputs['train_replica'] is True:
             logfile.write(f"reference list              : {neural_network['ref_list']}\n")
         logfile.write(f"shuffle dataloader          : {neural_network['shuffle_dataloader']}\n")
         logfile.write("\n  NETWORK\n")
         logfile.write(f"nodes                       : {neural_network['nodes']}\n")
         for node in neural_network['nodes'].split('-'):
-            assert node.isdigit(), f"In valid node information nodes : {neural_network['nodes']}"
+            if error: assert node.isdigit(), f"In valid node information nodes : {neural_network['nodes']}"
         if neural_network['regularization']:
             logfile.write(f"regularization (L2)         : {neural_network['regularization']}\n")
         logfile.write(f"use force in traning        : {neural_network['use_force']}\n")
@@ -391,15 +392,15 @@ def check_inputs(inputs, logfile, run_type):
 
         if neural_network['pca'] and not neural_network['continue']:
             if type(neural_network['pca']) is not bool:
-                assert os.path.exists(neural_network['pca']), f"{neural_network['pca']} file not exist.. set pca = False or make pca file\n"
+                if error: assert os.path.exists(neural_network['pca']), f"{neural_network['pca']} file not exist.. set pca = False or make pca file\n"
             else:
-                assert  os.path.exists('./pca'), f"./pca file not exist.. set pca = False or make pca file\n"
+                if error: assert  os.path.exists('./pca'), f"./pca file not exist.. set pca = False or make pca file\n"
         logfile.write(f"use scale in traning        : {neural_network['scale']}\n")
         if neural_network['scale'] and not neural_network['continue']:
             if type(neural_network['scale']) is not bool:
-                assert  os.path.exists(neural_network['scale']), f"{neural_network['scale']} file not exist.. set pca = False or make pca file\n"
+                if error: assert  os.path.exists(neural_network['scale']), f"{neural_network['scale']} file not exist.. set pca = False or make pca file\n"
             else:
-                assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale factor file\n"
+                if error: assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale factor file\n"
         logfile.write(f"use gdf in traning          : {neural_network['gdf']}\n")
         logfile.write("\n  OPTIMIZATION\n")
         logfile.write(f"optimization method         : {neural_network['method']}\n")
@@ -426,25 +427,24 @@ def check_inputs(inputs, logfile, run_type):
         if neural_network['checkpoint_interval']:
             logfile.write(f"interval (epoch) for checkpoint     : {neural_network['checkpoint_interval']}\n")
         if neural_network['energy_criteria'] is not None:
-            assert float(neural_network['energy_criteria']) > 0, f"Invalid value for energy_criteria : {neural_netowkr['energy_criteria']}"
+            if error: assert float(neural_network['energy_criteria']) > 0, f"Invalid value for energy_criteria : {neural_netowkr['energy_criteria']}"
             logfile.write(f"stop criteria for energy (RMSE) : {neural_network['energy_criteria']}\n")
         if neural_network['use_force'] and neural_network['force_criteria'] is not None:
-            assert float(neural_network['force_criteria']) > 0, f"Invalid value for force_criteria : {neural_netowkr['force_criteria']}"
+            if error: assert float(neural_network['force_criteria']) > 0, f"Invalid value for force_criteria : {neural_netowkr['force_criteria']}"
             logfile.write(f"stop criteria for force (RMSE)  : {neural_network['force_criteria']}\n")
         if neural_network['use_stress'] and neural_network['stress_criteria'] is not None:
-            assert float(neural_network['stress_criteria']) > 0, f"Invalid value for stress_criteria : {neural_netowkr['stress_criteria']}"
+            if error: assert float(neural_network['stress_criteria']) > 0, f"Invalid value for stress_criteria : {neural_netowkr['stress_criteria']}"
             logfile.write(f"stop criteria for stress (RMSE)     : {neural_network['stress_criteria']}\n")
         logfile.write(f"print structure RMSE            : {neural_network['print_structure_rmse']}\n")
         #logfile.write(f"stop traning criterion if T < V : {neural_network['break_man']}\n")
-        #logfile.write(f"save_result     : {neural_network['save_result']}\n")
         if neural_network['continue']:
             logfile.write("\n  CONTINUE\n")
             logfile.write(f"continue from checkpoint     : {neural_network['continue']}\n")
             if neural_network['continue'] == 'weights':
-                assert os.path.exists('./potential_saved'), "neural_network.continue : weights must need LAMMPS potential. Set potential ./potential_saved" 
+                if error: assert os.path.exists('./potential_saved'), "neural_network.continue : weights must need LAMMPS potential. Set potential ./potential_saved" 
                 logfile.write(f"read neural network model parameters from ./potential_saved\n")
             else:
-                assert os.path.exists(neural_network['continue']), "Cannot find checkpoint file : {neural_network['continue']}. Please set file right or neural_network.contiue : false " 
+                if error: assert os.path.exists(neural_network['continue']), "Cannot find checkpoint file : {neural_network['continue']}. Please set file right or neural_network.contiue : false " 
             logfile.write(f"clear previous status (epoch)   : {neural_network['clear_prev_status']}\n")
             logfile.write(f"clear previous optimizer          : {neural_network['clear_prev_optimizer']}\n")
             if not neural_network["clear_prev_status"]:
@@ -453,12 +453,12 @@ def check_inputs(inputs, logfile, run_type):
         logfile.write(f"load data directly to gpu       : {neural_network['load_data_to_gpu']}\n")
         logfile.write(f"number of workers in dataloader : {neural_network['workers']}\n")
         if neural_network['load_data_to_gpu']:
-            assert neural_network['workers'] == 0, f"If load data to gpu directly, use workers = 0"
+            if error: assert neural_network['workers'] == 0, f"If load data to gpu directly, use workers = 0"
         logfile.write(f"CPU core number in pytorch (0 for default setting)  : {neural_network['intra_op_parallelism_threads']}\n")
         logfile.write(f"Thread number in pytorch  (0 for default setting)   : {neural_network['inter_op_parallelism_threads']}\n")
         if neural_network['cuda_number'] is not None and torch.cuda.is_available():
             logfile.write(f"Use GPU device number     : {neural_network['cuda_number']}\n")
-            assert neural_network['cuda_number'] <= torch.cuda.device_count()-1,\
+            if error: assert neural_network['cuda_number'] <= torch.cuda.device_count()-1,\
              f"Invalid GPU device number available GPU # {torch.cuda.device_count()-1} , set number {neural_network['cuda_number']} "
     elif run_type == 'train_replica':
         replica = inputs['replica']

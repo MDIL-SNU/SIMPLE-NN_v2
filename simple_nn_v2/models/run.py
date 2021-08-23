@@ -42,10 +42,9 @@ def train(inputs, logfile):
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, loss, train_loader, valid_loader)
 
     if inputs['neural_network']['test']:
-        test_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='test')
-        labeled_test_loader = data_handler._load_labeled_dataset(inputs, logfile, scale_factor, pca, device, mode='test')
+        test_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='test', gdf=False)
         
-        test_model(inputs, logfile, model, optimizer, criterion, device, test_loader, labeled_test_loader)
+        test_model(inputs, logfile, model, optimizer, criterion, device, test_loader)
         
 def _get_torch_device(inputs):
     if torch.cuda.is_available():
@@ -116,7 +115,7 @@ def _load_scale_factor_and_pca(inputs, logfile, checkpoint):
                 pca = torch.load(inputs['neural_network']['pca'])
             else:
                 pca = torch.load('./pca')
-    _convert_to_tensor(inputs, logfile, scale_factor, pca)
+        _convert_to_tensor(inputs, logfile, scale_factor, pca)
 
     return scale_factor, pca
 
@@ -217,19 +216,35 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
 
     logfile.write("Best loss lammps potential written at {0} epoch\n".format(best_epoch))
 
-def _get_structure_labels(train_loader, valid_loader=None):
-    labels = []
-    for i, item in enumerate(train_loader):
-        for str_type in item['struct_type']:
-            if str_type not in labels:
-                labels.append(str_type)
-    if valid_loader:
-        for i, item in enumerate(valid_loader):
-            for str_type in item['struct_type']:
-                if str_type not in labels:
-                    labels.append(str_type)
-    return sorted(labels)
+#Evalutaion model & save result  -> result_saved
+def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader):
+    struct_labels = _get_structure_labels(test_loader, valid_loader=None)
+    logfile.write("Evaluation(Testing) model \n")
+    dtype = torch.get_default_dtype()
+    non_block = False if (device == torch.device('cpu')) else True
 
+    use_force = inputs['neural_network']['use_force']
+    use_stress = inputs['neural_network']['use_stress']
+    epoch_result = logger._init_meters(struct_labels, use_force, use_stress, atomic_e=False)
+    res_dict = _initialize_test_result_dict(inputs)
+    model.eval()
+    #Loop for test list
+    for i, item in enumerate(test_loader):
+        n_batch = item['E'].size(0)
+        _, calc_results = loss.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, False, dtype, use_force, use_stress, atomic_e=False)
+        #TODO: Add E, F, S to pt file as option  "NNP_to_pt"
+        _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress)
+
+    torch.save(res_dict, 'test_result')
+    logfile.write(f"DFT, NNP result saved at 'result_saved'\n")
+
+    # show RMSE
+    logger._show_avg_rmse(inputs, logfile, 0, 0, 0, epoch_result, None)
+
+    if inputs['neural_network']['print_structure_rmse']: 
+        logger._show_structure_rmse(inputs, logfile, epoch_result, None)
+
+#Main loop for calculations 
 def progress_epoch(inputs, data_loader, struct_labels, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=False):
     use_force = inputs['neural_network']['use_force'] if not atomic_e else False
     use_stress = inputs['neural_network']['use_stress'] if not atomic_e else False
@@ -252,6 +267,34 @@ def progress_epoch(inputs, data_loader, struct_labels, model, optimizer, criteri
         end = time.time()
 
     return epoch_result
+ 
+#Make checkpoint : epoch, loss, model, optimizer, pca, scale_factor 
+def save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename):
+    state ={'epoch': epoch + 1,
+            'loss': loss,
+            'model': model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'pca': pca,
+            'scale_factor': scale_factor,
+            #'scheduler': scheduler.state_dict()
+            }
+    torch.save(state, filename)
+
+
+
+#Make structure label by struct_type
+def _get_structure_labels(train_loader, valid_loader=None):
+    labels = []
+    for i, item in enumerate(train_loader):
+        for str_type in item['struct_type']:
+            if str_type not in labels:
+                labels.append(str_type)
+    if valid_loader:
+        for i, item in enumerate(valid_loader):
+            for str_type in item['struct_type']:
+                if str_type not in labels:
+                    labels.append(str_type)
+    return sorted(labels)
 
 #Check energy, force, stress criteria exist and create dictoary for them
 def _set_stop_rmse_criteria(inputs, logfile):
@@ -271,41 +314,6 @@ def _set_stop_rmse_criteria(inputs, logfile):
 
     return criteria_dict
 
-def save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename):
-    state ={'epoch': epoch + 1,
-            'loss': loss,
-            'model': model.state_dict(),
-            'optimizer': optimizer.state_dict(),
-            'pca': pca,
-            'scale_factor': scale_factor,
-            #'scheduler': scheduler.state_dict()
-            }
-    torch.save(state, filename)
-        
-def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader, labeled_test_loader=None):
-    logfile.write("Evaluation(Testing) model \n")
-    dtype = torch.get_default_dtype()
-    non_block = False if (device == torch.device('cpu')) else True
-
-    use_force = inputs['neural_network']['use_force']
-    use_stress = inputs['neural_network']['use_stress']
-    epoch_result = logger._init_meters(use_force, use_stress, atomic_e=False)
-    res_dict = _initialize_test_result_dict(inputs)
-    model.eval()
-
-    for i, item in enumerate(test_loader):
-        n_batch = item['E'].size(0)
-        _, calc_results = loss.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, False, dtype, use_force, use_stress, atomic_e=False)
-        _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress)
-
-    torch.save(res_dict, 'test_result')
-    logfile.write(f"DFT, NNP result saved at 'result_saved'\n")
-
-    # show RMSE
-    logger._show_avg_rmse(inputs, logfile, 0, 0, 0, epoch_result, None)
-    if inputs['neural_network']['print_structure_rmse'] and labeled_test_loader: 
-        logger._show_structure_rmse(inputs, logfile, labeled_test_loader, None, model, device, optimizer=optimizer, criterion=criterion, atomic_e=False)
-
 def _initialize_test_result_dict(inputs):
     res_dict = {'DFT': dict(), 'NNP': dict(), 'tot_num': list()}
     res_dict['DFT'] = {'E': list()}
@@ -319,6 +327,7 @@ def _initialize_test_result_dict(inputs):
 
     return res_dict
 
+#Update result dictionary 
 def _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress):
     for n in range(n_batch):
         res_dict['tot_num'].append(item['tot_num'][n].item())

@@ -28,18 +28,18 @@ def run(input_file_name):
     inputs = initialize_inputs(input_file_name, logfile)
     if inputs['generate_features'] is True:
         start_time = time.time()
-        #if comm.rank == 0:
-        #    check_inputs(inputs, logfile,'generate')
+        if comm.rank == 0:
+            check_inputs(inputs, logfile,'generate')
         generate = get_generate_function(logfile, descriptor_type=inputs['descriptor']['type'])
         generate(inputs, logfile, comm)
     
     if inputs['preprocess'] is True:
-        #if comm.rank == 0:
-        #    check_inputs(inputs, logfile,'preprocess')
+        if comm.rank == 0:
+            check_inputs(inputs, logfile,'preprocess')
         preprocess(inputs, logfile, comm)
 
     if inputs['train_model'] is True:
-        #check_inputs(inputs, logfile,'train_model')
+        check_inputs(inputs, logfile,'train_model')
         train(inputs, logfile)
 
     if inputs['train_replica'] is True:
