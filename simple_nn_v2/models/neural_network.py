@@ -158,45 +158,13 @@ def _initialize_model_and_weights(inputs, logfile, device):
             acti_func=inputs['neural_network']['acti_func'],
             dropout=inputs['neural_network']['dropout'])
 
-        weights_initialize_log = _initialize_weights(inputs, logfile, model[element])
+        weights_initialize_log = weight_initializers._initialize_weights(inputs, logfile, model[element])
 
     model = FCNDict(model) #Make full model with elementized dictionary model
     model.to(device=device)
     logfile.write("INITIALIZATION MODEL DONE.\n")
 
     return model
-
-def _initialize_weights(inputs, logfile, model):
-    try:
-        init_dic = inputs['neural_network']['weight_initializer']
-        init_name = init_dic['type']
-        init_params = init_dic['params']
-        acti_func = inputs['neural_network']['acti_func']
-        init_params['gain'] = weight_initializers._define_gain(logfile, acti_func, init_name, init_params)
-    except:
-        init_dic = None
-
-    # implimented_init = ['xavier uniform', 'xavier normal', 'normal', 'constant', 'kaiming normal', 'he normal', 'kaiming uniform', 'he uniform', 'orthogonal']
-    implimented_initializer = weight_initializers._get_implemented_initializer_list()
-    
-    try:
-        if init_dic is None:
-            weight_log = ""
-        elif init_name not in implimented_initializer:
-            weight_log = f"Warning : {init_name} weight initializer infomation is not implemented\n".format()
-        else:
-            weight_initializer, kwarg = weight_initializers._get_initializer_and_kwarg(init_name, init_params)
-            for lin in model.lin:
-                if lin == Linear:
-                    weight_initializer(lin.weight, **kwarg)
-                    weight_initializer(lin.bias, **kwarg)
-            weight_log = ""
-    except:
-        import sys
-        print(sys.exc_info())
-        raise Exception("During weight initialization error occured. Default Initializer used\n")
-
-    return weight_log
 
 def read_lammps_potential(filename):
     def _read_until(fil, stop_tag):

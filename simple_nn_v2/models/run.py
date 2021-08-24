@@ -3,15 +3,10 @@ from torch.optim.lr_scheduler import ExponentialLR
 #from torchsummary import summary
 
 import numpy as np
-import time
-import os
+import time, os, sys
 from tqdm import tqdm
 
-from simple_nn_v2.models import neural_network
-from simple_nn_v2.models import loss
-from simple_nn_v2.models import data_handler
-from simple_nn_v2.models import optimizers
-from simple_nn_v2.models import logger
+from simple_nn_v2.models import neural_network, loss, data_handler, optimizers, logger
 from simple_nn_v2.features.preprocessing import _split_train_list_and_valid_list
 
 

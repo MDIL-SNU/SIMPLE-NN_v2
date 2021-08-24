@@ -9,7 +9,6 @@ import collections
 from collections import OrderedDict
 #from tensorflow.python.framework import ops
 #from tensorflow.python.ops import array_ops, control_flow_ops, tensor_array_ops
-from .mpiclass import DummyMPI, MPI4PY
 from scipy.integrate import nquad
 
 import ase
@@ -17,6 +16,8 @@ import torch
 from ase.geometry import get_distances
 
 from simple_nn_v2.utils.features import _gen_2Darray_for_ffi
+from simple_nn_v2.features.mpi import DummyMPI, MPI4PY
+
 from ._libgdf import lib, ffi
 
 

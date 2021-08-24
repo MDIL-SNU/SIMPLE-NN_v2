@@ -87,7 +87,10 @@ model_default_inputs = \
                         'gain': None,
                         'std': None,
                         'mean': None,
-                        'var': None
+                        'val': None,
+                        'sparsity':None,
+                        'mode': None,
+                        'nonlinearity': None,
                     },
                 },
                 'acti_func': 'sigmoid',

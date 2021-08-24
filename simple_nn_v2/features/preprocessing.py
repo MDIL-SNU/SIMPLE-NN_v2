@@ -238,9 +238,10 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
         if comm.rank == 0 and callable(get_atomic_weights):
             grp.plot_gdfinv_density(atomic_weights_train, inputs['atom_types'], auto_c=dict_c)
  
-    atomic_weights_train['modifier'] = modifier
-    atomic_weights_train['type'] = inputs['preprocessing']['atomic_weights']['type']
-    atomic_weights_train['aw_tag'] = aw_tag
+        atomic_weights_train['modifier'] = modifier
+        atomic_weights_train['type'] = inputs['preprocessing']['atomic_weights']['type']
+        atomic_weights_train['aw_tag'] = aw_tag
+
     if comm.rank == 0:
         torch.save(atomic_weights_train, './atomic_weights')
 
