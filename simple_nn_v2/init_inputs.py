@@ -309,7 +309,11 @@ def check_inputs(inputs, logfile, run_type, error=False):
             logfile.write(f"scale rho value         : {preprocessing['scale_rho']}\n")
         logfile.write(f"calculate pca matrix    : {preprocessing['calc_pca']}\n")
         if preprocessing['calc_pca']:
+<<<<<<< HEAD
             if error: assert preprocessing['calc_scale'] is not False,\
+=======
+            assert preprocessing['calc_scale'] is not False,\
+>>>>>>> 1dce5444e8fb1e129cec9e1cb057eaf5ff636fa1
              f"calculating PCA matrix must need scale factor. use calc_factor : true or filename to load"
             logfile.write(f"use pca whitening       : {preprocessing['pca_whiten']}\n")
             if preprocessing['pca_whiten']:

@@ -322,7 +322,6 @@ def _initialize_test_result_dict(inputs):
 
     return res_dict
 
-#Update result dictionary 
 def _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress):
     for n in range(n_batch):
         res_dict['tot_num'].append(item['tot_num'][n].item())

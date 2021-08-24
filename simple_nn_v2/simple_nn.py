@@ -7,7 +7,6 @@ from simple_nn_v2.features import preprocess
 from simple_nn_v2.models import train
 from simple_nn_v2.features.mpi import DummyMPI, MPI4PY
 from simple_nn_v2.features.symmetry_function import generate as symf_generator
-
 #input parameter descriptor
 def run(input_file_name):
     logfile = sys.stdout

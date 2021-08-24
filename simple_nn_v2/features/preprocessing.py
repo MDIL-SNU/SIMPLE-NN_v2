@@ -8,6 +8,7 @@ from simple_nn_v2.utils import features as util_feature
 from simple_nn_v2.utils import scale as util_scale
 from simple_nn_v2.utils import graph as grp
 
+
 def preprocess(inputs, logfile, comm):
     """
     1. Split train/valid data names and save in "./pickle_train_list", "./pickle_valid_list" files

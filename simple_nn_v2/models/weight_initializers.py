@@ -80,4 +80,3 @@ def _initialize_weights(inputs, logfile, model):
 
     return weight_log
 
-

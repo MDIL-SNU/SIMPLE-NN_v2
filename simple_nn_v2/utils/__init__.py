@@ -17,7 +17,6 @@ from ase.geometry import get_distances
 
 from simple_nn_v2.utils.features import _gen_2Darray_for_ffi
 from simple_nn_v2.features.mpi import DummyMPI, MPI4PY
-
 from ._libgdf import lib, ffi
 
 
