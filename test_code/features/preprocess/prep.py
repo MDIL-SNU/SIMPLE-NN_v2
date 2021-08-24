@@ -7,29 +7,27 @@ sys.path.append('./')
 from simple_nn_v2 import simple_nn
 from simple_nn_v2.init_inputs import initialize_inputs
 from simple_nn_v2.features.symmetry_function import generate
+from simple_nn_v2.features.mpi import DummyMPI
 from simple_nn_v2.utils import features as util_ft
 from simple_nn_v2.features import preprocessing
 
-rootdir='./test_input/'
-logfile = open('LOG', 'w', 10)
+rootdir='./test_input/preprocess/'
+logfile = open(rootdir+'LOG', 'w', 10)
 inputs = initialize_inputs(rootdir+'input_SiO.yaml', logfile)
  
 
 print('preprocess() test')
 os.system(f'cp {rootdir}total_list ./')
-preprocessing.preprocess(inputs, logfile)
+comm = DummyMPI()
+preprocessing.preprocess(inputs, logfile, comm)
 
 filelist = [
     'train_list',
     'valid_list',
-    #'scale_factor',
-    #'pca'
     ]
 matchlist = [
     'train_match',
     'valid_match',
-    #'scale_match',
-    #'pca_match'
     ]
 
 print("Match generated files")

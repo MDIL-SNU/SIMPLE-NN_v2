@@ -1,9 +1,6 @@
 import sys
 import os
 sys.path.append('./')
-sys.path.append('../../../')
-
-
 
 from simple_nn_v2 import simple_nn
 from simple_nn_v2.init_inputs import initialize_inputs
@@ -11,8 +8,8 @@ from simple_nn_v2.features.symmetry_function import generate
 from simple_nn_v2.utils import features as util_ft
 from simple_nn_v2.features import preprocessing
 
-rootdir='./test_input/'
-logfile = open('LOG', 'w', 10)
+rootdir='./test_input/preprocess/'
+logfile = open(rootdir+'LOG', 'w', 10)
 inputs = initialize_inputs(rootdir+'input_SiO.yaml', logfile)
  
 print('_split_train_list_and_valid_list test : '+rootdir+'tota_list')

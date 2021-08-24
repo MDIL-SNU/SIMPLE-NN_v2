@@ -4,10 +4,10 @@ from simple_nn_v2 import simple_nn
 from simple_nn_v2 import init_inputs
 import torch
 
-logfile = open('LOG', 'w', 10)
 
+rootdir='./test_input/default/'
+logfile = open(rootdir+'LOG', 'w', 10)
 
-rootdir='./test_input/'
 print(f"read {rootdir}input_test.yaml")
 inputs = init_inputs.initialize_inputs(rootdir+'input_test.yaml', logfile)
 

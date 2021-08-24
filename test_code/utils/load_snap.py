@@ -16,8 +16,8 @@ from simple_nn_v2.utils import data_generator
 
 # Minimum Setting for Testing Symmetry_function methods
 # Initialize input file, set Simple_nn object as parent of Symmetry_function object
-rootdir = './test_input/'
-logfile = open('LOG', 'w', 10)
+rootdir = './test_input/utils/'
+logfile = open(rootdir+'LOG', 'w', 10)
 inputs = initialize_inputs(rootdir+'input_SiO.yaml', logfile)
 
 atom_types = inputs['atom_types']
@@ -42,7 +42,7 @@ save_dict = dict()
 
 for test_file, test_slicing in zip(test_file_list, test_slicing_list):
     print('Main structure  :   ',rootdir+test_file)
-    structures = data_generator.load_structures(inputs, rootdir+test_file, test_slicing, logfile)
+    structures = data_generator.load_structures(inputs, './test_input/'+test_file, test_slicing, logfile)
     save_dict[test_file] = structures
     print('Structures        :  ',structures)
     if str_match:

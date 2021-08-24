@@ -35,6 +35,8 @@ jobs:
       run: |
         cp simple_nn_v2/features/symmetry_function/libsymf_builder.py ./
         python libsymf_builder.py
+        cp simple_nn_v2/utils/libgdf_builder.py ./
+        python libgdf_builder.py
     - name: test with pytest
       run: |
         pytest

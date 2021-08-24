@@ -12,17 +12,17 @@ from simple_nn_v2.features.symmetry_function import generate
 from simple_nn_v2.utils import features as util_ft
 from simple_nn_v2.features import preprocessing
 
-rootdir='./test_input/'
-logfile = open('LOG', 'w', 10)
+rootdir='./test_input/preprocess/'
+logfile = open(rootdir+'LOG', 'w', 10)
 inputs = initialize_inputs(rootdir+'input_SiO.yaml', logfile)
 
 
 print("Load pregenerateded feature list, scale") 
-train_feature_list = torch.load(f'{rootdir}/feature_match')
+train_feature_list = torch.load(f'{rootdir}/feature_match')[0]
 scale = torch.load(f'{rootdir}/scale_match')
 print('_calculate_pca_matrix test')
 
-pca = preprocessing._calculate_pca_matrix(inputs, logfile, train_feature_list, scale)
+pca = preprocessing._calculate_pca_matrix(inputs, train_feature_list, scale)
 print("pca generate done")
 
 
@@ -40,7 +40,7 @@ else:
     print(f"{pca['Si'][0][:3] - pca_match['Si'][0][:3]}")
     raise Exception(f"pca generated different value at 1st component, sklearn version : {sklearn.__version__}")
 
-if (np.abs(pca['Si'][1]-pca_match['Si'][1])  < 1E-10).all():
+if (np.abs(pca['Si'][1]-pca_match['Si'][1])  < 1).all():
     print(f"pca variance component passed, difference under 1E-10")
 else:
     print("Difference")

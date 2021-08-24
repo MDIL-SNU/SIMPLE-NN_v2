@@ -9,9 +9,8 @@ from simple_nn_v2.features.symmetry_function import utils as symf_utils
 
 # Minimum Setting for Testing Symmetry_function methods
 # Initialize input file, set Simple_nn object as parent of Symmetry_function object
-rootdir='./'
-rootdir='./test_input/'
-logfile = open('LOG', 'w', 10)
+rootdir='./test_input/generate/'
+logfile = open(rootdir+'LOG', 'w', 10)
 inputs = initialize_inputs(rootdir+'input_SiO.yaml', logfile)
 atom_types = inputs['atom_types']
 

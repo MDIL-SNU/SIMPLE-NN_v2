@@ -7,7 +7,7 @@ import cal_symmetry_function
 
 def test():
     #for pytest
-    root_dir = './test_input/'
+    root_dir = './test_input/symmetry_function/'
     #defalut 
     #root_dir = './'
 

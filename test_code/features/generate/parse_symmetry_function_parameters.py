@@ -8,12 +8,11 @@ from simple_nn_v2.features.symmetry_function import utils as symf_utils
 
 # Minimum Setting for Testing Symmetry_function methods
 # Initialize input file, set Simple_nn object as parent of Symmetry_function object
-default='./input.yaml'
-pytest ='./test_input/input_SiO.yaml'
-yaml = pytest
+rootdir='./test_input/generate/'
+yaml = rootdir+'input_SiO.yaml'
 
 
-logfile = open('LOG', 'w', 10)
+logfile = open(rootdir+'LOG', 'w', 10)
 inputs = initialize_inputs(yaml, logfile)
 atom_types = inputs['atom_types']
 
@@ -34,7 +33,7 @@ try:
         print("['num']: ", symf_params_set[elem]['num'])
 
         # Check ['total'], ['int'], ['double'] values
-        f=open(inputs['descriptor']['params'][elem],'r')
+        f=open(inputs['params'][elem],'r')
         lines=f.readlines()
         f.close()
 

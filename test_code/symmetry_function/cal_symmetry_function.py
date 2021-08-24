@@ -53,7 +53,7 @@ def get_params_dir(filename):
     input_yaml = read_yaml(filename)
     atom_type = input_yaml['atom_types']
     for atom in atom_type:
-        params_dir.append(input_yaml['symmetry_function']['params'][atom])
+        params_dir.append(input_yaml['params'][atom])
     return atom_type , params_dir
 
 #Read VASP-OUTCAR file (only applicable VASP-OUTCAR format) 

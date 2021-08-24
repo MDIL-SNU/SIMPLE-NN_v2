@@ -5,19 +5,13 @@ random_seed: 100
 atom_types:
  - Si
  - O
-
+params:
+  Si: ./test_input/params_Si
+  O: ./test_input/params_O
 descriptor:
   type: symmetry_function
-  params:
-    Si: ./test_input/params_Si
-    O: ./test_input/params_O
   valid_rate: 0.4
   remain_pickle: True
   compress_outcar: True
   save_to_pickle: False
 
-neural_network:
-  continue: false
-  use_force: true
-  use_stress: true
-  pca: true

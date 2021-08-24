@@ -1,0 +1,136 @@
+generate_features: False
+preprocess: False
+train_model: True
+#random_seed: False
+train_replica: False
+
+atom_types:
+- Ge
+- Sb
+- Te
+params:
+    Ge: params_Ge
+    Sb: params_Sb
+    Te: params_Te
+
+descriptor: 
+    type: 'symmetry_function'
+    struct_list: './structure_list'
+    save_list: './total_list'
+    refdata_format: 'vasp-out'
+    compress_outcar: False
+    save_directory: './data'
+    read_force: True
+    read_stress: True 
+    dx_save_sparse: False
+    add_atom_idx: True 
+    absolute_path: False
+
+preprocessing: 
+    data_list: './total_list'
+    train_list: './train_list'
+    valid_list: './valid_list' 
+    shuffle: True
+    valid_rate: 0.0
+    
+    calc_pca: True
+    pca_whiten: True
+    pca_min_whiten_level: 1.0e-8
+    
+    calc_scale: True
+    scale_type: 'minmax'
+    scale_scale: 1.0
+    scale_rho: 1
+    
+    calc_gdf: True
+    atomic_weights: 
+       type: 'gdf'
+#       params: 
+#        Te:
+#          b: 100
+    weight_modifier: 
+       type: 'modified_sigmoid'
+#       params: 
+#        Te:
+#          b: 100
+
+neural_network:
+   train_list: './train_list'
+   valid_list: './valid_list' 
+   test_list: './test_list'
+   ref_list: './ref_list'
+
+   train: True
+   test: False
+
+#   split_data: 'train_list' 
+   shuffle_dataloader: True
+
+   # Network related
+   nodes: '30-30'
+   regularization: 1e-6 #L2 regularization
+   use_force: True
+   use_stress: False
+
+   double_precision: True
+   weight_initializer:
+      type: 'xavier normal'
+#      params:
+#          gain: 
+#          std: 
+#          mean: 
+#          var: 
+   acti_func: 'sigmoid'
+   dropout: False
+
+   # Optimization related
+   method: 'Adam'
+   batch_size: 10
+   full_batch: False
+   total_epoch: 5
+   learning_rate: 0.0001
+   lr_decay: 0.1
+   stress_coeff: 0.000001
+   force_coeff: 0.1 
+   energy_coeff: 1.
+   loss_scale: 1.
+   optimizer: 
+
+   workers: 0 
+
+   # Loss function related
+   E_loss_type: 0
+   F_loss_type: 1
+
+   # Logging & saving related (Epoch)
+
+   show_interval: 1
+   checkpoint_interval: 100
+   energy_criteria:
+   force_criteria: 
+   stress_criteria: 
+   break_max: 10
+   print_structure_rmse: True
+
+   pca: True
+   scale: True
+   gdf: True
+   # Write atomic energies to pickle
+   NNP_to_pt: False
+
+   #RESUME parameters
+   continue: False
+   clear_prev_status: True
+   clear_prev_optimizer: False
+   start_epoch: 0
+   #Parallelism
+   inter_op_parallelism_threads: 0
+   intra_op_parallelism_threads: 0
+   load_data_to_gpu: False
+   cuda_number: False
+
+replica:
+   add_NNP_ref: False
+   train_atomic_E: False
+
+

@@ -13,10 +13,10 @@ from ase import io
 # Initialize input file, set Simple_nn object as parent of Symmetry_function object
 
 #root_dir = './'
-root_dir = './test_input/'
+root_dir = './test_input/generate/'
 
 
-logfile = open('LOG', 'w', 10)
+logfile = open(root_dir+'LOG', 'w', 10)
 inputs = initialize_inputs(root_dir+'input_SiO.yaml', logfile)
 atom_types = inputs['atom_types']
 

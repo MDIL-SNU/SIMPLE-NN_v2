@@ -14,8 +14,8 @@ from simple_nn_v2.utils import data_generator
 
 # Minimum Setting for Testing Symmetry_function methods
 # Initialize input file, set Simple_nn object as parent of Symmetry_function object
-rootdir = './test_input/'
-logfile = open('LOG', 'w', 10)
+rootdir = './test_input/utils/'
+logfile = open(rootdir+'LOG', 'w', 10)
 inputs = initialize_inputs(rootdir+'input_SiO.yaml', logfile)
 
 atom_types = inputs['atom_types']
@@ -24,7 +24,7 @@ structure_list = rootdir+'structure_list'
 
 atype = 'SiO2 type'
 weight = '10.0'
-list_dir = './test_data/SiO2/OUTCAR_comp' 
+list_dir = '../test_data/SiO2/OUTCAR_comp' 
 sliced   = ':30:10'
 
 if not os.path.exists(structure_list):
@@ -50,7 +50,8 @@ assert structure_weights[1] == float(weight) , f"Error occured : not consistant 
 print("structure_weights compare OK")
 
 print('structure_file_list   :', structure_file_list)
-assert structure_file_list[0] == list_dir , f"Error occured : not consistant structure_file_list"
+assert structure_file_list[0] == list_dir ,\
+f"Error occured : not consistant structure_file_list: {structure_file_list[0]} , {list_dir}"
 print("structure_file_list compare OK")
 
 
