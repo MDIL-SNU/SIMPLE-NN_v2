@@ -71,7 +71,6 @@ model_default_inputs = \
                 'train': True,
                 'test': False,
 
-                'split_data': None,
                 'shuffle_dataloader': True,
 
                 # Network related
@@ -117,7 +116,7 @@ model_default_inputs = \
 
                 # Logging & saving related (Epoch)
                 'show_interval': 10,
-                'checkpoint_interval': 100,
+                'checkpoint_interval': False,
                 'energy_criteria':None,
                 'force_criteria':None,
                 'stress_criteria':None,
@@ -172,22 +171,6 @@ def initialize_inputs(input_file_name, logfile):
 
     # update inputs using 'input.yaml'
     inputs = _deep_update(inputs, input_yaml, warn_new_key=True, logfile=logfile)
-
-    #Default setting for generate & preprocess & train
-    if inputs['generate_features'] and inputs['train_model']:
-        assert not ((inputs['descriptor']['read_force'] is False) and (inputs['neural_network']['use_force'] is True))\
-        , f"read_force : false, use_force : true is not valid setting please set descriptor.read_force to true"
-        assert not ((inputs['descriptor']['read_stress'] is False) and (inputs['neural_network']['use_stress'] is True))\
-        , f"read_stress : false, use_stress : true is not valid setting please set descriptor.read_force to true"
-
-    if inputs['preprocess'] and inputs['train_model']:
-        assert not (inputs['preprocessing']['calc_scale'] is False and inputs['neural_network']['scale'] is not False)\
-        , f"calc_scale : false, scale : true is not valid setting please set preprocessing.calc_pca to true"
-        assert not (inputs['preprocessing']['calc_pca'] is False and inputs['neural_network']['pca'] is not False)\
-        , f"calc_pca : false, pca : true is not valid setting please set preprocessing.calc_scale to true"
-        assert not (inputs['preprocessing']['calc_gdf'] is False and inputs['neural_network']['gdf'] is not False)\
-        , f"calc_gdf : false, gdf : true is not valid setting please set preprocessing.calc_gdf to true"
-
     if len(inputs['atom_types']) == 0:
         raise KeyError
 
@@ -205,11 +188,6 @@ def initialize_inputs(input_file_name, logfile):
         np.random.seed(seed)
         logfile.write("*** Random seed: {0:} ***\n".format(seed))
     
-
-
-
-
-
 
 
     return inputs
@@ -361,10 +339,6 @@ def check_inputs(inputs, logfile, run_type, error=False):
             if error: assert os.path.exists(neural_network['train_list']), f"No train_list file for training set :{neural_network['train_list']}"
             if os.path.exists(neural_network['valid_list']):
                 logfile.write(f"valid list          : {neural_network['valid_list']}\n")
-            if neural_network['split_data']:
-                logfile.write(f"split data from list    : {neural_network['split_data']}\n")
-                if error: assert os.path.exists(neural_network['split_data']), f"split_data file is not exist : {neural_network['split_data']}."
-                if error: assert type(inputs['preprocessing']['valid_rate']) is float , f"split_data need valid rate please set preprocessing.valid_rate."
         logfile.write(f"test                        : {neural_network['test']}\n")
         if neural_network['test']:   
             logfile.write(f"test_list           : {neural_network['test_list']}\n")

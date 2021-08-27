@@ -16,9 +16,6 @@ def train(inputs, logfile):
     device = _get_torch_device(inputs)
     _set_pararrelism(inputs, logfile)
 
-    if inputs['neural_network']['split_data']:
-        _split_train_list_and_valid_list(inputs, data_list=inputs['neural_network']['split_data'])
-
     model = neural_network._initialize_model_and_weights(inputs, logfile, device)
     optimizer = optimizers._initialize_optimizer(inputs, model)
     criterion = torch.nn.MSELoss(reduction='none').to(device=device)
@@ -206,6 +203,14 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
         # Update scheduler
         if inputs['neural_network']['lr_decay']:
             scheduler.step()
+        # soft termination 
+        if os.path.exists('./stoptrain'):
+                logfile.write("Stop traning by ./strotrain file. Terminating traning model\n")
+                save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint_stoptrain.pth.tar')
+                model.write_lammps_potential(filename='./potential_saved_stoptrain', inputs=inputs, scale_factor=scale_factor, pca=pca)
+                logfile.write("checkpoint_stoptrain.pth.tar & potential_saved_stoptrain written\n")
+                break
+
 
         logfile.flush()
 
@@ -322,6 +327,7 @@ def _initialize_test_result_dict(inputs):
 
     return res_dict
 
+#Update result dictionary 
 def _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress):
     for n in range(n_batch):
         res_dict['tot_num'].append(item['tot_num'][n].item())
