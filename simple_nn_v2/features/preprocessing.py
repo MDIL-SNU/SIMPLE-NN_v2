@@ -8,7 +8,6 @@ from simple_nn_v2.utils import features as util_feature
 from simple_nn_v2.utils import scale as util_scale
 from simple_nn_v2.utils import graph as grp
 
-
 def preprocess(inputs, logfile, comm):
     """
     1. Split train/valid data names and save in "./pickle_train_list", "./pickle_valid_list" files
@@ -143,7 +142,7 @@ def _calculate_pca_matrix(inputs, feature_list, scale):
 
 
 
-def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_dir_list, scale, comm, **kwargs):
+def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_dir_list, scale, comm):
     #Set modifier parameters
     modifier = None
     if inputs['preprocessing']['weight_modifier']['type'] == 'modified sigmoid':
@@ -179,11 +178,20 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
 
             local_target_list[item] = feature_list_train[item][begin:end]
             local_idx_list[item] = idx_list_train[item][begin:end]
-       
+        
+        #Extract parameters for GDF
+        if inputs['preprocessing']['atomic_weights']['params']:
+            if 'sigma' in inputs['preprocessing']['atomic_weights']['params'].keys():
+                sigma = inputs['preprocessing']['atomic_weights']['params']['sigma']
+            else:
+                sigma = 0.02 #Default value for sigma
+            if 'nonscale' in inputs['preprocessing']['atomic_weights']['params'].keys():
+                noscale = inputs['preprocessing']['atomic_weights']['params']['noscale']
+            else:
+                noscale = False #Default value for noscale
+ 
         atomic_weights_train, dict_sigma, dict_c = get_atomic_weights(feature_list_train, scale, inputs['atom_types'], local_idx_list,\
-         target_list=local_target_list, comm=comm, **kwargs)
-        if 'sigma' in kwargs.keys():
-            kwargs.pop('sigma')
+         target_list=local_target_list, comm=comm, sigma=sigma, noscale=noscale)
         
         if comm.rank == 0:
             #weight modifier calling
@@ -218,7 +226,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
                 local_idx_list[item] = idx_list_valid[item][begin:end]
     
             atomic_weights_valid, _ , _  = get_atomic_weights(feature_list_train, scale, inputs['atom_types'], local_idx_list,\
-             target_list=local_target_list, sigma=dict_sigma, comm=comm, **kwargs)
+             target_list=local_target_list, sigma=dict_sigma, comm=comm, scale=scale, noscale=noscale)
             if comm.rank == 0: 
                 for item in inputs['atom_types']:
                     if modifier != None and callable(modifier[item]):

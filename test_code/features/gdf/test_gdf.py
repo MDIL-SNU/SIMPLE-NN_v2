@@ -15,31 +15,35 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 from simple_nn_v2.features.preprocessing import _calculate_gdf
 from simple_nn_v2.features.preprocessing import _calculate_scale
-from simple_nn_v2.features.symmetry_function.mpi import DummyMPI, MPI4PY
+from simple_nn_v2.features.mpi import DummyMPI, MPI4PY
 
 
 import numpy as np
 import torch 
-rootdir='./test_input/gdf/'
+
+
+rootdir = './test_inputs/gdf'
 def test():
     comm = DummyMPI()
     inputs = dict()
-    logfile = open(rootdir+'LOG','w')
+    logfile = open('LOG','w')
     inputs['atom_types'] = ['Si']
-    inputs['preprocessing'] = { 'atomic_weights':{'type':'gdf'}, 'valid_list':None, 'weight_modifier':{'type':None},
+    inputs['preprocessing'] = { 'atomic_weights':{'type':'gdf','params':{'sigma':0.02,'noscale':False}}, 'valid_list':None, 'weight_modifier':{'type':None},
      'calc_scale':True, 'scale_type':'minmax', 'scale_scale':1.0,'scale_rho':None, 'valid_rate':0.0}
 
     #Temporary symmetry function
     train_feature_list = {'Si':np.array([
-    [0.8,0,0,0],
-    [0.11,0,0,0],
-    [0.12,0,0,0],
-    [0.13,0,0,0],
-    [0.14,0,0,0],
-    [0.15,0,0,0],
+    [0.8],
+    [0.7],
+    [0.1],
+    [0.11],
+    [0.12],
+    [0.13],
+    [0.14],
+    [0.15],
     ])}
-    train_idx_list = {'Si':np.array([0,0,1,1,2,2])}
-    train_dir_list = [rootdir+i for i in ['data1.pt','data2.pt','data3.pt']]
+    train_idx_list = {'Si':np.array([0,0,1,1,2,2,3,3])}
+    train_dir_list = [f'{rootdir}/data{i+1}.pt' for i in range(int(len(train_idx_list['Si'])/2))]
     tmp_idx = 0
     for fil in train_dir_list:
         tmp = {'atom_idx':np.array([1,1]),'tot_num':2, 'N':{'Si':2}}
@@ -53,22 +57,63 @@ def test():
 
 
     #Get scale
-    scale = _calculate_scale(inputs, logfile, train_feature_list, comm)
-    print('Scale')
-    print(scale)
+    scale_minmax = _calculate_scale(inputs, logfile, train_feature_list, comm)
+    print('Scale : minmax')
+    print(scale_minmax)
+    inputs['preprocessing']['scale_type'] = 'meanstd'
+    scale_meanstd = _calculate_scale(inputs, logfile, train_feature_list, comm)
+    print('Scale : minstd')
+    print(scale_meanstd)
 
-    _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list ,train_dir_list, scale, comm )
+    _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list ,train_dir_list, scale_minmax, comm )
 
     for fil in train_dir_list:
         if os.path.exists(fil):
             print('_________________________________________________')
-            print('atom_idx')
+            print(fil)
+            print('Atom index')
             print(torch.load(fil)['atom_idx'])
-            print('x')
+            print('Symmetry function')
             print(torch.load(fil)['x'])
-            print('gdf')
+            print('Gaussian density function ')
             print(torch.load(fil)['gdf'])
             print('_________________________________________________')
+
+    print('\n\n')
+    
+
+
+    #Calculate GDF factor
+    def get_gdf(distance_list , sigma=0.02, dim = 1):
+        out = list(map(lambda distance: np.exp(- (distance**2) / (2* sigma**2 * dim)), distance_list))
+        out = np.sum(out) / len(distance_list)
+        return 1/out
+
+    test_feature_list = np.array([0.8,0.7,0.1,0.11,0.12,0.13,0.14,0.15]) 
+
+    scaled_feature_list   = test_feature_list - scale_minmax['Si'][0:1,:]
+    scaled_feature_list    /= scale_minmax['Si'][1:2,:]
+    #print(test_feature_list) 
+    #print(scaled_feature_list[0]) 
+    #print(get_gdf(test_feature_list - test_feature_list[0]))
+    for idx in range(len(test_feature_list)):
+        #print(scaled_feature_list[0] - scaled_feature_list[0][idx])
+        print(f'IDX {idx} GDF : ',get_gdf(scaled_feature_list[0] - scaled_feature_list[0][idx]))
+
+
+
+
+    #Check GDF sigma = Auto Part
+    inputs['preprocessing']['atomic_weights']['params']['sigma'] = 'Auto'
+    _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list ,train_dir_list, scale_minmax, comm)
+
+   
+
+
+
+
+
+
 
 
 

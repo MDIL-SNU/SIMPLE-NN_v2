@@ -9,8 +9,8 @@ def test():
     python_dir='python3'
     #Set python test files to run
     test_list=[
-             'initialize_inputs.py',
-             'get_generate_function.py'
+#             'initialize_inputs.py',
+             'get_generate_function.py',
               ]
     
     print('Start testing default function ')
