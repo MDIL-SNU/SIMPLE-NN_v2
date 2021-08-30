@@ -19,11 +19,10 @@ def run(input_file_name):
     try: 
         comm = MPI4PY()
         assert comm.size != 1
-        logfile.write("Use mpi with size {0}\n".format(comm.size))
         assert inputs['train_model'] is False, "MPI4PY does not support in train model. Set train_model = False"
+        logfile.write("Use mpi with size {0}\n".format(comm.size))
     except:
         comm = DummyMPI()
-        logfile.write("Not use mpi \n")
 
     inputs = initialize_inputs(input_file_name, logfile)
     if inputs['generate_features'] is True:

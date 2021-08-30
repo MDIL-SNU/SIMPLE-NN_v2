@@ -155,7 +155,10 @@ replica_default_inputs = \
 def initialize_inputs(input_file_name, logfile):
     with open(input_file_name) as input_file:
         input_yaml = yaml.safe_load(input_file)
-    descriptor_type = input_yaml['descriptor']['type']
+    if 'descriptor' in input_yaml.keys():
+        descriptor_type = input_yaml['descriptor']['type']
+    else:
+        descriptor_type = 'symmetry_function'
     params_type = input_yaml['params']
 
     inputs = default_inputs
@@ -300,9 +303,12 @@ def check_inputs(inputs, logfile, run_type, error=False):
                     logfile.write(f" ---parameters for atomic weights--- \n")
                     for atype in preprocessing['atomic_weights']['params'].keys():
                         logfile.write(f"{atype}  params  : ")
-                        for key, val in preprocessing['atomic_weights']['params'][atype].items():
-                            logfile.write(f" ({key} = {val}) ")
-                        logfile.write("\n")
+                        if isinstance(dict, type(preprocessing['atomic_weights']['params'][atype])):
+                            for key, val in preprocessing['atomic_weights']['params'][atype].items():
+                                logfile.write(f" ({key} = {val}) ")
+                            logfile.write("\n")
+                        else:
+                            logfile.write(str(preprocessing['atomic_weights']['params'][atype]))
             elif preprocessing['atomic_weights']['type']  not in ['gdf', 'user', 'file']:
                 logfile.write("Warning : set atomic weight types approatly. preprocessing.atomic_weights.type : gdf/user/file\n")
             if preprocessing['weight_modifier']['type']:
