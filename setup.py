@@ -28,11 +28,11 @@ with open('simple_nn_v2/_version.py', 'w') as fp:
 # required module
 # TODO: version check
 install_requires = [
-    'numpy<1.17.0',
-    'scipy<1.3.0',
-    'scikit-learn<0.21.0',
+    'scipy',
+    'scikit-learn',
     'pyyaml>=3.10',
     'cffi>=1.0.0',
+    'numpy<=1.20.2',
     'psutil',
     'tqdm',
     'braceexpand',
@@ -85,6 +85,7 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
 
     ],
@@ -96,8 +97,8 @@ setup(
     install_requires=install_requires,
     setup_requires=setup_requires,
     cffi_modules=[
-        "simple_nn_v2/features/symmetry_function/libsymf_builder.py:ffibuilder"
-#        "simple_nn_v2/utils/libgdf_builder.py:ffibuilder",
+        "simple_nn_v2/features/symmetry_function/libsymf_builder.py:ffibuilder",
+        "simple_nn_v2/utils/libgdf_builder.py:ffibuilder",
     ],
 )
 
