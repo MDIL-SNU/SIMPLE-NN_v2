@@ -1,4 +1,5 @@
 from torch.nn import Linear, init
+import torch
 
 
 def _set_optim_inputs(inputs, logfile):
@@ -71,7 +72,9 @@ def _initialize_weights(inputs, logfile, model):
             for lin in model.lin:
                 if isinstance(lin, Linear):
                     weight_initializer(lin.weight, **kwarg)
-                    #weight_initializer(lin.bias, **kwarg)
+                    tmp_bias = torch.zeros([1, lin.bias.size(0)])
+                    weight_initializer(tmp_bias, **kwarg)
+                    lin.bias.data = tmp_bias[0]
             weight_log = ""
     except:
         import sys

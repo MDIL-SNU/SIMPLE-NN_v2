@@ -108,6 +108,7 @@ def my_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_w
 def atomic_e_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_whiten_level=None, use_force=False, use_stress=False, load_data_to_gpu=False):
     non_blocking = True if (load_data_to_gpu and torch.cuda.is_available()) else False 
 
+    struct_type = list()
     struct_weight = list()
     tot_num = list()
     E = list()
@@ -120,6 +121,7 @@ def atomic_e_collate(batch, atom_types, device, scale_factor=None, pca=None, pca
 
     # extract data from batch_loader
     for item in batch:
+        struct_type.append(item['struct_type'])
         struct_weight.append(item['struct_weight'])
         tot_num.append(item['tot_num'])
 
@@ -148,7 +150,7 @@ def atomic_e_collate(batch, atom_types, device, scale_factor=None, pca=None, pca
     tot_num = _set_tensor_to_device(torch.tensor(tot_num), device, non_blocking, load_data_to_gpu)
     E = _set_tensor_to_device(torch.tensor(E), device, non_blocking, load_data_to_gpu)
 
-    return {'x': x, 'n': n, 'E': E, 'atomic_E': atomic_E, 'sp_idx': sparse_index, 'struct_weight': struct_weight, 'tot_num': tot_num, 'atomic_num': atomic_num}
+    return {'x': x, 'n': n, 'E': E, 'atomic_E': atomic_E, 'sp_idx': sparse_index, 'struct_type': struct_type, 'struct_weight': struct_weight, 'tot_num': tot_num, 'atomic_num': atomic_num}
 
 #Function to generate Iterator
 def filename_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_whiten_level=None, use_force=False, use_stress=False, load_data_to_gpu=False):
@@ -238,7 +240,7 @@ def _make_dataloader(inputs, dataset_list, scale_factor, pca, device, use_force,
 
     return data_loader
 
-def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf):
+def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf=False):
     # mode: ['train', 'valid', 'test', 'add_NNP_ref', 'atomic_E_train', 'atomic_E_valid']
     args = {
         'train': {'data_list': inputs['neural_network']['train_list'], 'use_force': inputs['neural_network']['use_force'],\
@@ -251,7 +253,7 @@ def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf):
          'use_stress': False, 'valid': True, 'my_collate': filename_collate},
         'atomic_E_train': {'data_list': inputs['neural_network']['train_list'], 'use_force': False,\
          'use_stress': False, 'valid': False, 'my_collate': atomic_e_collate},
-        'atomic_E_valid': {'data_list': inputs['neural_network']['train_list'], 'use_force': False,\
+        'atomic_E_valid': {'data_list': inputs['neural_network']['valid_list'], 'use_force': False,\
          'use_stress': False, 'valid': True, 'my_collate': atomic_e_collate},
         'gdf_train': {'data_list': inputs['neural_network']['train_list'], 'use_force': inputs['neural_network']['use_force'],\
          'use_stress': inputs['neural_network']['use_stress'], 'valid': False, 'my_collate': gdf_collate},

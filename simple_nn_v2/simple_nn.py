@@ -42,9 +42,6 @@ def run(input_file_name):
         check_inputs(inputs, logfile,'train_model')
         train(inputs, logfile)
 
-    if inputs['train_replica'] is True:
-        pass
-
 
 def get_generate_function(logfile, descriptor_type='symmetry_function'):
     generator = {
