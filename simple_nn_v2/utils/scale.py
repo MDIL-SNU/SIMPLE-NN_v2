@@ -10,17 +10,20 @@ def get_scale_function(scale_type='minmax'):
     }
     return scale_function[scale_type]
 
-def minmax(inputs, feature_list, atom_type, scale_scale):
+def minmax(inputs, feature_list, atom_type):
+    scale_scale = inputs['preprocessing']['scale_scale']
     mid_range = 0.5 * (np.amax(feature_list[atom_type], axis=0) + np.amin(feature_list[atom_type], axis=0))
     width = 0.5 * (np.amax(feature_list[atom_type], axis=0) - np.amin(feature_list[atom_type], axis=0)) / scale_scale
     return mid_range, width
 
-def meanstd(inputs, feature_list, atom_type, scale_scale):
+def meanstd(inputs, feature_list, atom_type):
+    scale_scale = inputs['preprocessing']['scale_scale']
     mean = np.mean(feature_list[atom_type], axis=0)
     std_dev = np.std(feature_list[atom_type], axis=0) / scale_scale
     return mean, std_dev
 
-def uniform_gas(inputs, feature_list, atom_type, scale_scale):
+def uniform_gas(inputs, feature_list, atom_type):
+    scale_scale = inputs['preprocessing']['scale_scale']
     atom_types = inputs['atom_types']
     scale_rho = inputs['preprocessing']['scale_rho']
     params_set = dict()

@@ -22,7 +22,7 @@ import numpy as np
 import torch 
 
 
-rootdir = './test_inputs/gdf'
+rootdir = './test_input/gdf'
 def test():
     comm = DummyMPI()
     inputs = dict()
@@ -49,6 +49,7 @@ def test():
         tmp = {'atom_idx':np.array([1,1]),'tot_num':2, 'N':{'Si':2}}
         tmp['atom_types'] = ['Si']
         tmp['x'] = {'Si':train_feature_list['Si'][tmp_idx:tmp_idx+2,:]}
+        print("Saved at ",fil)
         torch.save(tmp, fil)
         tmp_idx += 2
     print('total feature list (x)')
@@ -81,8 +82,6 @@ def test():
 
     print('\n\n')
     
-
-
     #Calculate GDF factor
     def get_gdf(distance_list , sigma=0.02, dim = 1):
         out = list(map(lambda distance: np.exp(- (distance**2) / (2* sigma**2 * dim)), distance_list))
@@ -99,6 +98,18 @@ def test():
     for idx in range(len(test_feature_list)):
         #print(scaled_feature_list[0] - scaled_feature_list[0][idx])
         print(f'IDX {idx} GDF : ',get_gdf(scaled_feature_list[0] - scaled_feature_list[0][idx]))
+
+    print('_________________________________________________')
+    print('Assertion Check')
+    for idx, fil in enumerate(train_dir_list):
+        if os.path.exists(fil):
+            tmp_val_even = np.abs(torch.load(fil)['gdf'][0] - get_gdf(scaled_feature_list[0] - scaled_feature_list[0][2*idx]))
+            tmp_val_odd = np.abs(torch.load(fil)['gdf'][1] - get_gdf(scaled_feature_list[0] - scaled_feature_list[0][2*idx+1]))
+            assert (tmp_val_even < 1E-2), f"Error : Wrong GDF value diff {tmp_val_even} "
+            assert (tmp_val_odd < 1E-2), f"Error : Wrong GDF value diff {tmp_val_odd} "
+            print(fil + ' passed ')
+    print('_________________________________________________')
+
 
 
 

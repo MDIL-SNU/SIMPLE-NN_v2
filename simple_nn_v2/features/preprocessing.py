@@ -77,7 +77,6 @@ def _calculate_scale(inputs, logfile, feature_list, comm):
     if inputs['preprocessing']['calc_scale'] is True:
         scale = dict()
         scale_type = inputs['preprocessing']['scale_type']
-        scale_scale = inputs['preprocessing']['scale_scale']
         calculate_scale_factor = util_scale.get_scale_function(scale_type=scale_type)
 
         for elem in atom_types:
@@ -88,7 +87,7 @@ def _calculate_scale(inputs, logfile, feature_list, comm):
             if len(feature_list[elem]) <= 0:  
                 scale[elem][1,:] = 1.
             else:
-                scale[elem][0], scale[elem][1] = calculate_scale_factor(feature_list, elem, scale_scale)
+                scale[elem][0], scale[elem][1] = calculate_scale_factor(inputs, feature_list, elem)
                 scale[elem][1, scale[elem][1,:] < 1e-15] = 1.
 
                 is_scaled = np.array([True] * inp_size)

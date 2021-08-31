@@ -163,7 +163,6 @@ def initialize_inputs(input_file_name, logfile):
     
     inputs = _deep_update(inputs, preprocess_default_inputs)
     inputs = _deep_update(inputs, model_default_inputs)
-#    inputs = _deep_update(inputs, replica_default_inputs)
 
     # update inputs using 'input.yaml'
     inputs = _deep_update(inputs, input_yaml, warn_new_key=True, logfile=logfile)
