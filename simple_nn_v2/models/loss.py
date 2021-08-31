@@ -116,7 +116,7 @@ def get_e_loss(atom_types, loss_type, atomic_E, E_, n_atoms, item, criterion, pr
         atype_loss = dict()
         for atype in atom_types:
             if atomic_E[atype] is not None:
-                batch_sum = torch.sum(atomic_E[atype], axis=0) 
+                batch_sum = torch.sum(atomic_E[atype], axis=0)
                 atype_loss[atype] = criterion(batch_sum, item['atomic_E'][atype].type(dtype).to(device=device, non_blocking=non_block))
             else:
                 atype_loss[atype] = None
@@ -130,13 +130,15 @@ def get_e_loss(atom_types, loss_type, atomic_E, E_, n_atoms, item, criterion, pr
                 tmp_idx = 0
                 for num in range(n_batch):
                     struct_weight_factor[tmp_idx:tmp_idx+item['atomic_num'][atype][num].item()] += weight[num]
+                    for atom_idx in range(item['atomic_num'][atype][num].item()):
+                        progress_dict['e_err'][item['struct_type'][num]].update(atype_loss[atype][tmp_idx+atom_idx].detach().item())
                     tmp_idx += item['atomic_num'][atype][num].item()
                 print_e_loss.append(atype_loss[atype])
                 atomic_loss.append(atype_loss[atype]*struct_weight_factor)
 
         w_e_loss = torch.mean(torch.cat(atomic_loss))
         print_e_loss = torch.mean(torch.cat(print_e_loss))
-        progress_dict['e_err'].update(print_e_loss.detach().item(), n_batch)
+        progress_dict['tot_e_err'].update(print_e_loss.detach().item(), n_batch)
 
     return w_e_loss
 

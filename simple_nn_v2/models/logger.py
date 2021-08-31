@@ -74,9 +74,11 @@ def _show_avg_rmse(inputs, logfile, epoch, lr, total_time, train_progress_dict, 
     log += 'Epoch {0:>7d}'.format(epoch)
     
     log += _formatting_avg_rmse('e_err', 'E RMSE', train_progress_dict, valid_progress_dict)
-    if inputs['neural_network']['use_force']:
+    #if inputs['neural_network']['use_force']:
+    if 'f_err' in train_progress_dict.keys():
         log += _formatting_avg_rmse('f_err', 'F RMSE', train_progress_dict, valid_progress_dict)
-    if inputs['neural_network']['use_stress']:
+    #if inputs['neural_network']['use_stress']:
+    if 's_err' in train_progress_dict.keys():
         log += _formatting_avg_rmse('s_err', 'S RMSE', train_progress_dict, valid_progress_dict)
     log += ' learning_rate: {0:.4e}\n'.format(lr)
     
@@ -120,9 +122,11 @@ def _show_structure_rmse(inputs, logfile, train_epoch_result, valid_epoch_result
     logfile.write('structural breakdown:\n')
     log = '  {:<20}'.format('label')
     log += '   E_RMSE(T)   E_RMSE(V)'
-    if inputs['neural_network']['use_force']:
+    #if inputs['neural_network']['use_force']:
+    if 'f_err' in train_epoch_result.keys():
         log += '   F_RMSE(T)   F_RMSE(V)'
-    if inputs['neural_network']['use_stress']:
+    #if inputs['neural_network']['use_stress']:
+    if 's_err' in train_epoch_result.keys():
         log += '   S_RMSE(T)   S_RMSE(V)'
     logfile.write(log+'\n')
 
@@ -130,9 +134,11 @@ def _show_structure_rmse(inputs, logfile, train_epoch_result, valid_epoch_result
         log = ''
         log += '  {0:20}'.format(label)
         log += _formatting_structure_rmse('e_err', label, train_epoch_result, valid_epoch_result)
-        if inputs['neural_network']['use_force']:
+        #if inputs['neural_network']['use_force']:
+        if 'f_err' in train_epoch_result.keys():
             log += _formatting_structure_rmse('f_err', label, train_epoch_result, valid_epoch_result)
-        if inputs['neural_network']['use_stress']:
+        #if inputs['neural_network']['use_stress']:
+        if 's_err' in train_epoch_result.keys():
             log += _formatting_structure_rmse('s_err', label, train_epoch_result, valid_epoch_result)
         logfile.write(log+'\n')
 

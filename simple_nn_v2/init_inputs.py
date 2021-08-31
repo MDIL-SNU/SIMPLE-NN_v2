@@ -11,7 +11,6 @@ default_inputs = {
     'train_model': True,
     'atom_types': [],
     'random_seed': None,
-    'train_replica': False,
     'params': dict(),
 }
 symmetry_function_descriptor_default_inputs = \
@@ -70,6 +69,8 @@ model_default_inputs = \
 
                 'train': True,
                 'test': False,
+                'add_NNP_ref': False,
+                'train_atomic_E': False,
 
                 'shuffle_dataloader': True,
 
@@ -142,14 +143,6 @@ model_default_inputs = \
                 'cuda_number': None
             }
         }
-replica_default_inputs = \
- {
-     'replica':{
-         'add_NNP_ref': False,
-         'train_atomic_E': False
-     }
- }
-
 
 
 def initialize_inputs(input_file_name, logfile):
@@ -170,7 +163,7 @@ def initialize_inputs(input_file_name, logfile):
     
     inputs = _deep_update(inputs, preprocess_default_inputs)
     inputs = _deep_update(inputs, model_default_inputs)
-    inputs = _deep_update(inputs, replica_default_inputs)
+#    inputs = _deep_update(inputs, replica_default_inputs)
 
     # update inputs using 'input.yaml'
     inputs = _deep_update(inputs, input_yaml, warn_new_key=True, logfile=logfile)
@@ -349,7 +342,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
         if neural_network['test']:   
             logfile.write(f"test_list           : {neural_network['test_list']}\n")
         if error: assert neural_network['train'] is True or neural_network['test'] is True, f"In valid mode train : false, test : false. Check your input"
-        if inputs['train_replica'] is True:
+        if inputs['neural_network']['add_NNP_ref'] is True:
             logfile.write(f"reference list              : {neural_network['ref_list']}\n")
         logfile.write(f"shuffle dataloader          : {neural_network['shuffle_dataloader']}\n")
         logfile.write("\n  NETWORK\n")

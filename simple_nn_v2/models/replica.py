@@ -17,30 +17,23 @@ def replica_run(inputs, logfile):
     device = _get_torch_device(inputs)
     _set_pararrelism(inputs, logfile)
 
-    if inputs['replica']['add_NNP_ref']:
-        # Todo: Log for start save_atomic_e
-        model = neural_network._initialize_model_and_weights(inputs, logfile, device)
-        optimizer = optimizers._initialize_optimizer(inputs, model)
-        checkpoint = _load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, optimizer, device)
-        scale_factor, pca = _load_scale_factor_and_pca(inputs, logfile, checkpoint)
+    model = neural_network._initialize_model_and_weights(inputs, logfile, device)
+    optimizer = optimizers._initialize_optimizer(inputs, model)
+    checkpoint = _load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, optimizer, device)
+    scale_factor, pca = _load_scale_factor_and_pca(inputs, logfile, checkpoint)
 
+    if inputs['add_NNP_ref']:
         data_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='add_NNP_ref')
         save_atomic_E(inputs, logfile, model, data_loader, device)
-    
-    if inputs['replica']['train_atomic_E']:
-        # Todo: Log for train save_atomic_e
-        model = neural_network._initialize_model_and_weights(inputs, logfile, device)
-        optimizer = optimizers._initialize_optimizer(inputs, model)
-        scale_factor, pca = _load_scale_factor_and_pca(inputs, logfile, checkpoint=None)
+        logfile.write("Adding NNP Energy to pt files Done\n")
+    elif inputs['train_atomic_E']:
         criterion = torch.nn.MSELoss(reduction='none').to(device=device)
 
         train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_train')
         valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_valid')
-        labeled_train_loader = data_handler._load_labeled_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_train')
-        labeled_valid_loader = data_handler._load_labeled_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_valid')
 
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, float('inf'),\
-            train_loader, valid_loader, labeled_train_loader, labeled_valid_loader, atomic_e=True)
+            train_loader, valid_loader, atomic_e=True)
 
 def save_atomic_E(inputs, logfile, model, data_loader, device):
     #Save NNP energy, force, DFT energy, force to use it
