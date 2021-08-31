@@ -2,14 +2,15 @@ import torch
 import os
 from ase import units
 
-
+#Calculate E, F, S loss
 def calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, weighted, dtype, use_force, use_stress, atomic_e):
     n_batch = item['E'].size(0) 
     weight = item['struct_weight'].to(device=device) if weighted else torch.ones(n_batch).to(device=device)
     calc_results = dict()
 
     x, atomic_E, E_, n_atoms = calculate_E(inputs['atom_types'], item, model, device, non_block)
-    e_loss = get_e_loss(inputs['atom_types'], inputs['neural_network']['E_loss_type'], atomic_E, E_, n_atoms, item, criterion, epoch_result, dtype, device, non_block, n_batch, weight, atomic_e)
+    e_loss = get_e_loss(inputs['atom_types'], inputs['neural_network']['E_loss_type'], atomic_E, E_, n_atoms, item, criterion,\
+     epoch_result, dtype, device, non_block, n_batch, weight, atomic_e)
     batch_loss = inputs['neural_network']['energy_coeff'] * e_loss
     calc_results['E'] = E_
 
@@ -71,7 +72,8 @@ def calculate_F(atom_types, x, dEdG, item, device, non_block):
 
             for n, ntem in enumerate(item['n'][atype]):
                 if ntem != 0:
-                    tmp_force.append(torch.einsum('ijkl,ij->kl', item['dx'][atype][n].to(device=device, non_blocking=non_block), dEdG[atype][tmp_idx:(tmp_idx + ntem)]))
+                    tmp_force.append(torch.einsum('ijkl,ij->kl', item['dx'][atype][n].to(device=device, non_blocking=non_block), \
+                    dEdG[atype][tmp_idx:(tmp_idx + ntem)]))
                 else:
                     tmp_force.append(torch.zeros(item['dx'][atype][n].size()[-2], item['dx'][atype][n].size()[-1]).to(device=device, non_blocking=non_block))
                 tmp_idx += ntem
@@ -86,10 +88,10 @@ def calculate_S(atom_types, x, dEdG, item, device, non_block):
         if x[atype].size(0) != 0:
             tmp_stress = list()
             tmp_idx = 0
-
             for n, ntem in enumerate(item['n'][atype]):
                 if ntem != 0:
-                    tmp_stress.append(torch.einsum('ijkl,ij->kl', item['da'][atype][n].to(device=device, non_blocking=non_block), dEdG[atype][tmp_idx:(tmp_idx + ntem)]).sum(axis=0))
+                    tmp_stress.append(torch.einsum('ijkl,ij->l', item['da'][atype][n].to(device=device, non_blocking=non_block), \
+                    dEdG[atype][tmp_idx:(tmp_idx + ntem)]))
                 else:
                     tmp_stress.append(torch.zeros(item['da'][atype][n].size()[-1]).to(device=device, non_blocking=non_block))
                 tmp_idx += ntem

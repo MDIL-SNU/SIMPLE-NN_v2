@@ -36,13 +36,9 @@ install_requires = [
     'psutil',
     'tqdm',
     'braceexpand',
-    'matplotlib<3.0',
+    'matplotlib',
+    'ase>=3.10.0,<3.20.0 '
 ]
-
-if sys.version_info >= (3,5):
-    install_requires.append('ase>=3.10.0,<3.20.0 ')
-else:
-    install_requires.append('ase>=3.10.0,<3.18.0')
 
 setup_requires = [
     'cffi>=1.0.0',
@@ -80,7 +76,6 @@ setup(
         'Development Status :: 5 - Stable',
 
         # other arguments are listed here.
-
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3.6',

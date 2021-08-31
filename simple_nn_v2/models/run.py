@@ -1,15 +1,12 @@
 import torch
 from torch.optim.lr_scheduler import ExponentialLR
-#from torchsummary import summary
-
 import numpy as np
 import time, os, sys
 from tqdm import tqdm
-
 from simple_nn_v2.models import neural_network, loss, data_handler, optimizers, logger
 from simple_nn_v2.features.preprocessing import _split_train_list_and_valid_list
 
-
+#main function  with traning 
 def train(inputs, logfile):
     if inputs['neural_network']['double_precision']:
         torch.set_default_dtype(torch.float64)
@@ -225,7 +222,6 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
                 logfile.write("checkpoint_stoptrain.pth.tar & potential_saved_stoptrain written\n")
                 break
 
-
         logfile.flush()
 
     logfile.write("Best loss lammps potential written at {0} epoch\n".format(best_epoch))
@@ -273,7 +269,6 @@ def progress_epoch(inputs, data_loader, struct_labels, model, optimizer, criteri
         print(valid)
         epoch_result['data_time'].update(time.time() - end) # save data loading time
         batch_loss, _ = loss.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, weighted, dtype, use_force, use_stress, atomic_e)
-
         if back_prop: 
             optimizer.zero_grad()
             batch_loss.backward()
@@ -294,8 +289,6 @@ def save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename):
             #'scheduler': scheduler.state_dict()
             }
     torch.save(state, filename)
-
-
 
 #Make structure label by struct_type
 def _get_structure_labels(train_loader, valid_loader=None):
