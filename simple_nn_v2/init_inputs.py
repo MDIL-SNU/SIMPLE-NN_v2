@@ -33,28 +33,28 @@ symmetry_function_descriptor_default_inputs = \
 preprocess_default_inputs = \
         {'preprocessing': 
             {
-                'data_list': './total_list',
+                'data_list' : './total_list',
                 'train_list': './train_list', 
                 'valid_list': './valid_list', 
-                'shuffle': True,
+                'shuffle'   : True,
                 'valid_rate': 0.1,
                 #PCA
-                'calc_pca': True, 
+                'calc_pca'  : True, 
                 'pca_whiten': True,
                 'pca_min_whiten_level': 1e-8,
                 #Scale
                 'calc_scale': True, 
                 'scale_type': 'minmax',
                 'scale_scale': 1.0,
-                'scale_rho': None,
+                'scale_rho' : None,
                 #GDF
-                'calc_gdf': False,
+                'calc_gdf'  : False,
                 'atomic_weights': {
-                    'type': None,
+                    'type'  : None,
                     'params': dict(),
                 },
                 'weight_modifier': {
-                    'type': None,
+                    'type'  : None,
                     'params': dict(),
                 }
             }
@@ -65,79 +65,82 @@ model_default_inputs = \
             {
                 'train_list': './train_list', 
                 'valid_list': './valid_list', 
-                'test_list': './test_list',
-                'ref_list': './ref_list',
+                'test_list' : './test_list',
+                'ref_list'  : './ref_list',
 
-                'train': True,
-                'test': False,
-                'add_NNP_ref': False,
+                'train'     : True,
+                'test'      : False,
+                'add_NNP_ref'   : False,
                 'train_atomic_E': False,
 
-                'workers': 0, 
+                'workers'   : 0, 
                 'shuffle_dataloader': True,
-                'double_precision': True,
+                'double_precision'  : True,
 
                 # Network related
-                'nodes': '30-30',
-                'regularization': 1e-6, #L2 regularization
-                'use_force': True,
+                'nodes'     : '30-30',
+                'use_force' : True,
                 'use_stress': False,
 
                 'weight_initializer': {
-                    'type': 'xavier normal',
+                    'type'  : 'xavier normal',
                     'params': {
-                        'gain': None,
-                        'std': None,
-                        'mean': None,
-                        'val': None,
+                        'gain'  : None,
+                        'std'   : None,
+                        'mean'  : None,
+                        'val'   : None,
                         'sparsity':None,
-                        'mode': None,
+                        'mode'  : None,
                         'nonlinearity': None,
                     },
                 },
-                'acti_func': 'sigmoid',
-                'dropout': False,
+                'acti_func' : 'sigmoid',
+                'dropout'   : False,
 
                 # Optimization related
-                'method': 'Adam',
                 'batch_size': 64,
                 'full_batch': False,
-                'total_epoch': 1000,
-                'learning_rate': 0.0001,
-                'lr_decay': None,
-                'stress_coeff': 0.000001,
-                'force_coeff': 0.1, 
-                'energy_coeff': 1.,
+                'total_epoch'   : 1000,
+                'learning_rate' : 0.0001,
+                'energy_coeff'  : 1.,
+                'force_coeff'   : 0.1, 
+                'stress_coeff'  : 0.000001,
                 'loss_scale': 1.,
-                'optimizer': None,
+                'optimizer' : {
+                    'method': 'Adam',
+                    'params': 
+                        None
+                    },
+                'lr_decay'  : None,
+                'regularization': 1e-6, #L2 regularization
 
                 # Loss function related
-                'E_loss_type': 0,
-                'F_loss_type': 1,
+                'E_loss_type'   : 0,
+                'F_loss_type'   : 1,
 
                 # Logging & saving related (Epoch)
-                'show_interval': 10,
+                'show_interval' : 10,
                 'checkpoint_interval': False,
-                'energy_criteria':None,
-                'force_criteria':None,
-                'stress_criteria':None,
-                'break_max': 10,
+                'energy_criteria'   : None,
+                'force_criteria'    : None,
+                'stress_criteria'   : None,
+                'break_max'     : 10,
                 'print_structure_rmse': False,
 
-                'pca': True,
-                'scale': True,
-                'gdf': False,
+                'pca'   : True,
+                'scale' : True,
+                'gdf'   : False,
 
                 #RESUME parameters
-                'continue': None, 
-                'clear_prev_status': False,  
-                'clear_prev_optimizer': False,
-                'start_epoch': 0,
+                'continue'      : None, 
+                'start_epoch'   : 0,
+                'clear_prev_status'     : False,  
+                'clear_prev_optimizer'  : False,
                 #Parallelism
                 'inter_op_parallelism_threads': 0,
                 'intra_op_parallelism_threads': 0,
-                'load_data_to_gpu': False,
-                'cuda_number': None
+                'load_data_to_gpu'  : False,
+                'cuda_number'       : None
             }
         }
 
@@ -166,7 +169,7 @@ def initialize_inputs(input_file_name, logfile):
     if not inputs['neural_network']['use_force'] and \
             inputs['descriptor']['atomic_weights']['type'] is not None:
         logfile.write("Warning: Force training is off but atomic weights are given. Atomic weights will be ignored.\n")
-    if inputs['neural_network']['method'] == 'L-BFGS' and \
+    if inputs['neural_network']['optimizer']['method'] == 'L-BFGS' and \
             not inputs['neural_network']['full_batch']:
         logfile.write("Warning: Optimization method is L-BFGS but full batch mode is off. This might results bad convergence or divergence.\n")
 
@@ -235,7 +238,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
             if not os.path.exists(params[atype]):
                 raise Exception(f"In params {params[atype]:2} file not exist for {atype}")
             else:
-                logfile.write(f"{atype} parameters directory : {params[atype]}\n")
+                logfile.write(f"{atype} parameters directory  : {params[atype]}\n")
         logfile.write(f"reference data format    : {descriptor['refdata_format']}\n")
         logfile.write(f"compress outcar          : {descriptor['compress_outcar']}\n")
         if error: assert os.path.exists(descriptor['struct_list']) ,f"structure list to generate : {descriptor['struct_list']} not exists." 
@@ -340,8 +343,6 @@ def check_inputs(inputs, logfile, run_type, error=False):
         logfile.write(f"nodes                       : {neural_network['nodes']}\n")
         for node in neural_network['nodes'].split('-'):
             if error: assert node.isdigit(), f"In valid node information nodes : {neural_network['nodes']}"
-        if neural_network['regularization']:
-            logfile.write(f"regularization (L2)         : {neural_network['regularization']}\n")
         logfile.write(f"use force in traning        : {neural_network['use_force']}\n")
         logfile.write(f"use stress in training      : {neural_network['use_stress']}\n")
         logfile.write(f"double precision     : {neural_network['double_precision']}\n")
@@ -370,7 +371,14 @@ def check_inputs(inputs, logfile, run_type, error=False):
                 if error: assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale factor file\n"
         logfile.write(f"use gdf in traning          : {neural_network['gdf']}\n")
         logfile.write("\n  OPTIMIZATION\n")
-        logfile.write(f"optimization method         : {neural_network['method']}\n")
+        logfile.write(f"optimization method         : {neural_network['optimizer']['method']}\n")
+        if neural_network['optimizer']['params']:
+            logfile.write(f"  ---optimizer parameters--- \n")
+            for key, val in neural_network['optimizer']['params'].items():
+                logfile.write(f"{key} : {val} \n")
+            logfile.write('\n')
+        else:
+            logfile.write(f"No specific optimizer parameters\n")
         if not neural_network['full_batch']:
             logfile.write(f"batch size                  : {neural_network['batch_size']}\n")
         logfile.write(f"use full batch for input    : {neural_network['full_batch']}\n")
@@ -378,8 +386,8 @@ def check_inputs(inputs, logfile, run_type, error=False):
         logfile.write(f"learning rate               : {neural_network['learning_rate']}\n")
         if neural_network['lr_decay']:
             logfile.write(f"learning rate decay (exp)   : {neural_network['lr_decay']}\n")
-        if neural_network['optimizer']:
-            logfile.write(f"user defined optimizer     : {neural_network['optimizer']}\n")
+        if neural_network['regularization']:
+            logfile.write(f"regularization (L2)         : {neural_network['regularization']}\n")
         logfile.write("\n  LOSS FUNCTION\n")
         logfile.write(f"energy coefficient              : {neural_network['energy_coeff']}\n")
         if neural_network['use_force']:
@@ -392,7 +400,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
         logfile.write("\n  LOGGING & SAVING\n")
         logfile.write(f"interval (epoch) for show       : {neural_network['show_interval']}\n")
         if neural_network['checkpoint_interval']:
-            logfile.write(f"interval (epoch) for checkpoint     : {neural_network['checkpoint_interval']}\n")
+            logfile.write(f"interval (epoch) for checkpoint : {neural_network['checkpoint_interval']}\n")
         if neural_network['energy_criteria'] is not None:
             if error: assert float(neural_network['energy_criteria']) > 0, f"Invalid value for energy_criteria : {neural_netowkr['energy_criteria']}"
             logfile.write(f"stop criteria for energy (RMSE) : {neural_network['energy_criteria']}\n")

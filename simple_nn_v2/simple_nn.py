@@ -10,36 +10,51 @@ from simple_nn_v2.features.symmetry_function import generate as symf_generator
 
 #input parameter descriptor
 def run(input_file_name):
+    start_time = time.time()
+    
+    #Load MPI 
+    try: 
+        comm = MPI4PY()
+    except:
+        comm = DummyMPI()
+    
     logfile = sys.stdout
     logfile = open('LOG', 'w', 1)
     atexit.register(_close_log, logfile)
     _log_header(logfile)
-
-    #Load MPI 
-    try: 
-        comm = MPI4PY()
-        assert comm.size != 1
-        assert inputs['train_model'] is False, "MPI4PY does not support in train model. Set train_model = False"
-        logfile.write("Use mpi with size {0}\n".format(comm.size))
-    except:
-        comm = DummyMPI()
+    
 
     inputs = initialize_inputs(input_file_name, logfile)
+    #MPI not supporting in training 
+    if comm.size != 1:
+        if inputs['train_model'] is not False:
+            if comm.rank == 0:
+                print("MPI4PY does not support in train model. Set train_model = False")
+            raise Exception
+        else:
+            logfile.write("MPI size {0}\n".format(comm.size))
+    logfile.flush()
+
     if inputs['generate_features'] is True:
-        start_time = time.time()
-        if comm.rank == 0:
-            check_inputs(inputs, logfile,'generate')
+        comm.barrier()
+        check_inputs(inputs, logfile,'generate')
         generate = get_generate_function(logfile, descriptor_type=inputs['descriptor']['type'])
+        comm.barrier()
         generate(inputs, logfile, comm)
     
     if inputs['preprocess'] is True:
+        comm.barrier()
         if comm.rank == 0:
             check_inputs(inputs, logfile,'preprocess')
+        comm.barrier()
         preprocess(inputs, logfile, comm)
 
     if inputs['train_model'] is True:
         check_inputs(inputs, logfile,'train_model')
         train(inputs, logfile)
+    
+    if comm.rank == 0:
+        logfile.write(f'total wall time {time.time()-start_time} seconds\n')
 
 
 def get_generate_function(logfile, descriptor_type='symmetry_function'):

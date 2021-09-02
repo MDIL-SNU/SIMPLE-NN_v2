@@ -1,4 +1,3 @@
-import pickle
 from braceexpand import braceexpand
 import numpy as np
 import ase

@@ -18,7 +18,7 @@ def preprocess(inputs, logfile, comm):
         inputs(dict): full parts in input.yaml
         logfile(file obj): logfile object
     """ 
-
+    start_time = time.time()
     data_list = inputs['preprocessing']['data_list']
     _split_train_list_and_valid_list(inputs, data_list)
 
@@ -48,7 +48,9 @@ def preprocess(inputs, logfile, comm):
         if inputs['preprocessing']['calc_gdf']:
             _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list, train_dir_list, scale, comm)
         logfile.flush()
-    
+    if comm.rank == 0:
+        logfile.write(f"preproces done. {time.time()-start_time:10} seconds elapsed.\n")
+     
 # Split train/valid data names that saved in data_list
 def _split_train_list_and_valid_list(inputs, data_list='./total_list', append=False):
    train_list_file = open(inputs['preprocessing']['train_list'], 'wa' if append else 'w')
@@ -192,6 +194,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
         atomic_weights_train, dict_sigma, dict_c = get_atomic_weights(feature_list_train, scale, inputs['atom_types'], local_idx_list,\
          target_list=local_target_list, comm=comm, sigma=sigma)
         
+        comm.barrier()
         if comm.rank == 0:
             #weight modifier calling
             for item in inputs['atom_types']:
@@ -227,7 +230,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
         torch.save(atomic_weights_train, './atomic_weights')
 
 
-def _save_gdf_to_pt(atom_types, feature_list, gdf):
+def _save_gdf_to_pt(atom_types, feature_list, gdf): 
     for idx, name in enumerate(feature_list):
         load_data = torch.load(name)
         force_array = list()

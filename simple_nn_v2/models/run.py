@@ -8,6 +8,7 @@ from simple_nn_v2.features.preprocessing import _split_train_list_and_valid_list
 
 #main function  with traning 
 def train(inputs, logfile):
+    start_time = time.time()
     if inputs['neural_network']['double_precision']:
         torch.set_default_dtype(torch.float64)
     device = _get_torch_device(inputs)
@@ -20,35 +21,32 @@ def train(inputs, logfile):
     checkpoint = _load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, optimizer, device)
     scale_factor, pca = _load_scale_factor_and_pca(inputs, logfile, checkpoint)
     loss = _set_initial_loss(inputs, logfile, checkpoint)
-
+    #train model
     if inputs['neural_network']['train']:
         train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='train', gdf=inputs['neural_network']['gdf'])
         if os.path.exists(inputs['neural_network']['valid_list']):
             valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='valid', gdf=inputs['neural_network']['gdf'])
         else:
             valid_loader = None
-
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, loss, train_loader, valid_loader)
-
+    #test model and save as saved_result
     if inputs['neural_network']['test']:
         test_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='test', gdf=False)
-
         test_model(inputs, logfile, model, optimizer, criterion, device, test_loader)
-
+    #add NNP energy to data
     if inputs['neural_network']['add_NNP_ref']:
         ref_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='add_NNP_ref')
         save_atomic_E(inputs, logfile, model, ref_loader, device)
         logfile.write("Adding NNP Energy to pt files Done\n")
-
+    #train atomic energy with saved NNP enegy
     if inputs['neural_network']['train_atomic_E']:
         train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_train')
         if os.path.exists(inputs['neural_network']['valid_list']):
             valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_valid')
-
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, float('inf'),\
             train_loader, valid_loader, atomic_e=True)
-
-
+    logfile.write(f'train done. {time.time()-start_time:10} seconds elapsed\n')
+#Check CUDA is available & get device type 
 def _get_torch_device(inputs):
     if torch.cuda.is_available():
         cuda_num = inputs['neural_network']['cuda_number']

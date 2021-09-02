@@ -141,7 +141,7 @@ def generate(inputs, logfile, comm):
         data_list_fil.close()
         if inputs['descriptor']['compress_outcar']:
             os.remove('./tmp_comp_OUTCAR')
-        logfile.write(f"generate done. {time.time()-start_time} seconds elapsed\n")
+        logfile.write(f"generate done. {time.time()-start_time:10} seconds elapsed\n")
     
 # Extract structure information from structure (atom numbers, cart, scale, cell)
 # Return variables related to structure information (atom_type_idx, type_num, type_atom_idx)

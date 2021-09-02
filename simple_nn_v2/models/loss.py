@@ -69,7 +69,6 @@ def calculate_F(atom_types, x, dEdG, item, device, non_block):
         if x[atype].size(0) != 0:
             tmp_force = list()
             tmp_idx = 0
-
             for n, ntem in enumerate(item['n'][atype]):
                 if ntem != 0:
                     tmp_force.append(torch.einsum('ijkl,ij->kl', item['dx'][atype][n].to(device=device, non_blocking=non_block), \

@@ -87,7 +87,6 @@ neural_network:
     dropout: False
 
     # Optimization related
-    method: 'Adam'
     batch_size: 10
     full_batch: False
     total_epoch: 5
@@ -97,6 +96,8 @@ neural_network:
     force_coeff: 0.1 
     energy_coeff: 1.
     loss_scale: 1.
+    optimizer:
+        method: 'Adam'
 
 
     # Loss function related
