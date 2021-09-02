@@ -182,15 +182,15 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
         if inputs['preprocessing']['atomic_weights']['params']:
             if 'sigma' in inputs['preprocessing']['atomic_weights']['params'].keys():
                 sigma = inputs['preprocessing']['atomic_weights']['params']['sigma']
+                #Set default sigma for not define species
+                for atype in inputs['atom_types']:
+                    if atype not in sigma.keys():
+                        sigma[atype] = 0.02 
             else:
                 sigma = 0.02 #Default value for sigma
-            if 'nonscale' in inputs['preprocessing']['atomic_weights']['params'].keys():
-                noscale = inputs['preprocessing']['atomic_weights']['params']['noscale']
-            else:
-                noscale = False #Default value for noscale
  
         atomic_weights_train, dict_sigma, dict_c = get_atomic_weights(feature_list_train, scale, inputs['atom_types'], local_idx_list,\
-         target_list=local_target_list, comm=comm, sigma=sigma, noscale=noscale)
+         target_list=local_target_list, comm=comm, sigma=sigma)
         
         if comm.rank == 0:
             #weight modifier calling
@@ -204,39 +204,12 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
                 logfile.write('{:3}: sigma = {:4.3f}, c = {:4.3f}\n'.format(item, dict_sigma[item], dict_c[item]))
         #Save gdf(atomic weight result) and modifier function
 
-        #GDF for valid list 
-        #make featurelist for valid
-        if inputs['preprocessing']['valid_rate'] != 0.0:
-            feature_list_valid, idx_list_valid, dir_list_valid = util_feature._make_full_featurelist(inputs['preprocessing']['valid_list'], 'x', inputs['atom_types'], use_idx=False)
-    
-            local_target_list = dict()
-            local_idx_list = dict()
-    
-            for item in inputs['atom_types']:
-                q = feature_list_valid[item].shape[0] // comm.size
-                r = feature_list_valid[item].shape[0]  % comm.size
-    
-                begin = comm.rank * q + min(comm.rank, r)
-                end = begin + q
-                if r > comm.rank:
-                    end += 1
-    
-                local_target_list[item] = feature_list_valid[item][begin:end]
-                local_idx_list[item] = idx_list_valid[item][begin:end]
-    
-            atomic_weights_valid, _ , _  = get_atomic_weights(feature_list_train, scale, inputs['atom_types'], local_idx_list,\
-             target_list=local_target_list, sigma=dict_sigma, comm=comm, scale=scale, noscale=noscale)
-            if comm.rank == 0: 
-                for item in inputs['atom_types']:
-                    if modifier != None and callable(modifier[item]):
-                        atomic_weights_valid[item][:,0] = modifier[item](atomic_weights_valid[item][:,0])
-                _save_gdf_to_pt(inputs['atom_types'], dir_list_valid, atomic_weights_valid)
-        else:
-            atomic_weights_valid = None
+    #Extract GDF from saved file
     elif isinstance(get_atomic_weights, six.string_types):
         atomic_weights_train = torch.load(get_atomic_weights)
         atomic_weights_valid = 'ones'
-    
+   
+    #Save to ./atomic_weignts  part  
     if atomic_weights_train is None:
         aw_tag = False
     else:

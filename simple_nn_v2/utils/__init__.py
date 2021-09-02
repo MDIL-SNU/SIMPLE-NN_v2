@@ -20,7 +20,7 @@ from simple_nn_v2.features.mpi import DummyMPI, MPI4PY
 from ._libgdf import lib, ffi
 
 
-def _generate_gdf_file(ref_list, scale, atom_types, idx_list, target_list=None, noscale=False, sigma=0.02, comm=DummyMPI()):
+def _generate_gdf_file(ref_list, scale, atom_types, idx_list, target_list=None, sigma=0.02, comm=DummyMPI()):
     gdf = dict()
     auto_c = dict()
     auto_sigma = dict()
@@ -76,14 +76,6 @@ def _generate_gdf_file(ref_list, scale, atom_types, idx_list, target_list=None, 
                 #auto_c[item] = np.poly1d(pfit)(sorted_gdf.shape[0]-1)
                 auto_c[item] = np.poly1d(pfit)(max_line_idx-1)
                 # FIXME: After testing, this part needs to be moved to neural_network.py
-
-            """
-            if callable(modifier[item]):
-                gdf[item] = modifier[item](gdf[item])
-
-            if not noscale:
-                gdf[item][:,0] /= np.mean(gdf[item][:,0])
-            """
 
 
     return gdf, auto_sigma, auto_c

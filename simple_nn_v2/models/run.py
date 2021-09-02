@@ -216,7 +216,8 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
             scheduler.step()
         # soft termination 
         if os.path.exists('./stoptrain'):
-                logfile.write("Stop traning by ./strotrain file. Terminating traning model\n")
+                os.remove('./stoptrain')
+                logfile.write("Stop traning by ./strotrain file.l\n")
                 save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint_stoptrain.pth.tar')
                 model.write_lammps_potential(filename='./potential_saved_stoptrain', inputs=inputs, scale_factor=scale_factor, pca=pca)
                 logfile.write("checkpoint_stoptrain.pth.tar & potential_saved_stoptrain written\n")
@@ -266,7 +267,6 @@ def progress_epoch(inputs, data_loader, struct_labels, model, optimizer, criteri
 
     end = time.time()
     for i, item in enumerate(data_loader):
-        print(valid)
         epoch_result['data_time'].update(time.time() - end) # save data loading time
         batch_loss, _ = loss.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, weighted, dtype, use_force, use_stress, atomic_e)
         if back_prop: 

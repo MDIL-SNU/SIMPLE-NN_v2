@@ -19,9 +19,10 @@ symmetry_function_descriptor_default_inputs = \
                 'type': 'symmetry_function',
                 'struct_list': './structure_list',
                 'save_list': './total_list',
+                'save_directory': './data', 
+                #data format
                 'refdata_format': 'vasp-out',
                 'compress_outcar': True,
-                'save_directory': './data', 
                 'read_force': True, 
                 'read_stress': False, 
                 'dx_save_sparse': True, 
@@ -37,16 +38,16 @@ preprocess_default_inputs = \
                 'valid_list': './valid_list', 
                 'shuffle': True,
                 'valid_rate': 0.1,
-
+                #PCA
                 'calc_pca': True, 
                 'pca_whiten': True,
                 'pca_min_whiten_level': 1e-8,
-
+                #Scale
                 'calc_scale': True, 
                 'scale_type': 'minmax',
                 'scale_scale': 1.0,
                 'scale_rho': None,
-
+                #GDF
                 'calc_gdf': False,
                 'atomic_weights': {
                     'type': None,
@@ -72,7 +73,9 @@ model_default_inputs = \
                 'add_NNP_ref': False,
                 'train_atomic_E': False,
 
+                'workers': 0, 
                 'shuffle_dataloader': True,
+                'double_precision': True,
 
                 # Network related
                 'nodes': '30-30',
@@ -80,7 +83,6 @@ model_default_inputs = \
                 'use_force': True,
                 'use_stress': False,
 
-                'double_precision': True,
                 'weight_initializer': {
                     'type': 'xavier normal',
                     'params': {
@@ -109,8 +111,6 @@ model_default_inputs = \
                 'loss_scale': 1.,
                 'optimizer': None,
 
-                'workers': 0, 
-
                 # Loss function related
                 'E_loss_type': 0,
                 'F_loss_type': 1,
@@ -128,9 +128,6 @@ model_default_inputs = \
                 'scale': True,
                 'gdf': False,
 
-                # Write atomic energies to pickle
-                'NNP_to_pt': False,
-
                 #RESUME parameters
                 'continue': None, 
                 'clear_prev_status': False,  
@@ -143,7 +140,6 @@ model_default_inputs = \
                 'cuda_number': None
             }
         }
-
 
 def initialize_inputs(input_file_name, logfile):
     with open(input_file_name) as input_file:
@@ -163,16 +159,13 @@ def initialize_inputs(input_file_name, logfile):
     
     inputs = _deep_update(inputs, preprocess_default_inputs)
     inputs = _deep_update(inputs, model_default_inputs)
-
     # update inputs using 'input.yaml'
     inputs = _deep_update(inputs, input_yaml, warn_new_key=True, logfile=logfile)
     if len(inputs['atom_types']) == 0:
         raise KeyError
-
     if not inputs['neural_network']['use_force'] and \
             inputs['descriptor']['atomic_weights']['type'] is not None:
         logfile.write("Warning: Force training is off but atomic weights are given. Atomic weights will be ignored.\n")
-
     if inputs['neural_network']['method'] == 'L-BFGS' and \
             not inputs['neural_network']['full_batch']:
         logfile.write("Warning: Optimization method is L-BFGS but full batch mode is off. This might results bad convergence or divergence.\n")
@@ -182,9 +175,7 @@ def initialize_inputs(input_file_name, logfile):
         torch.manual_seed(seed)
         np.random.seed(seed)
         logfile.write("*** Random seed: {0:} ***\n".format(seed))
-    
-
-
+   
     return inputs
 
 def get_descriptor_default_inputs(logfile, descriptor_type='symmetry_function'):
@@ -242,7 +233,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
         if error: assert set(atom_types)  == set(params.keys()), f"atom_types not consistant with params : {set(atom_types).symmetric_difference(params.keys())} "
         for atype in atom_types:
             if not os.path.exists(params[atype]):
-                raise Exception(f"In params {params[atype]} file not exist for {atype}")
+                raise Exception(f"In params {params[atype]:2} file not exist for {atype}")
             else:
                 logfile.write(f"{atype} parameters directory : {params[atype]}\n")
         logfile.write(f"reference data format    : {descriptor['refdata_format']}\n")
@@ -275,19 +266,20 @@ def check_inputs(inputs, logfile, run_type, error=False):
         logfile.write(f"splited valid list      : {preprocessing['train_list']}\n")
         logfile.write(f"valid rate              : {preprocessing['valid_rate']}\n")
         logfile.write(f"shuffle train/valid list: {preprocessing['shuffle']}\n")
-        logfile.write(f"calculate scale factor  : {preprocessing['calc_scale']}\n")
+        logfile.write(f"\ncalculate scale factor  : {preprocessing['calc_scale']}\n")
         if preprocessing['calc_scale']:
             logfile.write(f"scale type              : {preprocessing['scale_type']}\n")
             logfile.write(f"scale scale             : {preprocessing['scale_scale']}\n")
-            logfile.write(f"scale rho value         : {preprocessing['scale_rho']}\n")
-        logfile.write(f"calculate pca matrix    : {preprocessing['calc_pca']}\n")
+            if preprocessing['scale_type'] == 'uniform_gas':
+                logfile.write(f"scale rho value         : {preprocessing['scale_rho']}\n")
+        logfile.write(f"\ncalculate pca matrix    : {preprocessing['calc_pca']}\n")
         if preprocessing['calc_pca']:
             if error: assert preprocessing['calc_scale'] is not False,\
              f"calculating PCA matrix must need scale factor. use calc_factor : true or filename to load"
             logfile.write(f"use pca whitening       : {preprocessing['pca_whiten']}\n")
             if preprocessing['pca_whiten']:
                 logfile.write(f"pca min whitening level : {preprocessing['pca_min_whiten_level']}\n")
-        logfile.write(f"calc GDF for atomic weight: {preprocessing['calc_gdf']}\n")
+        logfile.write(f"\ncalc GDF for atomic weight: {preprocessing['calc_gdf']}\n")
         if preprocessing['calc_gdf']:
             if preprocessing['atomic_weights']['type']:
                 logfile.write(f"atomic_weights type     : {preprocessing['atomic_weights']['type']}\n")
@@ -295,16 +287,16 @@ def check_inputs(inputs, logfile, run_type, error=False):
                     logfile.write(f" ---parameters for atomic weights--- \n")
                     for atype in preprocessing['atomic_weights']['params'].keys():
                         logfile.write(f"{atype}  params  : ")
-                        if isinstance(dict, type(preprocessing['atomic_weights']['params'][atype])):
+                        if isinstance(preprocessing['atomic_weights']['params'][atype],dict):
                             for key, val in preprocessing['atomic_weights']['params'][atype].items():
-                                logfile.write(f" ({key} = {val}) ")
+                                logfile.write(f"\n ({key} = {val}) ")
                             logfile.write("\n")
                         else:
-                            logfile.write(str(preprocessing['atomic_weights']['params'][atype]))
+                            logfile.write(str(preprocessing['atomic_weights']['params'][atype])+'\n')
             elif preprocessing['atomic_weights']['type']  not in ['gdf', 'user', 'file']:
                 logfile.write("Warning : set atomic weight types approatly. preprocessing.atomic_weights.type : gdf/user/file\n")
             if preprocessing['weight_modifier']['type']:
-                logfile.write(f"weight modifier type    : {preprocessing['weight_modifier']['type']}\n")
+                logfile.write(f"\nWeight modifier type    : {preprocessing['weight_modifier']['type']}\n")
                 if preprocessing['weight_modifier']['params']:
                     logfile.write(f" ---parameters for weight modifier--- \n")
                     for atype in preprocessing['weight_modifier']['params'].keys():
@@ -439,6 +431,4 @@ def check_inputs(inputs, logfile, run_type, error=False):
         replica = inputs['replica']
     logfile.write('----------------------------------------------------------------------------------------------\n\n')
     logfile.flush()
-
-
 
