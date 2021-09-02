@@ -224,12 +224,11 @@ def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, p
     return source
 
 def check_inputs(inputs, logfile, run_type, error=False):
-    logfile.write('\n')
     atom_types = inputs['atom_types']
     #Check input valid and write log
+    logfile.write('\n---------------------------------------------------------------\n')
     if run_type  == 'generate':
-        logfile.write('----------------------------------------------------------------------------------------------\n')
-        logfile.write('Input for descriptor\n\n')
+        logfile.write('\nInput for descriptor\n')
         descriptor = inputs['descriptor']
         logfile.write(f"Descriptor type          : {descriptor['type']}\n")
         params = inputs['params']
@@ -252,8 +251,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
     #Check prerpcess input is valid and write log
     elif run_type  == 'preprocess':
         preprocessing = inputs['preprocessing']
-        logfile.write('----------------------------------------------------------------------------------------------\n')
-        logfile.write('Input for preprocessing\n\n')
+        logfile.write('\nInput for preprocessing\n')
         if not inputs['generate_features']: #Already checked if use generate
             params = inputs['params']
             if error: assert set(atom_types)  == set(params.keys()), f"atom_types not consistant with params : \
@@ -313,7 +311,6 @@ def check_inputs(inputs, logfile, run_type, error=False):
     #Check train model input is valid and write log
     elif run_type  == 'train_model':
         neural_network = inputs['neural_network']
-        logfile.write('----------------------------------------------------------------------------------------------\n')
         logfile.write('Input for neural_network\n\n')
         if not inputs['generate_features'] and not inputs['preprocess']: #Already checked if use generate or preprocess
             params = inputs['params']
@@ -435,8 +432,6 @@ def check_inputs(inputs, logfile, run_type, error=False):
             logfile.write(f"Use GPU device number     : {neural_network['cuda_number']}\n")
             if error: assert neural_network['cuda_number'] <= torch.cuda.device_count()-1,\
              f"Invalid GPU device number available GPU # {torch.cuda.device_count()-1} , set number {neural_network['cuda_number']} "
-    elif run_type == 'train_replica':
-        replica = inputs['replica']
-    logfile.write('----------------------------------------------------------------------------------------------\n\n')
+    logfile.write('\n---------------------------------------------------------------\n')
     logfile.flush()
 

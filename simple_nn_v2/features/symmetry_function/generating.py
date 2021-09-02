@@ -16,6 +16,7 @@ except:
     raise Exception("libsymf library not exists. Run libsymf_builder.py")    
     os.abort()
 
+
 def generate(inputs, logfile, comm):
     """ Generate structure data files(format: pickle/pt) that listed in "structure_list" file
 
@@ -36,13 +37,13 @@ def generate(inputs, logfile, comm):
     start_time = time.time()
     atom_types = inputs['atom_types']
     structure_list = inputs['descriptor']['struct_list'] #Default ./structure_list
-    data_list = inputs['descriptor']['save_list'] #Default ./total_list
+    save_list = inputs['descriptor']['save_list'] #Default ./total_list
     
     #Create pt file directory
     if comm.rank == 0:
         if not os.path.exists(inputs['descriptor']['save_directory']):
             os.makedirs(inputs['descriptor']['save_directory'])
-        data_list_fil = open(data_list, 'w')
+        data_list_fil = open(save_list, 'w')
 
     data_idx = 1
     
@@ -134,8 +135,9 @@ def generate(inputs, logfile, comm):
                 data_idx += 1
                 tmp_endfile = tmp_filename
         
-        if comm.rank == 0: 
-            logfile.write(': ~{}\n'.format(tmp_endfile))
+        comm.barrier()
+        data_idx = comm.bcast(data_idx)
+        logfile.write(f'  >> ~{inputs["descriptor"]["save_directory"]}/data{data_idx-1}.pt\n')
     
     if comm.rank == 0:
         data_list_fil.close()

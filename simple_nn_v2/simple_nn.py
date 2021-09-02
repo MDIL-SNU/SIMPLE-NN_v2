@@ -15,6 +15,8 @@ def run(input_file_name):
     #Load MPI 
     try: 
         comm = MPI4PY()
+        if comm.size == 1:
+            comm = DummyMPI()
     except:
         comm = DummyMPI()
     
@@ -22,7 +24,7 @@ def run(input_file_name):
     logfile = open('LOG', 'w', 1)
     atexit.register(_close_log, logfile)
     _log_header(logfile)
-    
+     
 
     inputs = initialize_inputs(input_file_name, logfile)
     #MPI not supporting in training 
