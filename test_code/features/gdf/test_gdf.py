@@ -28,7 +28,7 @@ def test():
     inputs = dict()
     logfile = open('LOG','w')
     inputs['atom_types'] = ['Si']
-    inputs['preprocessing'] = { 'atomic_weights':{'type':'gdf','params':{'sigma':{'Si':0.02},'noscale':False}}, 'valid_list':None, 'weight_modifier':{'type':None},
+    inputs['preprocessing'] = { 'atomic_weights':{'type':'gdf','params':{'sigma':0.02}}, 'valid_list':None, 'weight_modifier':{'type':None},
      'calc_scale':True, 'scale_type':'minmax', 'scale_scale':1.0,'scale_rho':None, 'valid_rate':0.0}
 
     #Temporary symmetry function

@@ -184,10 +184,11 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
         if inputs['preprocessing']['atomic_weights']['params']:
             if 'sigma' in inputs['preprocessing']['atomic_weights']['params'].keys():
                 sigma = inputs['preprocessing']['atomic_weights']['params']['sigma']
-                #Set default sigma for not define species
-                for atype in inputs['atom_types']:
-                    if atype not in sigma.keys():
-                        sigma[atype] = 0.02 
+                if isinstance(sigma, dict):
+                    #Set default sigma for not define species
+                    for atype in inputs['atom_types']:
+                        if atype not in sigma.keys():
+                            sigma[atype] = 0.02 
             else:
                 sigma = 0.02 #Default value for sigma
  
