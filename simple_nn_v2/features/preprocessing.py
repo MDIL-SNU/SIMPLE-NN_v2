@@ -198,10 +198,12 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
         comm.barrier()
         if comm.rank == 0:
             #weight modifier calling
+            gdf_scale = dict()
             for item in inputs['atom_types']:
                 if modifier != None and callable(modifier[item]):
                     atomic_weights_train[item][:,0] = modifier[item](atomic_weights_train[item][:,0])
-            _save_gdf_to_pt(inputs['atom_types'], train_dir_list, atomic_weights_train)
+                gdf_scale[item] = np.mean(atomic_weights_train[item][:,0])
+            _save_gdf_to_pt(inputs['atom_types'], train_dir_list, atomic_weights_train, gdf_scale)
 
             logfile.write('Selected(or generated) sigma and c\n')
             for item in inputs['atom_types']:
@@ -231,7 +233,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
         torch.save(atomic_weights_train, './atomic_weights')
 
 
-def _save_gdf_to_pt(atom_types, feature_list, gdf): 
+def _save_gdf_to_pt(atom_types, feature_list, gdf, gdf_scale): 
     for idx, name in enumerate(feature_list):
         load_data = torch.load(name)
         force_array = list()
@@ -239,7 +241,7 @@ def _save_gdf_to_pt(atom_types, feature_list, gdf):
         type_bef = None
         for atype in atom_idx:
             if type_bef != atype:
-                force_array.append(gdf[atom_types[atype-1]][gdf[atom_types[atype-1]][:,1] == idx,0])
+                force_array.append(gdf[atom_types[atype-1]][gdf[atom_types[atype-1]][:,1] == idx,0] / gdf_scale[atom_types[atype-1]])
                 type_bef = atype
 
         force_array = np.concatenate(force_array, axis=0)

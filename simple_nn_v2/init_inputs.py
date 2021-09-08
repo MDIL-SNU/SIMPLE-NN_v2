@@ -126,6 +126,7 @@ model_default_inputs = \
                 'stress_criteria'   : None,
                 'break_max'     : 10,
                 'print_structure_rmse': False,
+                'accurate_train_rmse': True,
 
                 'pca'   : True,
                 'scale' : True,
@@ -133,7 +134,7 @@ model_default_inputs = \
 
                 #RESUME parameters
                 'continue'      : None, 
-                'start_epoch'   : 0,
+                'start_epoch'   : 1,
                 'clear_prev_status'     : False,  
                 'clear_prev_optimizer'  : False,
                 #Parallelism

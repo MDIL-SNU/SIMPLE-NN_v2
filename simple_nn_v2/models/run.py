@@ -122,7 +122,6 @@ def _load_scale_factor_and_pca(inputs, logfile, checkpoint):
 
 def _convert_to_tensor(inputs, logfile, scale_factor, pca):
     device = _get_torch_device_optional(inputs)
-    gdf_scale = dict()
     for element in inputs['atom_types']:
         if scale_factor:
             max_plus_min = torch.tensor(scale_factor[element][0], device=device)
@@ -181,6 +180,10 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
 
         # show RMSE result for each show_interval
         if (epoch % inputs['neural_network']['show_interval'] == 0):
+            if inputs['neural_network']['accurate_train_rmse']:
+                recalc_epoch_result = progress_epoch(inputs, train_loader, struct_labels, model, optimizer, criterion, epoch, dtype, device, non_block, valid=True, atomic_e=atomic_e)
+                update_recalc_results(train_epoch_result, recalc_epoch_result)
+
             total_time = time.time() - start_time
             logger._show_avg_rmse(inputs, logfile, epoch, optimizer.param_groups[0]['lr'], total_time, train_epoch_result, valid_epoch_result)
             if inputs['neural_network']['print_structure_rmse']:
@@ -275,7 +278,22 @@ def progress_epoch(inputs, data_loader, struct_labels, model, optimizer, criteri
         end = time.time()
 
     return epoch_result
- 
+
+def update_recalc_results(train_result, recalc_result):
+    train_result['losses'] = recalc_result['losses']
+    train_result['e_err'] = recalc_result['e_err']
+    train_result['tot_e_err'] = recalc_result['tot_e_err']
+    if 'f_err' in train_result.keys():
+        train_result['f_err'] = recalc_result['f_err']
+        train_result['tot_f_err'] = recalc_result['tot_f_err']
+    if 's_err' in train_result.keys():
+        train_result['s_err'] = recalc_result['s_err']
+        train_result['tot_s_err'] = recalc_result['tot_s_err']
+
+    train_result['batch_time'].val += recalc_result['batch_time'].val
+    train_result['data_time'].val += recalc_result['data_time'].val
+
+
 #Make checkpoint : epoch, loss, model, optimizer, pca, scale_factor 
 def save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename):
     state ={'epoch': epoch + 1,

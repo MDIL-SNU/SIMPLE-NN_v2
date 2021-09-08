@@ -162,8 +162,8 @@ def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight
             partial_f_loss = f_loss[batch_idx:(batch_idx+tmp_idx)]
             partial_gdf = item['gdf'][batch_idx:(batch_idx+tmp_idx)]
             partial_f_mean = torch.mean(partial_f_loss)
-            progress_dict['f_err'][label].update(partial_f_mean.detach().item(), tmp_idx)
-            progress_dict['tot_f_err'].update(partial_f_mean.detach().item(), tmp_idx)
+            progress_dict['f_err'][label].update(partial_f_mean.detach().item() * 3, tmp_idx)
+            progress_dict['tot_f_err'].update(partial_f_mean.detach().item() * 3, tmp_idx)
             for it in range(tmp_idx):
                 partial_f_loss[it] =  partial_f_loss[it] * partial_gdf[it]
             f_loss[batch_idx:(batch_idx+tmp_idx)] = partial_f_loss
@@ -176,8 +176,8 @@ def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight
             label = item['struct_type'][n]
             partial_f_loss = f_loss[batch_idx:(batch_idx+tmp_idx)]
             partial_f_mean = torch.mean(partial_f_loss)
-            progress_dict['f_err'][label].update(partial_f_mean.detach().item(), tmp_idx)
-            progress_dict['tot_f_err'].update(partial_f_mean.detach().item(), tmp_idx)
+            progress_dict['f_err'][label].update(partial_f_mean.detach().item() * 3, tmp_idx)
+            progress_dict['tot_f_err'].update(partial_f_mean.detach().item() * 3, tmp_idx)
             f_loss[batch_idx:(batch_idx+tmp_idx)] = partial_f_loss * weight[n].item() #* weight for hgdf
             batch_idx += tmp_idx
 
