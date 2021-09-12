@@ -1,15 +1,10 @@
 from __future__ import print_function
 import six
 import numpy as np
-#from ._libgdf import lib, ffi
 import os, sys, psutil, shutil
 import types
 import re
 import collections
-from collections import OrderedDict
-#from tensorflow.python.framework import ops
-#from tensorflow.python.ops import array_ops, control_flow_ops, tensor_array_ops
-from scipy.integrate import nquad
 
 import ase
 import torch

@@ -98,7 +98,7 @@ model_default_inputs = \
                 'dropout'   : False,
 
                 # Optimization related
-                'batch_size': 64,
+                'batch_size': 20,
                 'full_batch': False,
                 'total_epoch'   : 1000,
                 'learning_rate' : 0.0001,
