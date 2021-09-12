@@ -80,7 +80,7 @@ def _load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, op
                     lin.weight.data = torch.transpose(torch.tensor(potential_params[element][name]['weight']).to(device=device), -1, 0)
                     lin.bias.data = torch.transpose(torch.tensor(potential_params[element][name]['bias']).to(device=device), -1, 0)
     elif inputs['neural_network']['continue']: # load pytorch type checkpoint
-        checkpoint = torch.load(inputs['neural_network']['continue'])
+        checkpoint = torch.load(inputs['neural_network']['continue'], map_location=device)
         model.load_state_dict(checkpoint['model'])
         logfile.write("Load pytorch model from [{0}]\n".format(inputs['neural_network']['continue']))
 

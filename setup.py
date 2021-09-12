@@ -37,7 +37,7 @@ install_requires = [
     'tqdm',
     'braceexpand',
     'matplotlib',
-    'ase>=3.10.0,<3.18.>=0,3.19.0,<3.21'
+    'ase>=3.10.0,<3.18.>=0,3.19.0,<3.21.0'
 ]
 
 setup_requires = [
