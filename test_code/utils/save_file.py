@@ -30,7 +30,8 @@ tag_idx = 3
 print('test dictionary data ', data)
 print('tag_index ', tag_idx)
 print(f'{rootdir}data dirctory maden')
-os.mkdir(f'{rootdir}data')
+if not os.path.exists(f'{rootdir}data'):
+    os.mkdir(f'{rootdir}data')
 
 tmp_filename = data_generator.save_to_datafile(inputs, data, data_idx, logfile)
 print('tmp_filename    :', tmp_filename)

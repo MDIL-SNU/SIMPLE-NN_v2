@@ -36,7 +36,7 @@ str_match = None
 if os.path.exists(rootdir+'str_match'):
     print("load structure data to match")
     str_match = torch.load(rootdir+'str_match')
-    print(str_match)
+    print("Loaded data : \n", str_match)
     print("Done \n")
 
 save_dict = dict()
