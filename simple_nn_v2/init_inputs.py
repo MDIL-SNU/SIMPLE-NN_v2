@@ -98,7 +98,7 @@ model_default_inputs = \
                 'dropout'   : False,
 
                 # Optimization related
-                'batch_size': 64,
+                'batch_size': 20,
                 'full_batch': False,
                 'total_epoch'   : 1000,
                 'learning_rate' : 0.0001,
@@ -126,6 +126,7 @@ model_default_inputs = \
                 'stress_criteria'   : None,
                 'break_max'     : 10,
                 'print_structure_rmse': False,
+                'accurate_train_rmse': True,
 
                 'pca'   : True,
                 'scale' : True,
@@ -133,7 +134,7 @@ model_default_inputs = \
 
                 #RESUME parameters
                 'continue'      : None, 
-                'start_epoch'   : 0,
+                'start_epoch'   : 1,
                 'clear_prev_status'     : False,  
                 'clear_prev_optimizer'  : False,
                 #Parallelism
@@ -164,6 +165,9 @@ def initialize_inputs(input_file_name, logfile):
     inputs = _deep_update(inputs, model_default_inputs)
     # update inputs using 'input.yaml'
     inputs = _deep_update(inputs, input_yaml, warn_new_key=True, logfile=logfile)
+    #Change .T. , t to boolean
+    _to_boolean(inputs)
+
     if len(inputs['atom_types']) == 0:
         raise KeyError
     if not inputs['neural_network']['use_force'] and \
@@ -330,11 +334,14 @@ def check_inputs(inputs, logfile, run_type, error=False):
             if os.path.exists(neural_network['valid_list']):
                 logfile.write(f"valid list          : {neural_network['valid_list']}\n")
         logfile.write(f"test                        : {neural_network['test']}\n")
-        if neural_network['test']:   
-            logfile.write(f"test_list           : {neural_network['test_list']}\n")
+        if neural_network['test']:
+            logfile.write(f"test_list                   : {neural_network['test_list']}\n")
         if error: assert neural_network['train'] is True or neural_network['test'] is True, f"In valid mode train : false, test : false. Check your input"
+        logfile.write(f"add NNP reference to files  : {neural_network['add_NNP_ref']}\n")
         if inputs['neural_network']['add_NNP_ref'] is True:
             logfile.write(f"reference list              : {neural_network['ref_list']}\n")
+
+        logfile.write(f"train atomic energy         : {neural_network['train_atomic_E']}\n")
         logfile.write(f"shuffle dataloader          : {neural_network['shuffle_dataloader']}\n")
         logfile.write("\n  NETWORK\n")
         logfile.write(f"nodes                       : {neural_network['nodes']}\n")
@@ -435,3 +442,47 @@ def check_inputs(inputs, logfile, run_type, error=False):
     logfile.write('\n---------------------------------------------------------------\n')
     logfile.flush()
 
+def _to_boolean(inputs):
+    check_list =  ['generate_features', 'preprocess',  'train_model']
+    descriptor_list = ['compress_outcar','read_force','read_stress', 'dx_save_sparse', 'add_atom_idx', 'absolute_path']
+    preprocessing_list = ['shuffle', 'calc_pca', 'pca_whiten', 'calc_scale', 'calc_gdf']
+
+    neural_network_list = ['train', 'test', 'add_NNP_ref', 'train_atomic_E', 'shuffle_dataloader', 'double_precision', 'use_force', 'use_stress',\
+                        'dropout','full_batch', 'checkpoint_interval', 'print_structure_rmse', 'accurate_train_rmse', 'pca', 'scale', 'gdf',\
+                        'clear_prev_status', 'clear_prev_optimizer', 'load_data_to_gpu']
+   
+
+    #True TRUE T t true TrUe .T. ... 
+    #False FALSE F f false FaLse .F. ... 
+    def convert(dic, dic_key):
+        check = dic[dic_key].upper()
+        if check[0] == '.':
+            if check[1] == 'T':
+                check = True
+            elif check[1] == 'F':
+                check = False
+            else:
+                pass
+        elif check[0] == 'T':
+            check = True
+        elif check[0] == 'F':
+            check = False
+        else:
+            pass
+        dic[dic_key] = check
+
+    for key in check_list:
+        if not isinstance(inputs[key], bool) and isinstance(inputs[key], str): 
+            convert(inputs, key)
+
+    for d_key in descriptor_list:
+        if not isinstance(inputs['descriptor'][d_key], bool) and isinstance(inputs['descriptor'][d_key], str): 
+            convert(inputs['descriptor'], d_key)
+
+    for p_key in preprocessing_list:
+        if not isinstance(inputs['preprocessing'][p_key], bool) and isinstance(inputs['preprocessing'][p_key], str): 
+            convert(inputs['preprocessing'], p_key)
+
+    for n_key in neural_network_list:
+        if not isinstance(inputs['neural_network'][n_key], bool) and isinstance(inputs['neural_network'][n_key], str): 
+            convert(inputs['neural_network'], n_key)

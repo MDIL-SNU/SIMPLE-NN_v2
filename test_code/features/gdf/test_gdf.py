@@ -95,16 +95,21 @@ def test():
     #print(test_feature_list) 
     #print(scaled_feature_list[0]) 
     #print(get_gdf(test_feature_list - test_feature_list[0]))
+    gdf = list()
     for idx in range(len(test_feature_list)):
         #print(scaled_feature_list[0] - scaled_feature_list[0][idx])
         print(f'IDX {idx} GDF : ',get_gdf(scaled_feature_list[0] - scaled_feature_list[0][idx]))
+        gdf.append(get_gdf(scaled_feature_list[0] - scaled_feature_list[0][idx]))
+
+
+    reduced_gdf = np.array(gdf)  / np.mean(gdf)
 
     print('_________________________________________________')
     print('Assertion Check')
     for idx, fil in enumerate(train_dir_list):
         if os.path.exists(fil):
-            tmp_val_even = np.abs(torch.load(fil)['gdf'][0] - get_gdf(scaled_feature_list[0] - scaled_feature_list[0][2*idx]))
-            tmp_val_odd = np.abs(torch.load(fil)['gdf'][1] - get_gdf(scaled_feature_list[0] - scaled_feature_list[0][2*idx+1]))
+            tmp_val_even = np.abs(torch.load(fil)['gdf'][0] - reduced_gdf[2*idx])
+            tmp_val_odd = np.abs(torch.load(fil)['gdf'][1] - reduced_gdf[2*idx+1])
             assert (tmp_val_even < 1E-2), f"Error : Wrong GDF value diff {tmp_val_even} "
             assert (tmp_val_odd < 1E-2), f"Error : Wrong GDF value diff {tmp_val_odd} "
             print(fil + ' passed ')

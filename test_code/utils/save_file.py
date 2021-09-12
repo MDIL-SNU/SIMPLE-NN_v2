@@ -11,7 +11,7 @@ import torch
 from simple_nn_v2 import simple_nn
 from simple_nn_v2.init_inputs import initialize_inputs
 from simple_nn_v2.features.symmetry_function import generating
-from simple_nn_v2.utils import data_generator
+from simple_nn_v2.features import data_generator
 
 # Minimum Setting for Testing Symmetry_function methods
 # Initialize input file, set Simple_nn object as parent of Symmetry_function object
@@ -29,19 +29,22 @@ data_idx = 3
 tag_idx = 3
 print('test dictionary data ', data)
 print('tag_index ', tag_idx)
+print(f'{rootdir}data dirctory maden')
+os.mkdir(f'{rootdir}data')
+
 tmp_filename = data_generator.save_to_datafile(inputs, data, data_idx, logfile)
 print('tmp_filename    :', tmp_filename)
 
-print("load saved data : ./data/data3.pt")
-if os.path.exists('./data/data3.pt'):
-    saved_data = torch.load("./data/data3.pt")
+
+print(f"load saved data : {rootdir}data/data3.pt")
+if os.path.exists(f'{rootdir}data/data3.pt'):
+    saved_data = torch.load(f"{rootdir}data/data3.pt")
     assert saved_data['TMP'] == 2 , f"Error occred : not consistant result"
     assert saved_data['DATA'] == 5 , f"Error occred : not consistant result"
+    print('{rootdir}data/data3.pt is saved well')
 else:
     raise Exception("Error occured : data not saved")
 
-print("Remove generated data ./data/data3.pt")
-os.system("rm -r ./data/")
 print('save_to_pickle() OK')
 print('')
 

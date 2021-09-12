@@ -1,15 +1,8 @@
 from __future__ import print_function
 import six
 import numpy as np
-#from ._libgdf import lib, ffi
 import os, sys, psutil, shutil
-import types
-import re
-import collections
-from collections import OrderedDict
-#from tensorflow.python.framework import ops
-#from tensorflow.python.ops import array_ops, control_flow_ops, tensor_array_ops
-from scipy.integrate import nquad
+import types, re, collections
 
 import ase
 import torch
@@ -101,6 +94,3 @@ def memory():
     py = psutil.Process(pid)
     memory_use = py.memory_info()[0]
     print('memory_use:', memory_use)
-
-
-

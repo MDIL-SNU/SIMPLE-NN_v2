@@ -11,7 +11,7 @@ import torch
 from simple_nn_v2 import simple_nn
 from simple_nn_v2.init_inputs import initialize_inputs
 from simple_nn_v2.features.symmetry_function import generating
-from simple_nn_v2.utils import data_generator
+from simple_nn_v2.features import data_generator
 
 # Minimum Setting for Testing Symmetry_function methods
 # Initialize input file, set Simple_nn object as parent of Symmetry_function object
