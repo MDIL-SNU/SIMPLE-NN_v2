@@ -1,8 +1,7 @@
 import torch
-import os
 from functools import partial
-from braceexpand import braceexpand
 from glob import glob
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -37,7 +36,7 @@ class FilelistDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         return torch.load(self.filelist[idx], map_location=self.device)
-    
+
     def save_filename(self):
         for f in self.filelist:
             tmp_dict = torch.load(f, map_location=torch.device('cpu'))
@@ -46,8 +45,8 @@ class FilelistDataset(torch.utils.data.Dataset):
 
 #Function to generate Iterator
 def my_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_whiten_level=None, use_force=True, use_stress=False, load_data_to_gpu=False):
-    non_blocking = True if (load_data_to_gpu and torch.cuda.is_available()) else False 
-    
+    non_blocking = True if (load_data_to_gpu and torch.cuda.is_available()) else False
+
     struct_type = list()
     struct_weight = list()
     tot_num = list()
@@ -60,20 +59,20 @@ def my_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_w
     S = list()
     da = _make_empty_dict(atom_types)
     sparse_index = _make_empty_dict(atom_types)
-    
+
     for item in batch:
         struct_type.append(item['struct_type'])
         struct_weight.append(item['struct_weight'])
         tot_num.append(item['tot_num'])
-        
+
         E.append(item['E'])
-        for atype in atom_types: 
+        for atype in atom_types:
             x[atype].append(item['x'][atype])
             n[atype].append(item['x'][atype].size(0))
-        
+
         if use_force:
             F.append(item['F'])
-            for atype in atom_types: 
+            for atype in atom_types:
                 tmp_dx = item['dx'][atype] #Make dx to sparse_tensor
                 if tmp_dx.is_sparse:
                     tmp_dx = tmp_dx.to_dense().reshape(item['dx_size'][atype])
@@ -82,7 +81,7 @@ def my_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_w
 
         if use_stress:
             S.append(item['S'])
-            for atype in atom_types: 
+            for atype in atom_types:
                 tmp_da = item['da'][atype]
                 tmp_da = _preprocess_scaling_pca_to_dx_da(tmp_da, atype, scale_factor, pca, pca_min_whiten_level)
                 da[atype].append(tmp_da)
@@ -106,7 +105,7 @@ def my_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_w
 
 #Function to generate Iterator
 def atomic_e_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_whiten_level=None, use_force=False, use_stress=False, load_data_to_gpu=False):
-    non_blocking = True if (load_data_to_gpu and torch.cuda.is_available()) else False 
+    non_blocking = True if (load_data_to_gpu and torch.cuda.is_available()) else False
 
     struct_type = list()
     struct_weight = list()
@@ -115,8 +114,8 @@ def atomic_e_collate(batch, atom_types, device, scale_factor=None, pca=None, pca
     x = _make_empty_dict(atom_types)
     n = _make_empty_dict(atom_types)
 
-    atomic_E = _make_empty_dict(atom_types)
-    atomic_num = _make_empty_dict(atom_types)
+    atomic_E     = _make_empty_dict(atom_types)
+    atomic_num   = _make_empty_dict(atom_types)
     sparse_index = _make_empty_dict(atom_types)
 
     # extract data from batch_loader
@@ -126,11 +125,11 @@ def atomic_e_collate(batch, atom_types, device, scale_factor=None, pca=None, pca
         tot_num.append(item['tot_num'])
 
         E.append(item['E'])
-        for atype in atom_types: 
+        for atype in atom_types:
             x[atype].append(item['x'][atype])
             n[atype].append(item['x'][atype].size(0))
 
-        for atype in atom_types: 
+        for atype in atom_types:
             if atype in item['atomic_E'].keys():
                 atomic_E[atype].append(item['atomic_E'][atype])
                 atomic_num[atype].append(item['atomic_E'][atype].size(0))
@@ -212,9 +211,9 @@ def gen_sparse_index(nlist):
             idx += 1
     return res
 
-def delete_key_in_pt(filename, key):       
+def delete_key_in_pt(filename, key):
     filelist = FilelistDataset(filename)
-    filelist.save_filename()  
+    filelist.save_filename()
     for f in range(filelist):
         pt_dict = f
         del pt_dict['filename']

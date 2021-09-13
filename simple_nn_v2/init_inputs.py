@@ -14,36 +14,36 @@ default_inputs = {
     'params': dict(),
 }
 symmetry_function_descriptor_default_inputs = \
-        {'descriptor': 
+        {'descriptor':
             {
-                'type': 'symmetry_function',
-                'struct_list': './structure_list',
-                'save_list': './total_list',
-                'save_directory': './data', 
+                'type'          : 'symmetry_function',
+                'struct_list'   : './structure_list',
+                'save_list'     : './total_list',
+                'save_directory': './data',
                 #data format
                 'refdata_format': 'vasp-out',
                 'compress_outcar': True,
-                'read_force': True, 
-                'read_stress': False, 
-                'dx_save_sparse': True, 
-                'add_atom_idx': True, 
-                'absolute_path': True,
+                'read_force'    : True,
+                'read_stress'   : False,
+                'dx_save_sparse': True,
+                'add_atom_idx'  : True,
+                'absolute_path' : True,
             }
         }
 preprocess_default_inputs = \
-        {'preprocessing': 
+        {'preprocessing':
             {
                 'data_list' : './total_list',
-                'train_list': './train_list', 
-                'valid_list': './valid_list', 
+                'train_list': './train_list',
+                'valid_list': './valid_list',
                 'shuffle'   : True,
                 'valid_rate': 0.1,
                 #PCA
-                'calc_pca'  : True, 
+                'calc_pca'  : True,
                 'pca_whiten': True,
                 'pca_min_whiten_level': 1e-8,
                 #Scale
-                'calc_scale': True, 
+                'calc_scale': True,
                 'scale_type': 'minmax',
                 'scale_scale': 1.0,
                 'scale_rho' : None,
@@ -63,8 +63,8 @@ preprocess_default_inputs = \
 model_default_inputs = \
         {'neural_network':
             {
-                'train_list': './train_list', 
-                'valid_list': './valid_list', 
+                'train_list': './train_list',
+                'valid_list': './valid_list',
                 'test_list' : './test_list',
                 'ref_list'  : './ref_list',
 
@@ -73,7 +73,7 @@ model_default_inputs = \
                 'add_NNP_ref'   : False,
                 'train_atomic_E': False,
 
-                'workers'   : 0, 
+                'workers'   : 0,
                 'shuffle_dataloader': True,
                 'double_precision'  : True,
 
@@ -98,20 +98,20 @@ model_default_inputs = \
                 'dropout'   : False,
 
                 # Optimization related
-                'batch_size': 20,
-                'full_batch': False,
+                'batch_size'    : 20,
+                'full_batch'    : False,
                 'total_epoch'   : 1000,
                 'learning_rate' : 0.0001,
                 'energy_coeff'  : 1.,
-                'force_coeff'   : 0.1, 
+                'force_coeff'   : 0.1,
                 'stress_coeff'  : 0.000001,
-                'loss_scale': 1.,
+                'loss_scale'    : 1.,
                 'optimizer' : {
                     'method': 'Adam',
-                    'params': 
+                    'params':
                         None
                     },
-                'lr_decay'  : None,
+                'lr_decay'      : None,
                 'regularization': 1e-6, #L2 regularization
 
                 # Loss function related
@@ -133,9 +133,9 @@ model_default_inputs = \
                 'gdf'   : False,
 
                 #RESUME parameters
-                'continue'      : None, 
+                'continue'      : None,
                 'start_epoch'   : 1,
-                'clear_prev_status'     : False,  
+                'clear_prev_status'     : False,
                 'clear_prev_optimizer'  : False,
                 #Parallelism
                 'inter_op_parallelism_threads': 0,
@@ -156,11 +156,11 @@ def initialize_inputs(input_file_name, logfile):
 
     inputs = default_inputs
     for key in list(params_type.keys()):
-        inputs['params'][key] =  None
+        inputs['params'][key] = None
 
     descriptor_default_inputs = get_descriptor_default_inputs(logfile, descriptor_type=descriptor_type)
     inputs = _deep_update(inputs, descriptor_default_inputs)
-    
+
     inputs = _deep_update(inputs, preprocess_default_inputs)
     inputs = _deep_update(inputs, model_default_inputs)
     # update inputs using 'input.yaml'
@@ -182,7 +182,7 @@ def initialize_inputs(input_file_name, logfile):
         torch.manual_seed(seed)
         np.random.seed(seed)
         logfile.write("*** Random seed: {0:} ***\n".format(seed))
-   
+
     return inputs
 
 def get_descriptor_default_inputs(logfile, descriptor_type='symmetry_function'):
@@ -197,7 +197,7 @@ def get_descriptor_default_inputs(logfile, descriptor_type='symmetry_function'):
 
     return descriptor_inputs[descriptor_type]
 
-def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, parent="top"):
+def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, parent='top'):
     """
     Update a nested dictionary or similar mapping.
     Modify ``source`` in place.
@@ -230,9 +230,9 @@ def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, p
 def check_inputs(inputs, logfile, run_type, error=False):
     atom_types = inputs['atom_types']
     #Check input valid and write log
-    logfile.write('\n---------------------------------------------------------------\n')
+    logfile.write("\n---------------------------------------------------------------\n")
     if run_type  == 'generate':
-        logfile.write('\nInput for descriptor\n')
+        logfile.write("\nInput for descriptor\n")
         descriptor = inputs['descriptor']
         logfile.write(f"Descriptor type         : {descriptor['type']}\n")
         params = inputs['params']
@@ -450,7 +450,7 @@ def _to_boolean(inputs):
     neural_network_list = ['train', 'test', 'add_NNP_ref', 'train_atomic_E', 'shuffle_dataloader', 'double_precision', 'use_force', 'use_stress',\
                         'dropout','full_batch', 'checkpoint_interval', 'print_structure_rmse', 'accurate_train_rmse', 'pca', 'scale', 'gdf',\
                         'clear_prev_status', 'clear_prev_optimizer', 'load_data_to_gpu']
-   
+
 
     #True TRUE T t true TrUe .T. ... 
     #False FALSE F f false FaLse .F. ... 
@@ -472,17 +472,17 @@ def _to_boolean(inputs):
         dic[dic_key] = check
 
     for key in check_list:
-        if not isinstance(inputs[key], bool) and isinstance(inputs[key], str): 
+        if not isinstance(inputs[key], bool) and isinstance(inputs[key], str):
             convert(inputs, key)
 
     for d_key in descriptor_list:
-        if not isinstance(inputs['descriptor'][d_key], bool) and isinstance(inputs['descriptor'][d_key], str): 
+        if not isinstance(inputs['descriptor'][d_key], bool) and isinstance(inputs['descriptor'][d_key], str):
             convert(inputs['descriptor'], d_key)
 
     for p_key in preprocessing_list:
-        if not isinstance(inputs['preprocessing'][p_key], bool) and isinstance(inputs['preprocessing'][p_key], str): 
+        if not isinstance(inputs['preprocessing'][p_key], bool) and isinstance(inputs['preprocessing'][p_key], str):
             convert(inputs['preprocessing'], p_key)
 
     for n_key in neural_network_list:
-        if not isinstance(inputs['neural_network'][n_key], bool) and isinstance(inputs['neural_network'][n_key], str): 
+        if not isinstance(inputs['neural_network'][n_key], bool) and isinstance(inputs['neural_network'][n_key], str):
             convert(inputs['neural_network'], n_key)

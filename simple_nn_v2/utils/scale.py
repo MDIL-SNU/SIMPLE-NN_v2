@@ -2,6 +2,7 @@ import numpy as np
 from simple_nn_v2.features.symmetry_function import utils as utils_symf
 from scipy.integrate import nquad
 
+
 def get_scale_function(scale_type='minmax'):
     scale_function = {
         'minmax': minmax,

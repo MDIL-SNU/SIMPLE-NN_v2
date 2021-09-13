@@ -40,7 +40,7 @@ def _generate_gdf_file(ref_list, scale, atom_types, idx_list, target_list=None, 
                 #    raise NotImplementedError
                 #else:
                 lib.calculate_gdf(scaled_ref_p, scaled_ref.shape[0], scaled_target_p, scaled_target.shape[0], scaled_ref.shape[1], -1., local_temp_gdf_p)
-                local_auto_sigma = max(np.sort(local_temp_gdf))/3.
+                local_auto_sigma = max(np.sort(local_temp_gdf)) / 3.
                 comm.barrier()
                 auto_sigma[item] = comm.allreduce_max(local_auto_sigma)
 
@@ -53,14 +53,13 @@ def _generate_gdf_file(ref_list, scale, atom_types, idx_list, target_list=None, 
             comm.barrier()
 
             temp_gdf = comm.gather(local_temp_gdf.reshape([-1,1]), root=0)
-            comm_idx_list = comm.gather(idx_list[item].reshape([-1,1]), root=0)   
+            comm_idx_list = comm.gather(idx_list[item].reshape([-1,1]), root=0)
 
             if comm.rank == 0:
                 temp_gdf = np.concatenate(temp_gdf, axis=0).reshape([-1])
                 comm_idx_list = np.concatenate(comm_idx_list, axis=0).reshape([-1])
 
                 gdf[item] = np.squeeze(np.dstack(([temp_gdf, comm_idx_list])))
-                #print(gdf[item])
                 gdf[item][:,0] *= float(len(gdf[item][:,0]))
 
                 sorted_gdf = np.sort(gdf[item][:,0])

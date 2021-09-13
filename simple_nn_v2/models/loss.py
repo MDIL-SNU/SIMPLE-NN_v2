@@ -1,21 +1,21 @@
 import torch
-import os
 from ase import units
 
 #Calculate E, F, S loss
 def calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, weighted, dtype, use_force, use_stress, atomic_e):
-    n_batch = item['E'].size(0) 
+    n_batch = item['E'].size(0)
     weight = item['struct_weight'].to(device=device) if weighted else torch.ones(n_batch).to(device=device)
     calc_results = dict()
 
     x, atomic_E, E_, n_atoms = calculate_E(inputs['atom_types'], item, model, device, non_block)
     e_loss = get_e_loss(inputs['atom_types'], inputs['neural_network']['E_loss_type'], atomic_E, E_, n_atoms, item, criterion,\
-     epoch_result, dtype, device, non_block, n_batch, weight, atomic_e)
+                    epoch_result, dtype, device, non_block, n_batch, weight, atomic_e)
     batch_loss = inputs['neural_network']['energy_coeff'] * e_loss
     calc_results['E'] = E_
 
     if not atomic_e: # atomic_e training does not calculate F, S
         dEdG = calculate_derivative(inputs, inputs['atom_types'], x, E_)
+
         if use_force:
             F_ = calculate_F(inputs['atom_types'], x, dEdG, item, device, non_block)
             F = item['F'].type(dtype).to(device=device, non_blocking=non_block)
@@ -51,7 +51,7 @@ def calculate_E(atom_types, item, model, device, non_block):
             ).to_dense()
             E_ += torch.sum(atomic_E[atype], axis=1)
         n_atoms += item['n'][atype].to(device=device, non_blocking=non_block)
-    
+
     return x, atomic_E, E_, n_atoms
 
 def calculate_derivative(inputs, atom_types, x, E_):
@@ -62,7 +62,7 @@ def calculate_derivative(inputs, atom_types, x, E_):
                 dEdG[atype] = torch.autograd.grad(torch.sum(E_), x[atype], create_graph=True)[0]
 
     return dEdG
-    
+
 def calculate_F(atom_types, x, dEdG, item, device, non_block):
     F_ = 0.
     for atype in atom_types:
@@ -72,7 +72,7 @@ def calculate_F(atom_types, x, dEdG, item, device, non_block):
             for n, ntem in enumerate(item['n'][atype]):
                 if ntem != 0:
                     tmp_force.append(torch.einsum('ijkl,ij->kl', item['dx'][atype][n].to(device=device, non_blocking=non_block), \
-                    dEdG[atype][tmp_idx:(tmp_idx + ntem)]))
+                    dEdG[atype][tmp_idx:(tmp_idx+ntem)]))
                 else:
                     tmp_force.append(torch.zeros(item['dx'][atype][n].size()[-2], item['dx'][atype][n].size()[-1]).to(device=device, non_blocking=non_block))
                 tmp_idx += ntem
@@ -90,7 +90,7 @@ def calculate_S(atom_types, x, dEdG, item, device, non_block):
             for n, ntem in enumerate(item['n'][atype]):
                 if ntem != 0:
                     tmp_stress.append(torch.einsum('ijkl,ij->l', item['da'][atype][n].to(device=device, non_blocking=non_block), \
-                    dEdG[atype][tmp_idx:(tmp_idx + ntem)]))
+                    dEdG[atype][tmp_idx:(tmp_idx+ntem)]))
                 else:
                     tmp_stress.append(torch.zeros(item['da'][atype][n].size()[-1]).to(device=device, non_blocking=non_block))
                 tmp_idx += ntem
@@ -135,7 +135,7 @@ def get_e_loss(atom_types, loss_type, atomic_E, E_, n_atoms, item, criterion, pr
                         progress_dict['e_err'][item['struct_type'][num]].update(atype_loss[atype][tmp_idx+atom_idx].detach().item())
                     tmp_idx += item['atomic_num'][atype][num].item()
                 print_e_loss.append(atype_loss[atype])
-                atomic_loss.append(atype_loss[atype]*struct_weight_factor)
+                atomic_loss.append(atype_loss[atype] * struct_weight_factor)
 
         w_e_loss = torch.mean(torch.cat(atomic_loss))
         print_e_loss = torch.mean(torch.cat(print_e_loss))

@@ -1,5 +1,5 @@
 import sys, os, time
-import yaml, functools, atexit
+import yaml, atexit
 from ._version import __version__, __git_sha__
 
 from simple_nn_v2.init_inputs import initialize_inputs, check_inputs
@@ -8,30 +8,28 @@ from simple_nn_v2.models import train
 from simple_nn_v2.features.mpi import DummyMPI, MPI4PY
 from simple_nn_v2.features.symmetry_function import generate as symf_generator
 
-#input parameter descriptor
+
 def run(input_file_name):
     start_time = time.time()
-    
-    #Load MPI 
-    try: 
+
+    try:
         comm = MPI4PY()
         if comm.size == 1:
             comm = DummyMPI()
     except:
         comm = DummyMPI()
-    
+
     logfile = sys.stdout
     logfile = open('LOG', 'w', 1)
     atexit.register(_close_log, logfile)
     _log_header(logfile)
-     
 
     inputs = initialize_inputs(input_file_name, logfile)
-    #MPI not supporting in training 
+
     if comm.size != 1:
-        if inputs['train_model'] is not False:
+        if inputs['train_model'] is True:
             if comm.rank == 0:
-                print("MPI4PY does not support in train model. Set train_model = False")
+                print("MPI4PY does not support in train model. Set train_model: False")
             raise Exception
         else:
             logfile.write("MPI size {0}\n".format(comm.size))
@@ -39,25 +37,24 @@ def run(input_file_name):
 
     if inputs['generate_features'] is True:
         comm.barrier()
-        check_inputs(inputs, logfile,'generate')
+        check_inputs(inputs, logfile, 'generate')
         generate = get_generate_function(logfile, descriptor_type=inputs['descriptor']['type'])
         comm.barrier()
         generate(inputs, logfile, comm)
-    
+
     if inputs['preprocess'] is True:
         comm.barrier()
         if comm.rank == 0:
-            check_inputs(inputs, logfile,'preprocess')
+            check_inputs(inputs, logfile, 'preprocess')
         comm.barrier()
         preprocess(inputs, logfile, comm)
 
     if inputs['train_model'] is True:
-        check_inputs(inputs, logfile,'train_model')
+        check_inputs(inputs, logfile, 'train_model')
         train(inputs, logfile)
-    
-    if comm.rank == 0:
-        logfile.write(f'total wall time {time.time()-start_time} seconds\n')
 
+    if comm.rank == 0:
+        logfile.write(f"total wall time {time.time()-start_time} seconds\n")
 
 def get_generate_function(logfile, descriptor_type='symmetry_function'):
     generator = {
@@ -69,7 +66,7 @@ def get_generate_function(logfile, descriptor_type='symmetry_function'):
         logfile.write("\nError: {:}\n".format(err))
         raise NotImplementedError(err)
 
-    return generator[descriptor_type] 
+    return generator[descriptor_type]
 
 def _close_log(logfile):
     logfile.flush()

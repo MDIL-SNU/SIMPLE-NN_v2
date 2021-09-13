@@ -1,4 +1,4 @@
-import os, sys, six, time
+import os, six, time
 import numpy as np
 import torch, functools
 from sklearn.decomposition import PCA
@@ -17,7 +17,7 @@ def preprocess(inputs, logfile, comm):
     Args:
         inputs(dict): full parts in input.yaml
         logfile(file obj): logfile object
-    """ 
+    """
     start_time = time.time()
     data_list = inputs['preprocessing']['data_list']
     _split_train_list_and_valid_list(inputs, data_list)
@@ -43,14 +43,14 @@ def preprocess(inputs, logfile, comm):
             pca = _calculate_pca_matrix(inputs, train_feature_list, scale)
             torch.save(pca, 'pca')
             logfile.flush()
-    
+
         # calculate gdf
         if inputs['preprocessing']['calc_gdf']:
             _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list, train_dir_list, scale, comm)
         logfile.flush()
     if comm.rank == 0:
         logfile.write(f"preproces done. {time.time()-start_time:10} seconds elapsed.\n")
-     
+
 # Split train/valid data names that saved in data_list
 def _split_train_list_and_valid_list(inputs, data_list='./total_list', append=False):
    train_list_file = open(inputs['preprocessing']['train_list'], 'wa' if append else 'w')
@@ -67,7 +67,7 @@ def _split_train_list_and_valid_list(inputs, data_list='./total_list', append=Fa
                valid_list_file.write(elem + '\n')
            else:
                train_list_file.write(elem + '\n')
-               
+
    train_list_file.close()
    valid_list_file.close()
 
@@ -75,7 +75,7 @@ def _split_train_list_and_valid_list(inputs, data_list='./total_list', append=Fa
 def _calculate_scale(inputs, logfile, feature_list, comm):
     atom_types = inputs['atom_types']
     scale = None
-    
+
     if inputs['preprocessing']['calc_scale'] is True:
         scale = dict()
         scale_type = inputs['preprocessing']['scale_type']
@@ -86,7 +86,7 @@ def _calculate_scale(inputs, logfile, feature_list, comm):
             scale[elem] = np.zeros([2, inp_size])
 
             # if no feature list, scaling to 1
-            if len(feature_list[elem]) <= 0:  
+            if len(feature_list[elem]) <= 0:
                 scale[elem][1,:] = 1.
             else:
                 scale[elem][0], scale[elem][1] = calculate_scale_factor(inputs, feature_list, elem)
@@ -130,7 +130,7 @@ def _calculate_pca_matrix(inputs, feature_list, scale):
 
     for elem in inputs['atom_types']:
         pca_temp = PCA()
-        scale_process = (feature_list[elem] - scale[elem][0].reshape(1, -1) )  / scale[elem][1].reshape(1, -1)
+        scale_process = (feature_list[elem] - scale[elem][0].reshape(1,-1) ) / scale[elem][1].reshape(1,-1)
         pca_temp.fit(scale_process)
         min_level = inputs['preprocessing']['pca_min_whiten_level'] if inputs['preprocessing']['pca_whiten'] else 0.0
         # PCA transformation = x * pca[0] - pca[2] (divide by pca[1] if whiten)
@@ -138,10 +138,8 @@ def _calculate_pca_matrix(inputs, feature_list, scale):
                      np.sqrt(pca_temp.explained_variance_ + min_level),
                      np.dot(pca_temp.mean_, pca_temp.components_.T)]
     pca['pca_whiten'] =  inputs['preprocessing']['pca_min_whiten_level'] if inputs['preprocessing']['pca_whiten'] else None
-    
+
     return pca
-
-
 
 def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_dir_list, scale, comm):
     #Set modifier parameters
@@ -179,7 +177,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
 
             local_target_list[item] = feature_list_train[item][begin:end]
             local_idx_list[item] = idx_list_train[item][begin:end]
-        
+
         #Extract parameters for GDF
         if inputs['preprocessing']['atomic_weights']['params']:
             if 'sigma' in inputs['preprocessing']['atomic_weights']['params'].keys():
@@ -188,13 +186,13 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
                     #Set default sigma for not define species
                     for atype in inputs['atom_types']:
                         if atype not in sigma.keys():
-                            sigma[atype] = 0.02 
+                            sigma[atype] = 0.02
             else:
                 sigma = 0.02 #Default value for sigma
- 
+
         atomic_weights_train, dict_sigma, dict_c = get_atomic_weights(feature_list_train, scale, inputs['atom_types'], local_idx_list,\
          target_list=local_target_list, comm=comm, sigma=sigma)
-        
+
         comm.barrier()
         if comm.rank == 0:
             #weight modifier calling
@@ -205,16 +203,16 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
                 gdf_scale[item] = np.mean(atomic_weights_train[item][:,0])
             _save_gdf_to_pt(inputs['atom_types'], train_dir_list, atomic_weights_train, gdf_scale)
 
-            logfile.write('Selected(or generated) sigma and c\n')
+            logfile.write("Selected(or generated) sigma and c\n")
             for item in inputs['atom_types']:
-                logfile.write('{:3}: sigma = {:4.3f}, c = {:4.3f}\n'.format(item, dict_sigma[item], dict_c[item]))
+                logfile.write("{:3}: sigma = {:4.3f}, c = {:4.3f}\n".format(item, dict_sigma[item], dict_c[item]))
         #Save gdf(atomic weight result) and modifier function
 
     #Extract GDF from saved file
     elif isinstance(get_atomic_weights, six.string_types):
         atomic_weights_train = torch.load(get_atomic_weights)
         atomic_weights_valid = 'ones'
-   
+
     #Save to ./atomic_weignts  part  
     if atomic_weights_train is None:
         aw_tag = False
@@ -224,7 +222,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
         # Plot histogram only if atomic weights just have been calculated.
         if comm.rank == 0 and callable(get_atomic_weights):
             grp.plot_gdfinv_density(atomic_weights_train, inputs['atom_types'], auto_c=dict_c)
- 
+
         atomic_weights_train['modifier'] = modifier
         atomic_weights_train['type'] = inputs['preprocessing']['atomic_weights']['type']
         atomic_weights_train['aw_tag'] = aw_tag
@@ -232,8 +230,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
     if comm.rank == 0:
         torch.save(atomic_weights_train, './atomic_weights')
 
-
-def _save_gdf_to_pt(atom_types, feature_list, gdf, gdf_scale): 
+def _save_gdf_to_pt(atom_types, feature_list, gdf, gdf_scale):
     for idx, name in enumerate(feature_list):
         load_data = torch.load(name)
         force_array = list()
@@ -241,11 +238,11 @@ def _save_gdf_to_pt(atom_types, feature_list, gdf, gdf_scale):
         type_bef = None
         for atype in atom_idx:
             if type_bef != atype:
-                force_array.append(gdf[atom_types[atype-1]][gdf[atom_types[atype-1]][:,1] == idx,0] / gdf_scale[atom_types[atype-1]])
+                force_array.append(gdf[atom_types[atype-1]][gdf[atom_types[atype-1]][:,1]==idx, 0] / gdf_scale[atom_types[atype-1]])
                 type_bef = atype
 
         force_array = np.concatenate(force_array, axis=0)
         assert load_data['tot_num'] == len(force_array), f"Not consistant number of atoms {name} : {load_data['N']} , {len(force_array)}"
         load_data['gdf'] = torch.tensor(force_array)
-        torch.save(load_data,name)
+        torch.save(load_data, name)
 

@@ -7,7 +7,7 @@ def _parse_symmetry_function_parameters(inputs, atom_types):
         symf_params_set[element]['int'], symf_params_set[element]['double'] = \
             _read_params(inputs['params'][element])
         symf_params_set[element]['total'] = np.concatenate((symf_params_set[element]['int'], symf_params_set[element]['double']), axis=1)
-        symf_params_set[element]['num'] = len(symf_params_set[element]['total'])            
+        symf_params_set[element]['num'] = len(symf_params_set[element]['total'])
     return symf_params_set
 
 def _read_params(filename):

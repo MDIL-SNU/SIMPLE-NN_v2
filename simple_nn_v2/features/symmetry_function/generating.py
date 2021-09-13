@@ -1,19 +1,19 @@
 from __future__ import print_function
 from __future__ import division
-import os, sys, time
+import os, time
 import torch
 import numpy as np
 from ase import io, units
 import ase
+
 from simple_nn_v2.features import data_generator
 from simple_nn_v2.utils.features import _gen_2Darray_for_ffi
-
 from simple_nn_v2.features.symmetry_function import utils  as utils_symf
 
 try:
     from ._libsymf import lib, ffi
 except:
-    raise Exception("libsymf library not exists. Run libsymf_builder.py")    
+    raise Exception("libsymf library not exists. Run libsymf_builder.py")
     os.abort()
 
 
@@ -38,7 +38,7 @@ def generate(inputs, logfile, comm):
     atom_types = inputs['atom_types']
     structure_list = inputs['descriptor']['struct_list'] #Default ./structure_list
     save_list = inputs['descriptor']['save_list'] #Default ./total_list
-    
+
     #Create pt file directory
     if comm.rank == 0:
         if not os.path.exists(inputs['descriptor']['save_directory']):
@@ -46,9 +46,9 @@ def generate(inputs, logfile, comm):
         data_list_fil = open(save_list, 'w')
 
     data_idx = 1
-    
+
     # structure_tag_idx(int list): list of structure tag index of each structure file    ex) [1, 2, 2]  
-    structure_tags, structure_weights, structure_file_list, structure_slicing_list, structure_tag_idx  = \
+    structure_tags, structure_weights, structure_file_list, structure_slicing_list, structure_tag_idx = \
                                 data_generator.parse_structure_list(logfile, structure_list=structure_list, comm=comm)
 
     symf_params_set = utils_symf._parse_symmetry_function_parameters(inputs, atom_types)
@@ -75,15 +75,14 @@ def generate(inputs, logfile, comm):
             cell_p  = _gen_2Darray_for_ffi(cell, ffi)
 
             result = _initialize_result(atoms_per_type, structure_tags, structure_weights, tag_idx, atom_type_idx)
-            
-            for idx, element in enumerate(atom_types):
 
+            for idx, element in enumerate(atom_types):
                 #MPI part
                 mpi_quotient  = atoms_per_type[element] // comm.size
                 mpi_remainder = atoms_per_type[element] %  comm.size
                 #MPI index     
-                begin_idx = comm.rank * mpi_quotient + min(comm.rank , mpi_remainder) 
-                end_idx = begin_idx + mpi_quotient 
+                begin_idx = comm.rank * mpi_quotient + min(comm.rank , mpi_remainder)
+                end_idx = begin_idx + mpi_quotient
                 #Distribute mpi_remainder to mpi 
                 if mpi_remainder > comm.rank:
                     end_idx += 1
@@ -91,19 +90,19 @@ def generate(inputs, logfile, comm):
                 # cal_atom_idx(int list): atom index for calculation    ex) [2,3,4]
                 # cal_atom_num(int): atom numbers for calculation       ex) 3
                 cal_atom_idx, cal_atom_num, x, dx, da = _initialize_symmetry_function_variables(atom_idx_per_type,\
-                    element, symf_params_set, atom_num, mpi_range = (begin_idx,end_idx) )
-                
+                    element, symf_params_set, atom_num, mpi_range=(begin_idx,end_idx))
+
                 # Convert cal_atom_idx, x, dx, da into C type data
                 cal_atom_idx_p = ffi.cast('int *', cal_atom_idx.ctypes.data)
-                x_p = _gen_2Darray_for_ffi(x, ffi)
+                x_p  = _gen_2Darray_for_ffi(x, ffi)
                 dx_p = _gen_2Darray_for_ffi(dx, ffi)
-                da_p = _gen_2Darray_for_ffi(da, ffi)        
+                da_p = _gen_2Darray_for_ffi(da, ffi)
 
                 # 5. Calculate symmetry functon using C type data
                 errno = lib.calculate_sf(cell_p, cart_p, scale_p, \
-                                    atom_type_idx_p, atom_num, cal_atom_idx_p, cal_atom_num, \
-                                    symf_params_set[element]['int_p'], symf_params_set[element]['double_p'], symf_params_set[element]['num'], \
-                                    x_p, dx_p, da_p)
+                            atom_type_idx_p, atom_num, cal_atom_idx_p, cal_atom_num, \
+                            symf_params_set[element]['int_p'], symf_params_set[element]['double_p'], \
+                            symf_params_set[element]['num'], x_p, dx_p, da_p)
                 comm.barrier()
                 errnos = comm.gather(errno) #List of error number
                 errnos = comm.bcast(errnos)
@@ -118,10 +117,10 @@ def generate(inputs, logfile, comm):
                             logfie.write("\nError: {:}\n".format(err))
                             raise ValueError(err)
                         else:
-                            assert errno == 0, "Unexpected error occred"             
+                            assert errno == 0, "Unexpected error occred"
 
                 _set_calculated_result(inputs, result, x, dx, da, atoms_per_type, element, symf_params_set, atom_num, comm)
-            
+
             E, F, S = _extract_EFS(inputs, structure, logfile, comm)
             result['E'] = torch.tensor(E)
             if inputs['descriptor']['read_force'] is True:
@@ -134,17 +133,17 @@ def generate(inputs, logfile, comm):
                 data_list_fil.write("{}:{}\n".format(tag_idx, tmp_filename))
                 data_idx += 1
                 tmp_endfile = tmp_filename
-        
+
         comm.barrier()
         data_idx = comm.bcast(data_idx)
-        logfile.write(f'  >> ~{inputs["descriptor"]["save_directory"]}/data{data_idx-1}.pt\n')
-    
+        logfile.write(" ~ {}/data{}.pt\n".format(inputs['descriptor']['save_directory'], data_idx-1))
+
     if comm.rank == 0:
         data_list_fil.close()
         if inputs['descriptor']['compress_outcar']:
             os.remove('./tmp_comp_OUTCAR')
         logfile.write(f"generate done. {time.time()-start_time:10} seconds elapsed\n")
-    
+
 # Extract structure information from structure (atom numbers, cart, scale, cell)
 # Return variables related to structure information (atom_type_idx, type_num, type_atom_idx)
 def _get_structure_coordination_info(structure):
@@ -179,17 +178,17 @@ def _initialize_result(type_num, structure_tags, structure_weights, idx, atom_ty
     result['dx'] = dict()
     result['da'] = dict()
     result['dx_size'] = dict() # due to sparse tensor
-    result['total'] = None 
-    result['num'] = None 
+    result['total'] = None
+    result['num'] = None
     result['N'] = type_num
     result['tot_num'] = np.sum(list(type_num.values()))
     result['struct_type'] = structure_tags[idx]
     result['struct_weight'] = structure_weights[idx]
     result['atom_idx'] = atom_type_idx
     return result
-    
+
 # Get data to make C array from variables
-def _initialize_symmetry_function_variables(type_atom_idx, element, symf_params_set, atom_num, mpi_range=None ):
+def _initialize_symmetry_function_variables(type_atom_idx, element, symf_params_set, atom_num, mpi_range=None):
     if mpi_range != None: # MPI calculation
         cal_atom_idx = np.asarray(type_atom_idx[element][mpi_range[0]:mpi_range[1]], dtype=np.intc, order='C')
     elif mpi_range == None: # Serial calculation
@@ -202,7 +201,7 @@ def _initialize_symmetry_function_variables(type_atom_idx, element, symf_params_
 
     return cal_atom_idx, cal_atom_num, x, dx, da
 
-def _check_error(errnos, logfile):   
+def _check_error(errnos, logfile):
     for errno in errnos:
         if errno == 1:
             err = "Not implemented symmetry function type."
@@ -213,7 +212,7 @@ def _check_error(errnos, logfile):
             logfile.write("\nError: {:}\n".format(err))
             raise ValueError(err)
         else:
-            assert errno == 0    
+            assert errno == 0
 
 # Set resulatant Dictionary
 def _set_calculated_result(inputs, result, x, dx, da, type_num, element, symf_params_set, atom_num, comm):
@@ -250,7 +249,7 @@ def _extract_EFS(inputs, structure, logfile, comm):
     F = None
     S = None
 
-    if inputs['descriptor']['refdata_format']=='vasp-out':
+    if inputs['descriptor']['refdata_format'] == 'vasp-out':
         if ase.__version__ >= '3.18.0':
             E = structure.get_potential_energy(force_consistent=True)
         else:
@@ -260,7 +259,7 @@ def _extract_EFS(inputs, structure, logfile, comm):
             try:
                 F = structure.get_forces()
             except:
-                err = "There is not force information! Set 'use_force' = false"
+                err = "There is not force information! Set 'use_force': False"
                 if comm.rank == 0:
                     logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)
@@ -268,10 +267,10 @@ def _extract_EFS(inputs, structure, logfile, comm):
         if inputs['descriptor']['read_stress'] is True:
             try:
                 # ASE returns the stress tensor by voigt order xx yy zz yz zx xy
-                S = -structure.get_stress()/units.GPa*10
+                S = -1 * structure.get_stress() / units.GPa * 10
                 S = S[[0, 1, 2, 5, 3, 4]]
             except:
-                err = "There is not stress information! Set 'use_stress' = false"
+                err = "There is not stress information! Set 'use_stress': False"
                 if comm.rank == 0:
                     logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)

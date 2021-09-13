@@ -21,8 +21,7 @@ def _initialize_optimizer(inputs, model, user=None):
     default = {'lr': lr, 'weight_decay': regularization}
 
     optim_params.update(default)
-    #Convert strings to tuple 0.9 0.99 -> (0.9,0.99)
-    if 'betas' in optim_params.keys(): 
+    if 'betas' in optim_params.keys():
         optim_params['betas'] = tuple(float(b_range) for b_range in optim_params['betas'].split())
 
     rprop_params = optim_params.copy()

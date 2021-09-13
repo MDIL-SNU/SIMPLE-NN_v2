@@ -1,4 +1,3 @@
-import pickle
 from braceexpand import braceexpand
 import numpy as np
 import ase
@@ -60,7 +59,7 @@ def parse_structure_list(logfile, structure_list='./structure_list',comm=None):
             elif line[0] == '[' and line[-1] == ']':
                 tag_line = line[1:-1]
                 tag, weight = _get_tag_and_weight(tag_line)
-                
+
                 if weight < 0:
                     err = "Structure weight must be greater than or equal to zero."
                     if comm and comm.rank == 0:
@@ -75,8 +74,8 @@ def parse_structure_list(logfile, structure_list='./structure_list',comm=None):
                 # Validate structure weight (structure weight is not validated on training run).
                 if tag not in structure_tags:
                     structure_tags.append(tag)
-                    structure_weights.append(weight)    
-                else:                   
+                    structure_weights.append(weight)
+                else:
                     existent_weight = structure_weights[structure_tags.index(tag)]
                     if comm and comm.rank == 0:
                         if not np.isclose(existent_weight - weight, 0):
@@ -115,7 +114,7 @@ def _get_tag_and_weight(text):
     else:
         tag = text.strip()
         weight = 1.0
-        
+
     return tag, weight
 
 def load_structures(inputs, structure_file, structure_slicing, logfile,comm=None):
@@ -155,15 +154,15 @@ def load_structures(inputs, structure_file, structure_slicing, logfile,comm=None
             logfile.write("Warning: Structure format is not OUTCAR(['refdata_format'] : {:}). Unexpected error can occur.\n"\
                                                     .format(inputs['descriptor']['refdata_format']))
         structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'])
-    
+
     return structures
 
 def save_to_datafile(inputs, data, data_idx, logfile):
-    """ Write result data to pickle file
+    """ Write result data to pt file
 
-    Check if pickle list file is open
-    Save data as data{index}.pickle ({index}: +1 of last index in save directory)
-    Write pickle file path in pickle list
+    Check if pt list file is open
+    Save data as data{index}.pt ({index}: +1 of last index in save directory)
+    Write pt file path in pt list
 
     Args:
         inputs(dict): ['descriptor'] part in input.yaml
@@ -171,7 +170,7 @@ def save_to_datafile(inputs, data, data_idx, logfile):
         data_idx(int): index of data file to save
         logfile(file obj): logfile object
     Returns:
-        tmp_filename(str): saved pickle file path
+        tmp_filename(str): saved pt file path
     """
     data_dir = inputs['descriptor']['save_directory']
 
@@ -205,13 +204,15 @@ def compress_outcar(filename):
     with open(filename, 'r') as fil, open(comp_name, 'w') as res:
         minus_tag = 0
         line_tag = 0
+        ions_key = 0
         for line in fil:
             if 'POTCAR:' in line:
                 res.write(line)
             if 'POSCAR:' in line:
                 res.write(line)
-            elif 'ions per type' in line:
+            elif 'ions per type' in line and ions_key == 0:
                 res.write(line)
+                ions_key = 1
             elif 'direct lattice vectors' in line:
                 res.write(line)
                 minus_tag = 3
@@ -235,4 +236,4 @@ def compress_outcar(filename):
                     line_tag -= 1
 
     return comp_name
-    
+

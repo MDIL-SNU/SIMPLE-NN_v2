@@ -6,11 +6,9 @@ random_seed: False
 atom_types:
 - 'species1'
 - 'species2'
-- 'species3'
 params:
     species1: 'your/dir/to/parameter/species1'
     species2: 'your/dir/to/parameter/species2'
-    species3: 'your/dir/to/parameter/species3'
 
 #Input for generate fearues
 descriptor: 
@@ -31,7 +29,7 @@ preprocessing:
     train_list: './train_list'
     valid_list: './valid_list' 
     shuffle: True
-    valid_rate: 0.0
+    valid_rate: 0.1
     #PCA 
     calc_pca: True
     pca_whiten: True
@@ -54,6 +52,10 @@ preprocessing:
        params: 
         species1:
           b: 100
+          c: 0.01
+        species2:
+          b: 100
+          c: 0.01
 #Input for traning
 neural_network:
     train_list: './train_list'

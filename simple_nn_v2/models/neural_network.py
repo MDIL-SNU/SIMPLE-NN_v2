@@ -42,7 +42,7 @@ class FCNDict(torch.nn.Module):
             for ctem in params:
                 tmp_types = inputs['atom_types'][int(ctem[1]) - 1]
                 if int(ctem[0]) > 3:
-                    tmp_types += ' {}'.format(inputs['atom_types'][int(ctem[2]) - 1])
+                    tmp_types += ' {}'.format(inputs['atom_types'][int(ctem[2])-1])
                 if len(ctem) != 7:
                     raise ValueError("params file must have lines with 7 columns.")
 
@@ -50,7 +50,7 @@ class FCNDict(torch.nn.Module):
                     format(int(ctem[0]), ctem[3], ctem[4], ctem[5], ctem[6], tmp_types))
 
             if scale_factor is None:
-                with open(inputs['params'][item],'r') as f:
+                with open(inputs['params'][item], 'r') as f:
                     tmp = f.readlines()
                 input_dim = len(tmp) #open params read input number of symmetry functions
                 FIL.write('scale1 {}\n'.format(' '.join(np.zeros(input_dim).astype(np.str))))
@@ -60,9 +60,9 @@ class FCNDict(torch.nn.Module):
                 FIL.write('scale2 {}\n'.format(' '.join(scale_factor[item][1].cpu().numpy().astype(np.str))))
 
             # An extra linear layer is used for PCA transformation.
-            nodes = list()
+            nodes   = list()
             weights = list()
-            biases = list()
+            biases  = list()
             for n, i in self.nets[item].lin.named_modules():
                 if 'lin' in n:
                     nodes.append(i.weight.size(0))
@@ -104,7 +104,7 @@ class FCNDict(torch.nn.Module):
 
             FIL.write('\n')
         FIL.close()
-        
+
 class FCN(torch.nn.Module):
     def __init__(self, dim_input, dim_hidden, acti_func='sigmoid', dropout=None):
         super(FCN, self).__init__()
@@ -116,7 +116,7 @@ class FCN(torch.nn.Module):
             if dropout:
                 self.lin.add_module(f'drop_{i}', torch.nn.Dropout(p=dropout))
             self.lin.add_module(f'lin_{i}', torch.nn.Linear(dim_in, hn))
-           #if batch_norm:
+            #if batch_norm:
             #    seq.add_module(torch.nn.BatchNorm1d(hn))
             dim_in = hn
             if acti_func == 'sigmoid':
@@ -129,7 +129,7 @@ class FCN(torch.nn.Module):
                 self.lin.add_module(f'tanh_{i}', torch.nn.SELU())
             elif acti_func == 'swish':
                 self.lin.add_module(f'swish_{i}', swish())
-            
+
         self.lin.add_module(f'lin_{i+1}', torch.nn.Linear(hn, 1))
 
     def forward(self, x):
@@ -138,7 +138,7 @@ class FCN(torch.nn.Module):
 class swish(torch.nn.Module):
     def __init__(self):
         super(swish, self).__init__()
-        
+
     def forward(self, x):
         return x * torch.sigmoid(x)
 
@@ -153,7 +153,7 @@ def _initialize_model_and_weights(inputs, logfile, device):
         with open(inputs['params'][element], 'r') as f:
             tmp_symf = f.readlines()
             input_nodes = len(tmp_symf)
- 
+
         model[element] = FCN(input_nodes, hidden_layer_nodes,\
             acti_func=inputs['neural_network']['acti_func'],
             dropout=inputs['neural_network']['dropout'])
@@ -190,7 +190,7 @@ def read_lammps_potential(filename):
             dims += hidden_to_out
 
             num_weights = len(dims) - 1
-    
+
             tmp_idx = 0
             for j in range(num_weights):
                 weights[item][f'lin_{tmp_idx}'] = dict()

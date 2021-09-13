@@ -10,8 +10,8 @@ def convert_pickle_to_pt(filename):
         out_name = filename.split('.')[0]+'.pt'
         with open(filename, 'rb') as fil:
             tmp_data = pickle.load(fil, encoding='latin1')
-        torch.save(tmp_data, out_name) 
- 
+        torch.save(tmp_data, out_name)
+
 def _gen_2Darray_for_ffi(arr, ffi, cdata='double'):
     # Function to generate 2D pointer for cffi  
     shape = arr.shape
@@ -37,7 +37,7 @@ def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False
     feature_list = dict()
     idx_list = dict()
     directory_list = list()
-    
+
     if atom_types == None:
         for i,item in enumerate(data_list):
             tmp_data = torch.load(item)
@@ -51,7 +51,7 @@ def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False
             for item in atom_types:
                 feature_list[item] = list()
                 idx_list[item] = list()
-    
+
             for i,item in enumerate(data_list):
                 tmp_data = torch.load(item)
                 directory_list.append(item)
@@ -59,20 +59,19 @@ def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False
                     if jtem in tmp_data[feature_tag]:
                         feature_list[jtem].append(tmp_data[feature_tag][jtem])
 
-                   
+
                     idx_list[jtem].append([i]*len(tmp_data['atom_idx'][tmp_data['atom_idx'] == j+1]))
-            
+
             for item in atom_types:
                 if len(feature_list[item]) > 0:
                     feature_list[item] = np.concatenate(feature_list[item], axis=0)
                 if len(idx_list[item]) > 0:
                     idx_list[item] = np.concatenate(idx_list[item], axis=0)
-    
         else:
             for item in atom_types:
                 feature_list[item] = list()
                 idx_list[item] = list()
-    
+
             for i,item in enumerate(data_list):
                 tmp_data = torch.load(item)
                 directory_list.append(item)
@@ -80,7 +79,7 @@ def _make_full_featurelist(filelist, feature_tag, atom_types=None, use_idx=False
                     if jtem in tmp_data[feature_tag]:
                         feature_list[jtem].append(tmp_data[feature_tag][jtem])
                         idx_list[jtem].append([i]*tmp_data['N'][jtem])
-                
+
             for item in atom_types:
                 if len(feature_list[item]) > 0:
                     feature_list[item] = np.concatenate(feature_list[item], axis=0)
@@ -113,10 +112,4 @@ def _make_str_data_list(filename):
                 data_list[group_id] = []
             data_list[group_id].append(file_name)
     return data_list.values()
-
-
-
-
-
-
 
