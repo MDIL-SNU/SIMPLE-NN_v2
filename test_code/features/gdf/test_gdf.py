@@ -102,7 +102,7 @@ def test():
         gdf.append(get_gdf(scaled_feature_list[0] - scaled_feature_list[0][idx]))
 
 
-    reduced_gdf = np.array(gdf)  / np.mean(gdf)
+    reduced_gdf = np.array(gdf) # / np.mean(gdf)
 
     print('_________________________________________________')
     print('Assertion Check')

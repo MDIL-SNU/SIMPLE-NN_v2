@@ -1,6 +1,6 @@
 import os, six, time
 import numpy as np
-import torch, functools
+import torch
 from sklearn.decomposition import PCA
 
 from simple_nn_v2.utils import modified_sigmoid, _generate_gdf_file
@@ -142,12 +142,6 @@ def _calculate_pca_matrix(inputs, feature_list, scale):
     return pca
 
 def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_dir_list, scale, comm):
-    #Set modifier parameters
-    modifier = None
-    if inputs['preprocessing']['weight_modifier']['type'] == 'modified sigmoid':
-        modifier = dict()
-        for item in inputs['atom_types']:
-            modifier[item] = functools.partial(modified_sigmoid, **inputs['preprocessing']['weight_modifier']['params'][item])
 
     #Set gdf 
     if inputs['preprocessing']['atomic_weights']['type'] == 'gdf':
@@ -194,19 +188,12 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
          target_list=local_target_list, comm=comm, sigma=sigma)
 
         comm.barrier()
+        #Save gdf value part
         if comm.rank == 0:
-            #weight modifier calling (if possible)
-            gdf_scale = dict()
-            for item in inputs['atom_types']:
-                if modifier != None and callable(modifier[item]):
-                    atomic_weights_train[item][:,0] = modifier[item](atomic_weights_train[item][:,0])
-                gdf_scale[item] = np.mean(atomic_weights_train[item][:,0])
-            _save_gdf_to_pt(inputs['atom_types'], train_dir_list, atomic_weights_train, gdf_scale)
-
+            _save_gdf_to_pt(inputs['atom_types'], train_dir_list, atomic_weights_train)
             logfile.write("Selected(or generated) sigma and c\n")
             for item in inputs['atom_types']:
                 logfile.write("{:3}: sigma = {:4.3f}, c = {:4.3f}\n".format(item, dict_sigma[item], dict_c[item]))
-        #Save gdf(atomic weight result) and modifier function
 
     #Extract GDF from saved file
     elif isinstance(get_atomic_weights, six.string_types):
@@ -223,7 +210,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
     if comm.rank == 0:
         torch.save(atomic_weights_train, './atomic_weights')
 
-def _save_gdf_to_pt(atom_types, feature_list, gdf, gdf_scale):
+def _save_gdf_to_pt(atom_types, feature_list, gdf):
     for idx, name in enumerate(feature_list):
         load_data = torch.load(name)
         force_array = list()
@@ -231,7 +218,7 @@ def _save_gdf_to_pt(atom_types, feature_list, gdf, gdf_scale):
         type_bef = None
         for atype in atom_idx:
             if type_bef != atype:
-                force_array.append(gdf[atom_types[atype-1]][gdf[atom_types[atype-1]][:,1]==idx, 0] / gdf_scale[atom_types[atype-1]])
+                force_array.append(gdf[atom_types[atype-1]][gdf[atom_types[atype-1]][:,1]==idx, 0])
                 type_bef = atype
 
         force_array = np.concatenate(force_array, axis=0)

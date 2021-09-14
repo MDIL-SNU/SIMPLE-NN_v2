@@ -53,10 +53,6 @@ preprocess_default_inputs = \
                     'type'  : None,
                     'params': dict(),
                 },
-                'weight_modifier': {
-                    'type'  : None,
-                    'params': dict(),
-                }
             }
         }
 
@@ -306,18 +302,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
                             logfile.write(str(preprocessing['atomic_weights']['params'][atype])+'\n')
             elif preprocessing['atomic_weights']['type']  not in ['gdf', 'user', 'file']:
                 logfile.write("Warning : set atomic weight types approatly. preprocessing.atomic_weights.type : gdf/user/file\n")
-            if preprocessing['weight_modifier']['type']:
-                logfile.write(f"\nWeight modifier type    : {preprocessing['weight_modifier']['type']}\n")
-                if preprocessing['weight_modifier']['params']:
-                    logfile.write(f" ---parameters for weight modifier--- \n")
-                    for atype in preprocessing['weight_modifier']['params'].keys():
-                        logfile.write(f"{atype}  params  : ")
-                        for key, val in preprocessing['weight_modifier']['params'][atype].items():
-                            logfile.write(f" ({key} = {val}) ")
-                        logfile.write("\n")
-            elif preprocessing['weight_modifier']['type'] not in ['modified sigmoid']:
-                logfile.write("Warning : set weight modifier types approatly. Now support only preprocessing.weight_modifier.type : modified sigmoid\n")
- 
+
     #Check train model input is valid and write log
     elif run_type  == 'train_model':
         neural_network = inputs['neural_network']
@@ -380,6 +365,19 @@ def check_inputs(inputs, logfile, run_type, error=False):
             else:
                 if error: assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale factor file\n"
         logfile.write(f"use gdf in traning          : {neural_network['gdf']}\n")
+        if neural_network['gdf']:
+            if neural_network['weight_modifier']['type']:
+                logfile.write(f"\nWeight modifier type    : {neural_network['weight_modifier']['type']}\n")
+                if neural_network['weight_modifier']['params']:
+                    logfile.write(f" ---parameters for weight modifier--- \n")
+                    for atype in neural_network['weight_modifier']['params'].keys():
+                        logfile.write(f"{atype}  params  : ")
+                        for key, val in neural_network['weight_modifier']['params'][atype].items():
+                            logfile.write(f" ({key} = {val}) ")
+                        logfile.write("\n")
+            elif neural_network['weight_modifier']['type'] not in ['modified sigmoid']:
+                logfile.write("Warning : set weight modifier types approatly. Now support only neural_network.weight_modifier.type : modified sigmoid\n")
+ 
         logfile.write("\n  OPTIMIZATION\n")
         logfile.write(f"optimization method         : {neural_network['optimizer']['method']}\n")
         if neural_network['optimizer']['params']:

@@ -1,6 +1,9 @@
 import torch
+import numpy as np
+import os
 from functools import partial
 from glob import glob
+from simple_nn_v2.utils import modified_sigmoid
 
 
 torch.set_default_dtype(torch.float64)
@@ -160,14 +163,24 @@ def filename_collate(batch, atom_types, device, scale_factor=None, pca=None, pca
     tmp_dict['filename'] = tmp_list
     return tmp_dict
 
-def gdf_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_whiten_level=None, use_force=False, use_stress=False, load_data_to_gpu=False):
+def gdf_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_whiten_level=None, use_force=False, use_stress=False, load_data_to_gpu=False\
+    ,gdf_scaler=None):
+
     tmp_dict = my_collate(batch, atom_types, device, scale_factor, pca, pca_min_whiten_level, use_force, use_stress, load_data_to_gpu)
+    #if modifier != None and callable(modifier[item]):
+    #    atomic_weights_train[item][:,0] = modifier[item](atomic_weights_train[item][:,0])
     gdf_list = list()
     for item in batch:
-        gdf_list.append(item['gdf'])
+        gdf_list.append(gdf_scaler(item['gdf'], item['atom_idx']))
     gdf_list = torch.cat(gdf_list, axis=0)
     tmp_dict['gdf'] = gdf_list
     return tmp_dict
+#
+
+
+
+
+
 
 def _make_empty_dict(atom_types):
     dic = dict()
@@ -222,17 +235,23 @@ def delete_key_in_pt(filename, key):
         torch.save(pt_dict, f['filename'])
 
 #Load collate from train, valid dataset
-def _make_dataloader(inputs, dataset_list, scale_factor, pca, device, use_force, use_stress, valid, my_collate=my_collate):
+def _make_dataloader(inputs, dataset_list, scale_factor, pca, device, use_force, use_stress, valid, my_collate=my_collate, gdf=None):
     if len(dataset_list) == 0:
         data_loader = None
     else:
         batch_size = len(dataset_list) if inputs['neural_network']['full_batch'] else inputs['neural_network']['batch_size']
         shuffle = False if valid else inputs['neural_network']['shuffle_dataloader']
 
-        partial_collate = partial(my_collate, atom_types=inputs['atom_types'], device=device,\
+        if gdf == None:
+            partial_collate = partial(my_collate, atom_types=inputs['atom_types'], device=device,\
             scale_factor=scale_factor, pca=pca,  pca_min_whiten_level=pca['pca_whiten'] if inputs['neural_network']['pca'] else None,\
             use_force=use_force, use_stress=use_stress, load_data_to_gpu=inputs['neural_network']['load_data_to_gpu'])
-
+        else: #gdf case !!
+            #Unpacking gdf parameters
+            partial_collate = partial(my_collate, atom_types=inputs['atom_types'], device=device,\
+            scale_factor=scale_factor, pca=pca,  pca_min_whiten_level=pca['pca_whiten'] if inputs['neural_network']['pca'] else None,\
+            use_force=use_force, use_stress=use_stress, load_data_to_gpu=inputs['neural_network']['load_data_to_gpu'], gdf_scaler=gdf)
+      
         data_loader = torch.utils.data.DataLoader(\
             dataset_list, batch_size=batch_size, shuffle=shuffle, collate_fn=partial_collate,\
             num_workers=inputs['neural_network']['workers'], pin_memory=False)
@@ -261,10 +280,44 @@ def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf=False):
     }
 
     dataset_list = FilelistDataset(args[mode]['data_list'], device, inputs['neural_network']['load_data_to_gpu'])
+
     if mode == 'add_NNP_ref':
         dataset_list.save_filename()
+    #GDF part -> Modifier, Scale
     if gdf is True:
+        #Call atomic modifier if possible and scale gdf here!!
+        modifier = None
+        if inputs['neural_network']['weight_modifier']['type'] == 'modified sigmoid':
+            modifier = dict()
+            for item in inputs['atom_types']:
+                if item in inputs['neural_network']['weight_modifier']['params'].keys():
+                    modifier[inputs['atom_types'].index(item)+1] = \
+                    partial(modified_sigmoid, **inputs['neural_network']['weight_modifier']['params'][item])
+                else:
+                    modifier[inputs['atom_types'].index(item)+1] = None
+        gdf_scale = dict()
+        #Initial loop for mean value
+        atomic_weights = torch.load('./atomic_weights')
+        for item in inputs['atom_types']:
+            if modifier and callable(modifier):
+                atomic_weights[item][:,0] = modifier[item](atomic_weights[item][:,0])
+            gdf_scale[inputs['atom_types'].index(item)+1] = np.mean(atomic_weights[item][:,0])
+
+        #Create mapping function in gdf
+        def gdf_scaler(gdf, atom_idx):
+            for it, idx in enumerate(atom_idx):
+                if modifier != None and callable(modifier[idx]):
+                    gdf[it] = modifier[idx](gdf[it])/gdf_scale[idx]
+                else:
+                    gdf[it]/gdf_scale[idx]
+
+            return gdf
+
         mode = 'gdf_'+mode
-    data_loader = _make_dataloader(inputs, dataset_list, scale_factor, pca, device, args[mode]['use_force'], args[mode]['use_stress'], args[mode]['valid'], args[mode]['my_collate'])
+        #Set modifier parameters
+        data_loader = _make_dataloader(inputs, dataset_list, scale_factor, pca, device, args[mode]['use_force'], args[mode]['use_stress'], args[mode]['valid'], args[mode]['my_collate'], gdf=gdf_scaler)
+
+    else:
+        data_loader = _make_dataloader(inputs, dataset_list, scale_factor, pca, device, args[mode]['use_force'], args[mode]['use_stress'], args[mode]['valid'], args[mode]['my_collate'])
 
     return data_loader

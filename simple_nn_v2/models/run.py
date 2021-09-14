@@ -167,7 +167,7 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
             valid_epoch_result = progress_epoch(inputs, valid_loader, struct_labels, model, optimizer, criterion, epoch, dtype, device, non_block, valid=True, atomic_e=atomic_e)
             loss = valid_epoch_result['losses'].avg
         else:
-            valid_epochdd_result = None
+            valid_epoch_result = None
             loss = train_loss
 
         if loss < best_loss:
