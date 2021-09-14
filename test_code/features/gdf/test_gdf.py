@@ -66,7 +66,7 @@ def test():
     print('Scale : minstd')
     print(scale_meanstd)
 
-    _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list ,train_dir_list, scale_minmax ,comm )
+    _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list ,train_dir_list, scale_minmax ,comm)
 
     for fil in train_dir_list:
         if os.path.exists(fil):
@@ -84,7 +84,7 @@ def test():
     
     #Calculate GDF factor
     def get_gdf(distance_list , sigma=0.02, dim = 1):
-        out = list(map(lambda distance: np.exp(- (distance**2) / (2* sigma**2 * dim)), distance_list))
+        out = list(map(lambda distance:np.exp(-(distance**2)/(2*sigma**2*dim)), distance_list))
         out = np.sum(out) / len(distance_list)
         return 1/out
 
@@ -115,23 +115,9 @@ def test():
             print(fil + ' passed ')
     print('_________________________________________________')
 
-
-
-
-
     #Check GDF sigma = Auto Part
     inputs['preprocessing']['atomic_weights']['params']['sigma'] = 'Auto'
     _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list ,train_dir_list, scale_minmax, comm)
-
-   
-
-
-
-
-
-
-
-
 
 if __name__ == '__main__':
     test()

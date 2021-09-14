@@ -132,6 +132,12 @@ model_default_inputs = \
                 'scale' : True,
                 'gdf'   : False,
 
+                'weight_modifier': {
+                    'type'  : None,
+                    'params': dict(),
+                },
+ 
+
                 #RESUME parameters
                 'continue'      : None,
                 'start_epoch'   : 1,
@@ -241,7 +247,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
             if not os.path.exists(params[atype]):
                 raise Exception(f"In params {params[atype]:2} file not exist for {atype}")
             else:
-                logfile.write(f"{atype} parameters directory  : {params[atype]}\n")
+                logfile.write(f"{atype:2} parameters directory : {params[atype]}\n")
         logfile.write(f"reference data format   : {descriptor['refdata_format']}\n")
         logfile.write(f"compress outcar         : {descriptor['compress_outcar']}\n")
         if error: assert os.path.exists(descriptor['struct_list']) ,f"structure list to generate : {descriptor['struct_list']} not exists." 
@@ -264,7 +270,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
                 if not os.path.exists(params[atype]):
                     raise Exception(f"In params {params[atype]} file not exist for {atype}")
                 else:
-                    logfile.write(f"{atype} parameters directory : {params[atype]}\n")
+                    logfile.write(f"{atype:2} parameters directory : {params[atype]}\n")
         logfile.write(f"total data list         : {preprocessing['data_list']}\n")
         if error: assert os.path.exists(preprocessing['data_list']), f"data list : {preprocessing['data_list']} not exists."
         logfile.write(f"splited train list      : {preprocessing['train_list']}\n")
@@ -324,7 +330,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
                 if not os.path.exists(params[atype]):
                     raise Exception(f"In params {params[atype]} file not exist for {atype}")
                 else:
-                    logfile.write(f"{atype} parameters directory : {params[atype]}\n")
+                    logfile.write(f"{atype:2} parameters directory : {params[atype]}\n")
  
         logfile.write('  INPUT DATA\n')
         logfile.write(f"train                       : {neural_network['train']}\n")

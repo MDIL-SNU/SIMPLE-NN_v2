@@ -37,7 +37,8 @@ def run(input_file_name):
 
     if inputs['generate_features'] is True:
         comm.barrier()
-        check_inputs(inputs, logfile, 'generate')
+        if comm.rank == 0:
+            check_inputs(inputs, logfile, 'generate')
         generate = get_generate_function(logfile, descriptor_type=inputs['descriptor']['type'])
         comm.barrier()
         generate(inputs, logfile, comm)

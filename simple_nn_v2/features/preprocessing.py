@@ -195,7 +195,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
 
         comm.barrier()
         if comm.rank == 0:
-            #weight modifier calling
+            #weight modifier calling (if possible)
             gdf_scale = dict()
             for item in inputs['atom_types']:
                 if modifier != None and callable(modifier[item]):
@@ -213,19 +213,12 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
         atomic_weights_train = torch.load(get_atomic_weights)
         atomic_weights_valid = 'ones'
 
-    #Save to ./atomic_weignts  part  
-    if atomic_weights_train is None:
-        aw_tag = False
-    else:
-        aw_tag = True
         #grp.plot_gdfinv_density(atomic_weights_train, self.parent.inputs['atom_types'])
         # Plot histogram only if atomic weights just have been calculated.
         if comm.rank == 0 and callable(get_atomic_weights):
             grp.plot_gdfinv_density(atomic_weights_train, inputs['atom_types'], auto_c=dict_c)
 
-        atomic_weights_train['modifier'] = modifier
         atomic_weights_train['type'] = inputs['preprocessing']['atomic_weights']['type']
-        atomic_weights_train['aw_tag'] = aw_tag
 
     if comm.rank == 0:
         torch.save(atomic_weights_train, './atomic_weights')

@@ -14,4 +14,5 @@ descriptor:
   remain_pickle: True
   compress_outcar: True
   save_to_pickle: False
+  save_directory: ./test_input/utils/data
 

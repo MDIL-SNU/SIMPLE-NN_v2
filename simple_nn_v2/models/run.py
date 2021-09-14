@@ -4,9 +4,10 @@ import time, os
 from tqdm import tqdm
 from simple_nn_v2.models import neural_network, loss, data_handler, optimizers, logger
 
-
+#Main function that train neural network
 def train(inputs, logfile):
     start_time = time.time()
+
     if inputs['neural_network']['double_precision']:
         torch.set_default_dtype(torch.float64)
     device = _get_torch_device(inputs)
