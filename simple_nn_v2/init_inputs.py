@@ -9,7 +9,6 @@ default_inputs = {
     'generate_features': True,
     'preprocess': True,
     'train_model': True,
-    'atom_types': [],
     'random_seed': None,
     'params': dict(),
 }
@@ -45,7 +44,7 @@ preprocess_default_inputs = \
                 #Scale
                 'calc_scale': True,
                 'scale_type': 'minmax',
-                'scale_scale': 1.0,
+                'scale_width': 1.0,
                 'scale_rho' : None,
                 #GDF
                 'calc_gdf'  : False,
@@ -155,8 +154,9 @@ def initialize_inputs(input_file_name, logfile):
     else:
         descriptor_type = 'symmetry_function'
     params_type = input_yaml['params']
-
+               
     inputs = default_inputs
+
     for key in list(params_type.keys()):
         inputs['params'][key] = None
 
@@ -169,6 +169,15 @@ def initialize_inputs(input_file_name, logfile):
     inputs = _deep_update(inputs, input_yaml, warn_new_key=True, logfile=logfile)
     #Change .T. , t to boolean
     _to_boolean(inputs)
+    #add atom_types information
+    if 'atom_types' not in inputs.keys():  
+        inputs['atom_types'] = list(params_type.keys())
+    elif not set(inputs['atom_types']) == set(params_type.keys()):
+        inputs['atom_types'] = list(params_type.keys())
+        logfile.write("Warning: atom_types not met with params type. Overwritting to atom_types.\n")
+    else:
+        logfile.write("Warning: atom_types is depreciated. Use params only.\n")
+
 
     if len(inputs['atom_types']) == 0:
         raise KeyError
@@ -276,8 +285,8 @@ def check_inputs(inputs, logfile, run_type, error=False):
         logfile.write(f"\ncalculate scale factor: {preprocessing['calc_scale']}\n")
         if preprocessing['calc_scale']:
             logfile.write(f"scale type              : {preprocessing['scale_type']}\n")
-            logfile.write(f"scale scale             : {preprocessing['scale_scale']}\n")
-            if preprocessing['scale_type'] == 'uniform gas':
+            logfile.write(f"scale scale             : {preprocessing['scale_width']}\n")
+            if preprocessing['scale_type'] == 'uniform_gas':
                 logfile.write(f"scale rho value         : {preprocessing['scale_rho']}\n")
         logfile.write(f"\ncalculate pca matrix  : {preprocessing['calc_pca']}\n")
         if preprocessing['calc_pca']:
