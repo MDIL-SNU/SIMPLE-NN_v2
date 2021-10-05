@@ -1,0 +1,32 @@
+SIMPLE_NN v20.2 (unknown)
+----------------------------------------------------------------------------------------------
+                   _____ _ _      _ _ ___  _     _____       __    _ __    _                  
+                  / ____| | \    / | '__ \| |   |  ___|     |  \  | |  \  | |                 
+                 | |___ | |  \  /  | |__) | |   | |___  ___ |   \ | |   \ | |                 
+                  \___ \| |   \/   |  ___/| |   |  ___||___|| |\ \| | |\ \| |                 
+                  ____| | | |\  /| | |    | |___| |___      | | \   | | \   |                 
+                 |_____/|_|_| \/ |_|_|    |_____|_____|     |_|  \__|_|  \__|                 
+                                                                     ver2.0.0                 
+----------------------------------------------------------------------------------------------
+
+
+----------------------------------------------------------------------------------------------
+
+Input for descriptor
+Descriptor type         : symmetry_function
+Si parameters directory : params_Si
+O  parameters directory : params_O
+reference data format   : vasp-out
+compress outcar         : True
+structure list          : ./structure_list
+save directory          : ./data
+save output list        : ./total_list
+save file absolute path : False
+read force from data    : True
+read stress from data   : False
+save dx as sparse tensor: True
+
+----------------------------------------------------------------------------------------------
+../../OUTCAR_SiO2_compressed ::10 ~ ./data/data500.pt
+generate done. 166.14116644859314 seconds elapsed
+total wall time 166.53550839424133 seconds

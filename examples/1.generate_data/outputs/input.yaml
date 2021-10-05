@@ -1,0 +1,9 @@
+generate_features: true
+preprocess: false
+train_model: false
+params:
+    Si: params_Si
+    O:  params_O
+descriptor:
+    type: 'symmetry_function'
+    absolute_path: False

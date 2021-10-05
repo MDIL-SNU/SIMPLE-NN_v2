@@ -1,0 +1,14 @@
+generate_features: false
+preprocess: false
+train_model: true
+atom_types:
+ - Si
+ - O
+
+neural_network:
+  method: 'Adam'
+  nodes: '30-30'
+  batch_size: 10
+  train: false
+  test: true
+  continue: 'checkpoint.tar'

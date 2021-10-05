@@ -3,9 +3,6 @@ preprocess: False
 train_model: False
 random_seed: False
 
-atom_types:
-- 'species1'
-- 'species2'
 params:
     species1:   'your/dir/to/parameter/species1'
     species2:   'your/dir/to/parameter/species2'

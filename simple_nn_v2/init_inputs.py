@@ -15,18 +15,18 @@ default_inputs = {
 symmetry_function_descriptor_default_inputs = \
         {'descriptor':
             {
-                'type'          : 'symmetry_function',
-                'struct_list'   : './structure_list',
-                'save_list'     : './total_list',
-                'save_directory': './data',
+                'type'          :   'symmetry_function',
+                'struct_list'   :   './structure_list',
+                'save_list'     :   './total_list',
+                'save_directory':   './data',
                 #data format
-                'refdata_format': 'vasp-out',
-                'compress_outcar': True,
-                'read_force'    : True,
-                'read_stress'   : False,
-                'dx_save_sparse': True,
-                'add_atom_idx'  : True,
-                'absolute_path' : True,
+                'refdata_format':   'vasp-out',
+                'compress_outcar':  True,
+                'read_force'    :   True,
+                'read_stress'   :   False,
+                'dx_save_sparse':   True,
+                'add_atom_idx'  :   True,
+                'absolute_path' :   True,
             }
         }
 preprocess_default_inputs = \
@@ -91,7 +91,6 @@ model_default_inputs = \
                 },
                 'acti_func' : 'sigmoid',
                 'dropout'   : False,
-
                 # Optimization related
                 'batch_size'    : 20,
                 'full_batch'    : False,
@@ -105,36 +104,32 @@ model_default_inputs = \
                     'method': 'Adam',
                     'params':
                         None
-                    },
+                },
                 'lr_decay'      : None,
                 'regularization': 1e-6, #L2 regularization
-
                 # Loss function related
                 'E_loss_type'   : 0,
                 'F_loss_type'   : 1,
-
                 # Logging & saving related (Epoch)
                 'show_interval' : 10,
-                'checkpoint_interval': False,
-                'energy_criteria'   : None,
-                'force_criteria'    : None,
-                'stress_criteria'   : None,
-                'break_max'     : 10,
+                'checkpoint_interval':  False,
+                'energy_criteria'   :   None,
+                'force_criteria'    :   None,
+                'stress_criteria'   :   None,
+                'break_max'         :   10,
                 'print_structure_rmse': False,
-                'accurate_train_rmse': True,
-
+                'accurate_train_rmse':  True,
+                #Using preprocessing results
                 'pca'   : True,
                 'scale' : True,
                 'gdf'   : False,
-
+                #GDF weight modifier
                 'weight_modifier': {
                     'type'  : None,
                     'params': dict(),
                 },
- 
-
                 #RESUME parameters
-                'continue'      : None,
+                'continue'      : None, # checkpoint file name  or 'weights'
                 'start_epoch'   : 1,
                 'clear_prev_status'     : False,
                 'clear_prev_optimizer'  : False,
@@ -241,7 +236,7 @@ def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, p
 def check_inputs(inputs, logfile, run_type, error=False):
     atom_types = inputs['atom_types']
     #Check input valid and write log
-    logfile.write("\n---------------------------------------------------------------\n")
+    logfile.write("\n----------------------------------------------------------------------------------------------\n")
     if run_type  == 'generate':
         logfile.write("\nInput for descriptor\n")
         descriptor = inputs['descriptor']
@@ -452,7 +447,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
             logfile.write(f"Use GPU device number     : {neural_network['cuda_number']}\n")
             if error: assert neural_network['cuda_number'] <= torch.cuda.device_count()-1,\
              f"Invalid GPU device number available GPU # {torch.cuda.device_count()-1} , set number {neural_network['cuda_number']} "
-    logfile.write('\n---------------------------------------------------------------\n')
+    logfile.write('\n----------------------------------------------------------------------------------------------\n')
     logfile.flush()
 
 def _to_boolean(inputs):

@@ -1,13 +1,8 @@
 generate_features: False
 preprocess: False
 train_model: True
-#random_seed: False
 train_replica: False
 
-atom_types:
-- Ge
-- Sb
-- Te
 params:
     Ge: params_Ge
     Sb: params_Sb
