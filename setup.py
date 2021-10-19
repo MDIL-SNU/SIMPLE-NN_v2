@@ -37,8 +37,12 @@ install_requires = [
     'tqdm',
     'braceexpand',
     'matplotlib',
-    'ase>=3.10.0,<3.18.>=3.19.0,<3.21.0,>=3.22.0'
 ]
+
+if sys.version_info < (3,6):
+    install_requires.append('ase<3.18.0')
+else:
+    install_requires.append('ase>=3.19.0')
 
 setup_requires = [
     'cffi>=1.0.0',
@@ -65,7 +69,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/MDIL-SNU/SIMPLE-NN', # temperary url 
-    author='Kyuhyun Lee, Dongsun Yoo, Seungwoo Hwang, Sangmin Oh',
+    author='Kyuhyun Lee, Dongsun Yoo, Jisu Jung, Seungwoo Hwang, Sangmin Oh',
     author_email='khlee1992@naver.com',
     license='GPL-3.0',
     classifiers=[   # Optional

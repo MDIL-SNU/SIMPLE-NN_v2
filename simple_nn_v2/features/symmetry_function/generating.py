@@ -49,7 +49,7 @@ def generate(inputs, logfile, comm):
 
     # structure_tag_idx(int list): list of structure tag index of each structure file    ex) [1, 2, 2]  
     structure_tags, structure_weights, structure_file_list, structure_slicing_list, structure_tag_idx = \
-                                data_generator.parse_structure_list(logfile, structure_list=structure_list, comm=comm)
+                                data_generator.parse_structure_list(logfile, structure_list, comm=comm)
 
     symf_params_set = utils_symf._parse_symmetry_function_parameters(inputs, atom_types)
 
