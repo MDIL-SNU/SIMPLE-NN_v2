@@ -65,7 +65,7 @@ def generate(inputs, logfile, comm):
             # atom_type_idx(int list): list of type index for each atoms(start from 1)      ex) [1,1,2,2,2,2]
             # type_num(int dic): number of atoms for each types                             ex) {'Si': 2, 'O': 4}
             # type_atom_idx(int list dic): list of atoms index for each atom types     ex) {'Si': [0,1], 'O': [2,3,4,5]}
-            cell, cart, scale = _get_structure_coordination_info(structure)
+            cell, scale, cart = _get_structure_coordination_info(structure)
             atom_num, atom_type_idx, atoms_per_type, atom_idx_per_type = _get_atom_types_info(structure, atom_types)
 
             # Convert values into C type data
@@ -133,10 +133,7 @@ def generate(inputs, logfile, comm):
                 data_list_fil.write("{}:{}\n".format(tag_idx, tmp_filename))
                 data_idx += 1
                 tmp_endfile = tmp_filename
-
-        comm.barrier()
-        data_idx = comm.bcast(data_idx)
-        logfile.write(" ~ {}/data{}.pt\n".format(inputs['descriptor']['save_directory'], data_idx-1))
+                logfile.write(" ~ {}/data{}.pt\n".format(inputs['descriptor']['save_directory'], data_idx-1))
 
     if comm.rank == 0:
         data_list_fil.close()
@@ -148,10 +145,10 @@ def generate(inputs, logfile, comm):
 # Return variables related to structure information (atom_type_idx, type_num, type_atom_idx)
 def _get_structure_coordination_info(structure):
     cell = np.copy(structure.cell, order='C')
-    cart = np.copy(structure.get_positions(wrap=True), order='C')
     scale = np.copy(structure.get_scaled_positions(), order='C')
+    cart = np.matmul(scale, cell)
 
-    return cell, cart, scale
+    return cell, scale, cart
 
 def _get_atom_types_info(structure, atom_types):
     # if atom indexs are sorted by atom type,

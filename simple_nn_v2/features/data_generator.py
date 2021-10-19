@@ -138,7 +138,8 @@ def load_structures(inputs, structure_file, structure_slicing, logfile, comm):
     else:
         index = int(structure_slicing)
 
-    logfile.write(f"{file_path} {index}")
+    if comm.rank == 0:
+        logfile.write(f"{file_path} {index}")
 
     if inputs['descriptor']['refdata_format'] == 'vasp-out':
         if inputs['descriptor']['compress_outcar']:

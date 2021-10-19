@@ -36,7 +36,9 @@ preprocessing:
     calc_scale:         True
     scale_type:         'minmax'
     scale_width:        1.0
-    scale_rho:          1
+    scale_rho:
+        species1:       0.03
+        species2:       0.03
     #GDF
     calc_gdf:           False
     atomic_weights: 

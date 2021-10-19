@@ -297,7 +297,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
                 if preprocessing['atomic_weights']['params']:
                     logfile.write(f" ---parameters for atomic weights--- \n")
                     for atype in preprocessing['atomic_weights']['params'].keys():
-                        logfile.write(f"{atype}  params  : ")
+                        logfile.write(f"{atype:2}  params  : ")
                         if isinstance(preprocessing['atomic_weights']['params'][atype],dict):
                             for key, val in preprocessing['atomic_weights']['params'][atype].items():
                                 logfile.write(f"\n ({key} = {val}) ")
@@ -324,10 +324,10 @@ def check_inputs(inputs, logfile, run_type, error=False):
         logfile.write('  INPUT DATA\n')
         logfile.write(f"train                       : {neural_network['train']}\n")
         if inputs['preprocess'] is False and neural_network['train']:
-            logfile.write(f"train list          : {neural_network['train_list']}\n")
+            logfile.write(f"train list                  : {neural_network['train_list']}\n")
             if error: assert os.path.exists(neural_network['train_list']), f"No train_list file for training set :{neural_network['train_list']}"
             if os.path.exists(neural_network['valid_list']):
-                logfile.write(f"valid list          : {neural_network['valid_list']}\n")
+                logfile.write(f"valid list                  : {neural_network['valid_list']}\n")
         logfile.write(f"test                        : {neural_network['test']}\n")
         if neural_network['test']:
             logfile.write(f"test_list                   : {neural_network['test_list']}\n")
@@ -344,14 +344,14 @@ def check_inputs(inputs, logfile, run_type, error=False):
             if error: assert node.isdigit(), f"In valid node information nodes : {neural_network['nodes']}"
         logfile.write(f"use force in traning        : {neural_network['use_force']}\n")
         logfile.write(f"use stress in training      : {neural_network['use_stress']}\n")
-        logfile.write(f"double precision     : {neural_network['double_precision']}\n")
+        logfile.write(f"double precision            : {neural_network['double_precision']}\n")
         logfile.write(f"activation function type    : {neural_network['acti_func']}\n")
         logfile.write(f"use dropout network         : {neural_network['dropout']}\n")
-        logfile.write(f"weight initializer     : {neural_network['weight_initializer']['type']}\n")
+        logfile.write(f"weight initializer          : {neural_network['weight_initializer']['type']}\n")
         use_param = False
         for keys in neural_network['weight_initializer']['params'].keys():
             if neural_network['weight_initializer']['params'][keys]:
-                logfile.write(f"params.{keys}     : {neural_network['weight_initializer']['params'][keys]}\n")
+                logfile.write(f"params.{keys}               : {neural_network['weight_initializer']['params'][keys]}\n")
                 use_param = True
         if not use_param:
             logfile.write("No specific params for weight initializer\n")
@@ -375,7 +375,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
                 if neural_network['weight_modifier']['params']:
                     logfile.write(f" ---parameters for weight modifier--- \n")
                     for atype in neural_network['weight_modifier']['params'].keys():
-                        logfile.write(f"{atype}  params  : ")
+                        logfile.write(f"{atype:2}  params  : ")
                         for key, val in neural_network['weight_modifier']['params'][atype].items():
                             logfile.write(f" ({key} = {val}) ")
                         logfile.write("\n")
