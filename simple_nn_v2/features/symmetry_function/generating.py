@@ -132,14 +132,15 @@ def generate(inputs, logfile, comm):
                 tmp_filename = data_generator.save_to_datafile(inputs, result, data_idx, logfile)
                 data_list_fil.write("{}:{}\n".format(tag_idx, tmp_filename))
                 data_idx += 1
-                tmp_endfile = tmp_filename
-                logfile.write(" ~ {}/data{}.pt\n".format(inputs['descriptor']['save_directory'], data_idx-1))
+
+        if comm.rank == 0:
+            logfile.write(" ~ {}/data{}.pt\n".format(inputs['descriptor']['save_directory'], data_idx-1))
 
     if comm.rank == 0:
         data_list_fil.close()
         if inputs['descriptor']['compress_outcar']:
             os.remove('./tmp_comp_OUTCAR')
-        logfile.write(f"generate done. {time.time()-start_time:10} seconds elapsed\n")
+        logfile.write(f"Elapsed time in generating: {time.time()-start_time:10} s\n")
 
 # Extract structure information from structure (atom numbers, cart, scale, cell)
 # Return variables related to structure information (atom_type_idx, type_num, type_atom_idx)

@@ -240,24 +240,24 @@ def check_inputs(inputs, logfile, run_type, error=False):
     if run_type  == 'generate':
         logfile.write("\nInput for descriptor\n")
         descriptor = inputs['descriptor']
-        logfile.write(f"Descriptor type         : {descriptor['type']}\n")
+        logfile.write(f"Descriptor type             : {descriptor['type']}\n")
         params = inputs['params']
         if error: assert set(atom_types)  == set(params.keys()), f"atom_types not consistant with params : {set(atom_types).symmetric_difference(params.keys())} "
         for atype in atom_types:
             if not os.path.exists(params[atype]):
                 raise Exception(f"In params {params[atype]:2} file not exist for {atype}")
             else:
-                logfile.write(f"{atype:2} parameters directory : {params[atype]}\n")
-        logfile.write(f"reference data format   : {descriptor['refdata_format']}\n")
-        logfile.write(f"compress outcar         : {descriptor['compress_outcar']}\n")
+                logfile.write(f"{atype:2} parameters directory     : {params[atype]}\n")
+        logfile.write(f"reference data format       : {descriptor['refdata_format']}\n")
+        logfile.write(f"compress outcar             : {descriptor['compress_outcar']}\n")
         if error: assert os.path.exists(descriptor['struct_list']) ,f"structure list to generate : {descriptor['struct_list']} not exists." 
-        logfile.write(f"structure list          : {descriptor['struct_list']}\n")
-        logfile.write(f"save directory          : {descriptor['save_directory']}\n")
-        logfile.write(f"save output list        : {descriptor['save_list']}\n")
-        logfile.write(f"save file absolute path : {descriptor['absolute_path']}\n")
-        logfile.write(f"read force from data    : {descriptor['read_force']}\n")
-        logfile.write(f"read stress from data   : {descriptor['read_stress']}\n")
-        logfile.write(f"save dx as sparse tensor: {descriptor['dx_save_sparse']}\n")
+        logfile.write(f"structure list              : {descriptor['struct_list']}\n")
+        logfile.write(f"save directory              : {descriptor['save_directory']}\n")
+        logfile.write(f"save output list            : {descriptor['save_list']}\n")
+        logfile.write(f"save file absolute path     : {descriptor['absolute_path']}\n")
+        logfile.write(f"read force from data        : {descriptor['read_force']}\n")
+        logfile.write(f"read stress from data       : {descriptor['read_stress']}\n")
+        logfile.write(f"save dx as sparse tensor    : {descriptor['dx_save_sparse']}\n")
     #Check prerpcess input is valid and write log
     elif run_type  == 'preprocess':
         preprocessing = inputs['preprocessing']
@@ -270,27 +270,28 @@ def check_inputs(inputs, logfile, run_type, error=False):
                 if not os.path.exists(params[atype]):
                     raise Exception(f"In params {params[atype]} file not exist for {atype}")
                 else:
-                    logfile.write(f"{atype:2} parameters directory : {params[atype]}\n")
-        logfile.write(f"total data list         : {preprocessing['data_list']}\n")
+                    logfile.write(f"{atype:2} parameters directory     : {params[atype]}\n")
+        logfile.write(f"total data list             : {preprocessing['data_list']}\n")
         if error: assert os.path.exists(preprocessing['data_list']), f"data list : {preprocessing['data_list']} not exists."
-        logfile.write(f"splited train list      : {preprocessing['train_list']}\n")
-        logfile.write(f"splited valid list      : {preprocessing['train_list']}\n")
-        logfile.write(f"valid rate              : {preprocessing['valid_rate']}\n")
-        logfile.write(f"shuffle train/valid list: {preprocessing['shuffle']}\n")
-        logfile.write(f"\ncalculate scale factor: {preprocessing['calc_scale']}\n")
+        logfile.write(f"splited train list          : {preprocessing['train_list']}\n")
+        logfile.write(f"splited valid list          : {preprocessing['train_list']}\n")
+        logfile.write(f"valid rate                  : {preprocessing['valid_rate']}\n")
+        logfile.write(f"shuffle train/valid list    : {preprocessing['shuffle']}\n")
+        logfile.write(f"\ncalculate scale factor      : {preprocessing['calc_scale']}\n")
         if preprocessing['calc_scale']:
-            logfile.write(f"scale type              : {preprocessing['scale_type']}\n")
-            logfile.write(f"scale scale             : {preprocessing['scale_width']}\n")
+            logfile.write(f"scale type                  : {preprocessing['scale_type']}\n")
+            logfile.write(f"scale width                 : {preprocessing['scale_width']}\n")
             if preprocessing['scale_type'] == 'uniform_gas':
-                logfile.write(f"scale rho value         : {preprocessing['scale_rho']}\n")
-        logfile.write(f"\ncalculate pca matrix  : {preprocessing['calc_pca']}\n")
+                for key, value in preprocessing['scale_rho'].items():
+                    logfile.write(f"scale rho for {key:2}            : {value}\n")
+        logfile.write(f"\ncalculate pca matrix        : {preprocessing['calc_pca']}\n")
         if preprocessing['calc_pca']:
             if error: assert preprocessing['calc_scale'] is not False,\
              f"calculating PCA matrix must need scale factor. use calc_factor : true or filename to load"
-            logfile.write(f"use pca whitening       : {preprocessing['pca_whiten']}\n")
+            logfile.write(f"use pca whitening           : {preprocessing['pca_whiten']}\n")
             if preprocessing['pca_whiten']:
-                logfile.write(f"pca min whitening level : {preprocessing['pca_min_whiten_level']}\n")
-        logfile.write(f"\ncalc GDF for atomic weight: {preprocessing['calc_gdf']}\n")
+                logfile.write(f"pca min whitening level     : {preprocessing['pca_min_whiten_level']}\n")
+        logfile.write(f"\ncalc GDF for atomic weight  : {preprocessing['calc_gdf']}\n")
         if preprocessing['calc_gdf']:
             if preprocessing['atomic_weights']['type']:
                 logfile.write(f"atomic_weights type     : {preprocessing['atomic_weights']['type']}\n")
@@ -319,7 +320,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
                 if not os.path.exists(params[atype]):
                     raise Exception(f"In params {params[atype]} file not exist for {atype}")
                 else:
-                    logfile.write(f"{atype:2} parameters directory : {params[atype]}\n")
+                    logfile.write(f"{atype:2} parameters directory     : {params[atype]}\n")
  
         logfile.write('  INPUT DATA\n')
         logfile.write(f"train                       : {neural_network['train']}\n")

@@ -13,7 +13,7 @@ descriptor:
     struct_list:        './structure_list'
     save_list:          './total_list'
     refdata_format:     'vasp-out'
-    compress_outcar:    False
+    compress_outcar:    True
     save_directory:     './data'
     read_force:         True
     read_stress:        True 
@@ -70,7 +70,7 @@ neural_network:
     workers:            0 
     # Network related
     nodes:              '30-30'
-    regularization:     1e-6 #L2 regularization
+    regularization:     1.0e-6 #L2 regularization
     use_force:          True
     use_stress:         True
     double_precision:   True
@@ -84,7 +84,7 @@ neural_network:
     total_epoch:        5
     learning_rate:      0.0001
     lr_decay:           0.9999
-    stress_coeff:       1e-6
+    stress_coeff:       1.0e-6
     force_coeff:        0.1 
     energy_coeff:       1.
     loss_scale:         1.
