@@ -36,13 +36,9 @@ install_requires = [
     'psutil',
     'tqdm',
     'braceexpand',
-    'matplotlib',
+    'matplotlib>=3.1.0,<3.4.0',
+    'ase>=3.22.0',
 ]
-
-if sys.version_info < (3,6):
-    install_requires.append('ase<3.18.0')
-else:
-    install_requires.append('ase>=3.19.0')
 
 setup_requires = [
     'cffi>=1.0.0',

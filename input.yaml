@@ -10,11 +10,11 @@ params:
 #Input for generate fearues
 descriptor: 
     type:               'symmetry_function'
-    struct_list:        './structure_list'
-    save_list:          './total_list'
+    struct_list:        'structure_list'
+    save_list:          'total_list'
     refdata_format:     'vasp-out'
     compress_outcar:    True
-    save_directory:     './data'
+    save_directory:     'data'
     read_force:         True
     read_stress:        True 
     dx_save_sparse:     False
@@ -23,9 +23,9 @@ descriptor:
 
 #Input for preprocess
 preprocessing: 
-    data_list:          './total_list'
-    train_list:         './train_list'
-    valid_list:         './valid_list' 
+    data_list:          'total_list'
+    train_list:         'train_list'
+    valid_list:         'valid_list' 
     shuffle:            True
     valid_rate:         0.1
     #PCA parameters
@@ -58,10 +58,10 @@ preprocessing:
                 c:  0.01
 #Input for traning
 neural_network:
-    train_list:         './train_list'
-    valid_list:         './valid_list' 
-    test_list:          './test_list'
-    ref_list:           './ref_list'
+    train_list:         'train_list'
+    valid_list:         'valid_list' 
+    test_list:          'test_list'
+    ref_list:           'ref_list'
     train:              True
     test:               False
     add_NNP_ref:        False
