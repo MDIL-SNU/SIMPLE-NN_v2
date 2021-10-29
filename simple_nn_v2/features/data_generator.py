@@ -12,7 +12,7 @@ import torch
     save_to_datafile(inputs, data, data_idx, logfile): save results to pt files
 """
 
-def parse_structure_list(logfile, structure_list='./structure_list',comm=None):
+def parse_structure_list(logfile, structure_list, comm):
     """ Parsing "structure_list" file (default="./structure_list")
 
     ex) "structure_list" file format:
@@ -62,11 +62,11 @@ def parse_structure_list(logfile, structure_list='./structure_list',comm=None):
 
                 if weight < 0:
                     err = "Structure weight must be greater than or equal to zero."
-                    if comm and comm.rank == 0:
+                    if comm.rank == 0:
                         logfile.write("Error: {:}\n".format(err))
                     raise ValueError(err)
                 elif np.isclose(weight, 0):
-                    if comm and comm.rank == 0:
+                    if comm.rank == 0:
                         logfile.write("Warning: Structure weight for '{:}' is set to zero.\n".format(tag))
 
                 # If the same structure tags are given multiple times with different weights,
@@ -77,7 +77,7 @@ def parse_structure_list(logfile, structure_list='./structure_list',comm=None):
                     structure_weights.append(weight)
                 else:
                     existent_weight = structure_weights[structure_tags.index(tag)]
-                    if comm and comm.rank == 0:
+                    if comm.rank == 0:
                         if not np.isclose(existent_weight - weight, 0):
                             logfile.write("Warning: Structure weight for '{:}' is set to {:} (previously set to {:}). New value will be ignored\n"\
                                                     .format(tag, weight, existent_weight))
@@ -117,7 +117,7 @@ def _get_tag_and_weight(text):
 
     return tag, weight
 
-def load_structures(inputs, structure_file, structure_slicing, logfile,comm=None):
+def load_structures(inputs, structure_file, structure_slicing, logfile, comm):
     """ Read structure file and load structures using ase.io.read() method
 
     Handle inputs['refdata_format']: 'vasp-out' vs else
@@ -138,11 +138,12 @@ def load_structures(inputs, structure_file, structure_slicing, logfile,comm=None
     else:
         index = int(structure_slicing)
 
-    logfile.write(f"{file_path} {index}")
+    if comm.rank == 0:
+        logfile.write(f"{file_path} {index}")
 
     if inputs['descriptor']['refdata_format'] == 'vasp-out':
         if inputs['descriptor']['compress_outcar']:
-            if comm and comm.rank == 0:
+            if comm.rank == 0:
                 file_path = compress_outcar(structure_file)
 
         if ase.__version__ >= '3.18.0':
@@ -150,7 +151,7 @@ def load_structures(inputs, structure_file, structure_slicing, logfile,comm=None
         else:
             structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'], force_consistent=True, parallel=False)
     else:
-        if comm and comm.rank == 0:
+        if comm.rank == 0:
             logfile.write("Warning: Structure format is not OUTCAR(['refdata_format'] : {:}). Unexpected error can occur.\n"\
                                                     .format(inputs['descriptor']['refdata_format']))
         structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'])

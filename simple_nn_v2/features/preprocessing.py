@@ -49,7 +49,7 @@ def preprocess(inputs, logfile, comm):
             _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list, train_dir_list, scale, comm)
         logfile.flush()
     if comm.rank == 0:
-        logfile.write(f"preproces done. {time.time()-start_time:10} seconds elapsed.\n")
+        logfile.write(f"Elapsed Time in preprocessing: {time.time()-start_time:10} s.\n")
 
 # Split train/valid data names that saved in data_list
 def _split_train_list_and_valid_list(inputs, data_list='./total_list', append=False):

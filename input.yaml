@@ -10,11 +10,11 @@ params:
 #Input for generate fearues
 descriptor: 
     type:               'symmetry_function'
-    struct_list:        './structure_list'
-    save_list:          './total_list'
+    struct_list:        'structure_list'
+    save_list:          'total_list'
     refdata_format:     'vasp-out'
-    compress_outcar:    False
-    save_directory:     './data'
+    compress_outcar:    True
+    save_directory:     'data'
     read_force:         True
     read_stress:        True 
     dx_save_sparse:     False
@@ -23,9 +23,9 @@ descriptor:
 
 #Input for preprocess
 preprocessing: 
-    data_list:          './total_list'
-    train_list:         './train_list'
-    valid_list:         './valid_list' 
+    data_list:          'total_list'
+    train_list:         'train_list'
+    valid_list:         'valid_list' 
     shuffle:            True
     valid_rate:         0.1
     #PCA parameters
@@ -36,7 +36,9 @@ preprocessing:
     calc_scale:         True
     scale_type:         'minmax'
     scale_width:        1.0
-    scale_rho:          1
+    scale_rho:
+        species1:       0.03
+        species2:       0.03
     #GDF
     calc_gdf:           False
     atomic_weights: 
@@ -56,10 +58,10 @@ preprocessing:
                 c:  0.01
 #Input for traning
 neural_network:
-    train_list:         './train_list'
-    valid_list:         './valid_list' 
-    test_list:          './test_list'
-    ref_list:           './ref_list'
+    train_list:         'train_list'
+    valid_list:         'valid_list' 
+    test_list:          'test_list'
+    ref_list:           'ref_list'
     train:              True
     test:               False
     add_NNP_ref:        False
@@ -68,7 +70,7 @@ neural_network:
     workers:            0 
     # Network related
     nodes:              '30-30'
-    regularization:     1e-6 #L2 regularization
+    regularization:     1.0e-6 #L2 regularization
     use_force:          True
     use_stress:         True
     double_precision:   True
@@ -82,7 +84,7 @@ neural_network:
     total_epoch:        5
     learning_rate:      0.0001
     lr_decay:           0.9999
-    stress_coeff:       1e-6
+    stress_coeff:       1.0e-6
     force_coeff:        0.1 
     energy_coeff:       1.
     loss_scale:         1.
