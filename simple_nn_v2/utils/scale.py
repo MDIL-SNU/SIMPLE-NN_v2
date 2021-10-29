@@ -24,7 +24,7 @@ def meanstd(inputs, feature_list, atom_type):
     return mean, std_dev
 
 def uniform_gas(inputs, feature_list, atom_type):
-    scale_width = inputs['preprocessing']['scale_witdh']
+    scale_width = inputs['preprocessing']['scale_width']
     atom_types = inputs['atom_types']
     scale_rho = inputs['preprocessing']['scale_rho']
     params_set = dict()
