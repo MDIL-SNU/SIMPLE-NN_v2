@@ -1,0 +1,16 @@
+generate_features: false
+preprocess: false
+train_model: true
+
+params:
+    Si: params_Si
+    O:  params_O
+
+
+
+neural_network:
+  nodes: '30-30'
+  batch_size: 10
+  train: false
+  test: true
+  continue: 'checkpoint.tar'

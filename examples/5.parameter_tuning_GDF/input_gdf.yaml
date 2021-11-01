@@ -1,0 +1,17 @@
+generate_features: false
+preprocess: true
+train_model: false
+params:
+    Si: params_Si
+    O:  params_O
+
+preprocessing:
+    valid_rate: 0.1
+    calc_scale: True
+    calc_pca: True
+    calc_gdf: True
+    atomic_weights:
+      type: gdf
+      params:
+        sigma: Auto
+ 

@@ -5,7 +5,7 @@ params:
     Si: params_Si
     O:  params_O
 
-preprocess:
-    valid_rate: 0.0
+preprocessing:
+    valid_rate: 0.1
     calc_scale: True
     calc_pca: True
