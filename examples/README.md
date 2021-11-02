@@ -1,4 +1,4 @@
-SIMPLE_NN_V2 EAMPLES
+SIMPLE_NN_V2 EXAMPLES
 
 This doc explain how run simple_nn_v2 example code for SiO2
 
