@@ -14,7 +14,7 @@ You need to install Tensorflow and mpi4py to use SIMPLE-NN
 
 install Pytorch: https://pytorch.org/
 
-# *Importnts for pytorch*
+# *Importants for pytorch*
 
 To use CUDA in model traning, you need to check CUDA version and match pytorch version to it.
 
