@@ -1,2 +1,129 @@
 # SIMPLE-NN_v2
-Refactored version of SIMPLE-NN with pytorch
+SIMPLE-NN_v2(SNU Interatomic Machine-learning PotentiaL packagE – version Neural Network)
+
+If you use SIMPLE-NN_v2, please cite this article: 
+
+K. Lee, D. Yoo, W. Jeong, S. Han, SIMPLE-NN: An efficient package for training and executing neural-network interatomic potentials, *Computer Physics Communications* (2019), https://doi.org/10.1016/j.cpc.2019.04.014.
+
+Here do we describe minimal instruction to run the example of SIMPLE-NN
+If you want more information such as tuning parameters, please visit our online manual(https://simple-nn.readthedocs.io)
+
+## Installation
+SIMPLE-NN use Pytorch and mpi4py(optional).
+You need to install Tensorflow and mpi4py to use SIMPLE-NN
+
+install Pytorch: https://pytorch.org/
+
+# *Importnts for pytorch*
+
+To use CUDA in model traning, you need to check CUDA version and match pytorch version to it.
+
+For example, in your system CUDA version is 11.3 and installing pytorch 1.10.0 version,  
+```python
+pip3 install torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+```
+Check detailes in here [https://pytorch.org/get-started/locally/]
+
+If you want to know pytorch with CUDA is well installed, try 
+```python
+import torch.cuda
+torch.cuda.is_available()
+#True if pytorch well installed
+```
+
+install mpi4py:
+```
+pip install mpi4py
+```
+
+### From github
+```
+git clone https://github.com/MDIL-SNU/SIMPLE-NN_v2.git
+cd SIMPLE-NN_v2
+python setup.py install
+```
+
+### Install LAMMPS' module
+Currently, we support the module for symmetry_function - Neural_network model.
+Copy the source code to LAMMPS src directory.
+```
+cp /directory/of/simple-nn/features/symmetry_function/pair_nn.* /directory/of/lammps/src/
+cp /directory/of/simple-nn/features/symmetry_function/symmetry_function.h /directory/of/lammps/src/
+```
+And compile LAMMPS code.
+Only LAMMPS whose version is `29Oct2020` or later is supported.
+
+## Usage
+To use SIMPLE-NN_v2, 3 types of files (input.yaml, params_XX, structure_list) are required.
+
+### input.yaml
+Parameter list to control SIMPLE-NN code is listed in input.yaml. 
+The simplest form of input.yaml is described below:
+```YAML
+# input.yaml
+generate_features: true
+preprocess: true
+train_model: true
+params:
+    Si: params_Si
+    O: params_O
+
+
+symmetry_function:
+    type: symmetry_function
+# GDF setting
+  #atomic_weights:
+  #  type: gdf
+  
+neural_network:
+  optimizer:
+    method: Adam
+  nodes: 30-30
+```
+
+### params_XX
+params_XX (XX means atom type that is included your target system) indicates the coefficients of symmetry functions.
+Each line contains coefficients for one symmetry function. detailed format is described below:
+
+```text
+2 1 0 6.0 0.003214 0.0 0.0
+2 1 0 6.0 0.035711 0.0 0.0
+4 1 1 6.0 0.000357 1.0 -1.0
+4 1 1 6.0 0.028569 1.0 -1.0
+4 1 1 6.0 0.089277 1.0 -1.0
+```
+
+First one indicates the type of symmetry function. Currently G2, G4 and G5 is available.
+
+Second and third indicates the type index of neighbor atoms which starts from 1. For radial symmetry function, 1 neighbor atom is need to calculate the symmetry function value. Thus, third parameter is set to zero. For angular symmtery function, 2 neighbor atom is needed. The order of second and third do not affect to the calculation result.
+
+Fourth one means the cutoff radius for cutoff function.
+
+The remaining parameters are the coefficients applied to each symmetry function.
+
+### structure_list
+structure_list contains the location of reference calculation data. The format is described below:
+
+```
+/location/of/calculation/data/oneshot_output_file :
+/location/of/calculation/data/MDtrajectory_output_file 100:2000:20
+/location/of/calculation/data/same_folder_format{1..10}/oneshot_output_file :
+``` 
+
+### Script for running SIMPLE-NN
+After preparing input.yaml, params_XX and str_list, one can run SIMPLE-NN using the script below:
+
+```python
+"""
+Run the code below:
+    python run.py
+
+run.py:
+"""
+from simple_nn_v2 import run
+run('input.yaml')
+```
+
+## Example
+In examples folder, one can find MD trajectories of bulk SiO<sub>2</sub>, corresponding input files (input.yaml, params_Si, params_O and structure_list) and python script run.py. To use this example, one simply change the location in the 'structure_list' file and run 'Python run.py' command.
+

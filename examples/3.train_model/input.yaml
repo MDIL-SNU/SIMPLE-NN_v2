@@ -11,7 +11,7 @@ neural_network:
         method: 'Adam'
     nodes: '30-30'
     batch_size: 10
-    total_iteration: 1000
+    total_epoch: 1000
     learning_rate: 0.001
     pca: True
     scale: True

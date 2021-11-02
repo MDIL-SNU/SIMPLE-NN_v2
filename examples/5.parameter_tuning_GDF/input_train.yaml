@@ -6,10 +6,11 @@ params:
   O: params_O
 
 neural_network:
-  method: Adam
+  optimizer:
+    method: Adam
   nodes: 30-30
   batch_size: 10
-  epoch: 10
+  total_epoch: 100
   learning_rate: 0.001
   use_force: true
   pca: true
