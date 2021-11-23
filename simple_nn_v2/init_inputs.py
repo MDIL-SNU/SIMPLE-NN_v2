@@ -277,34 +277,28 @@ def check_inputs(inputs, logfile, run_type, error=False):
         logfile.write(f"splited valid list          : {preprocessing['train_list']}\n")
         logfile.write(f"valid rate                  : {preprocessing['valid_rate']}\n")
         logfile.write(f"shuffle train/valid list    : {preprocessing['shuffle']}\n")
-        logfile.write(f"\ncalculate scale factor      : {preprocessing['calc_scale']}\n")
+        logfile.write(f"calculate scale factor      : {preprocessing['calc_scale']}\n")
         if preprocessing['calc_scale']:
             logfile.write(f"scale type                  : {preprocessing['scale_type']}\n")
             logfile.write(f"scale width                 : {preprocessing['scale_width']}\n")
             if preprocessing['scale_type'] == 'uniform_gas':
                 for key, value in preprocessing['scale_rho'].items():
                     logfile.write(f"scale rho for {key:2}            : {value}\n")
-        logfile.write(f"\ncalculate pca matrix        : {preprocessing['calc_pca']}\n")
+        logfile.write(f"calculate pca matrix        : {preprocessing['calc_pca']}\n")
         if preprocessing['calc_pca']:
             if error: assert preprocessing['calc_scale'] is not False,\
              f"calculating PCA matrix must need scale factor. use calc_factor : true or filename to load"
             logfile.write(f"use pca whitening           : {preprocessing['pca_whiten']}\n")
             if preprocessing['pca_whiten']:
                 logfile.write(f"pca min whitening level     : {preprocessing['pca_min_whiten_level']}\n")
-        logfile.write(f"\ncalc GDF for atomic weight  : {preprocessing['calc_gdf']}\n")
+        logfile.write(f"calc GDF for atomic weight  : {preprocessing['calc_gdf']}\n")
         if preprocessing['calc_gdf']:
             if preprocessing['atomic_weights']['type']:
-                logfile.write(f"atomic_weights type     : {preprocessing['atomic_weights']['type']}\n")
+                logfile.write(f"atomic_weights type         : {preprocessing['atomic_weights']['type']}\n")
                 if preprocessing['atomic_weights']['params']:
-                    logfile.write(f" ---parameters for atomic weights--- \n")
                     for atype in preprocessing['atomic_weights']['params'].keys():
-                        logfile.write(f"{atype:2}  params  : ")
-                        if isinstance(preprocessing['atomic_weights']['params'][atype],dict):
-                            for key, val in preprocessing['atomic_weights']['params'][atype].items():
-                                logfile.write(f"\n ({key} = {val}) ")
-                            logfile.write("\n")
-                        else:
-                            logfile.write(str(preprocessing['atomic_weights']['params'][atype])+'\n')
+                        for key, value in preprocessing['atomic_weights']['params'][atype].items():
+                            logfile.write(f"sigma for {key:2}                : {value}\n")
             elif preprocessing['atomic_weights']['type']  not in ['gdf', 'user', 'file']:
                 logfile.write("Warning : set atomic weight types approatly. preprocessing.atomic_weights.type : gdf/user/file\n")
 
