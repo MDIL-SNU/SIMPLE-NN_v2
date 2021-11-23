@@ -43,10 +43,10 @@ preprocessing:
     calc_gdf:           False
     atomic_weights: 
         type:            'gdf'
-            params: 
-                sigma:
-                    species1: 0.02
-                    species2: 0.06
+        params: 
+            sigma:
+                species1: 0.02
+                species2: 0.06
     weight_modifier: 
         type:           'modified_sigmoid'
         params: 
