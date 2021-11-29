@@ -49,7 +49,10 @@ def train(inputs, logfile):
 def _get_torch_device(inputs):
     if torch.cuda.is_available():
         cuda_num = inputs['neural_network']['cuda_number']
-        device = 'cuda'+':'+str(cuda_num) if cuda_num else 'cuda'
+        if isinstance(cuda_num, int):
+            device = 'cuda'+':'+str(cuda_num) if cuda_num else 'cuda'
+        else:
+            device = 'cuda'
     else:
         device = 'cpu'
     return torch.device(device)
