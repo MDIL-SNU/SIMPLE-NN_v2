@@ -175,12 +175,6 @@ def gdf_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_
     gdf_list = torch.cat(gdf_list, axis=0)
     tmp_dict['gdf'] = gdf_list
     return tmp_dict
-#
-
-
-
-
-
 
 def _make_empty_dict(atom_types):
     dic = dict()
@@ -275,8 +269,6 @@ def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf=False):
          'use_stress': False, 'valid': True, 'my_collate': atomic_e_collate},
         'gdf_train': {'data_list': inputs['neural_network']['train_list'], 'use_force': inputs['neural_network']['use_force'],\
          'use_stress': inputs['neural_network']['use_stress'], 'valid': False, 'my_collate': gdf_collate},
-        'gdf_valid': {'data_list': inputs['neural_network']['valid_list'], 'use_force': inputs['neural_network']['use_force'],\
-         'use_stress': inputs['neural_network']['use_stress'], 'valid': True, 'my_collate': gdf_collate},
     }
 
     dataset_list = FilelistDataset(args[mode]['data_list'], device, inputs['neural_network']['load_data_to_gpu'])

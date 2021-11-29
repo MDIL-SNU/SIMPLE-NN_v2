@@ -137,7 +137,7 @@ model_default_inputs = \
                 'inter_op_parallelism_threads': 0,
                 'intra_op_parallelism_threads': 0,
                 'load_data_to_gpu'  : False,
-                'cuda_number'       : None
+                'GPU_number'       : None
             }
         }
 
@@ -361,10 +361,12 @@ def check_inputs(inputs, logfile, run_type, error=False):
             if type(neural_network['scale']) is not bool:
                 if error: assert  os.path.exists(neural_network['scale']), f"{neural_network['scale']} file not exist.. set pca = False or make pca file\n"
             else:
-                if error: assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale factor file\n"
+                if error: assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale_factor file\n"
         logfile.write(f"use gdf in traning              : {neural_network['gdf']}\n")
         if neural_network['gdf']:
-            if neural_network['weight_modifier']['type']:
+            if neural_network['weight_modifier']['type'] != 'modified sigmoid':
+                logfile.write("Warning: We only support 'modified sigmoid'\n")
+            else:
                 logfile.write(f"\nWeight modifier type      : {neural_network['weight_modifier']['type']}\n")
                 if neural_network['weight_modifier']['params']:
                     logfile.write(f" ---parameters for weight modifier--- \n")
@@ -373,8 +375,6 @@ def check_inputs(inputs, logfile, run_type, error=False):
                         for key, val in neural_network['weight_modifier']['params'][atype].items():
                             logfile.write(f" ({key} = {val}) ")
                         logfile.write("\n")
-            elif neural_network['weight_modifier']['type'] not in ['modified sigmoid']:
-                logfile.write("Warning : set weight modifier types approatly. Now support only neural_network.weight_modifier.type : modified sigmoid\n")
  
         logfile.write("\n  OPTIMIZATION\n")
         logfile.write(f"optimization method             : {neural_network['optimizer']['method']}\n")
@@ -435,10 +435,10 @@ def check_inputs(inputs, logfile, run_type, error=False):
             if error: assert neural_network['workers'] == 0, f"If load data to gpu directly, use workers = 0"
         logfile.write(f"CPU core number in pytorch      : {neural_network['intra_op_parallelism_threads']}\n")
         logfile.write(f"Thread number in pytorch        : {neural_network['inter_op_parallelism_threads']}\n")
-        if neural_network['cuda_number'] is not None and torch.cuda.is_available():
-            logfile.write(f"Use GPU device number           : {neural_network['cuda_number']}\n")
-            if error: assert neural_network['cuda_number'] <= torch.cuda.device_count()-1,\
-             f"Invalid GPU device number available GPU # {torch.cuda.device_count()-1} , set number {neural_network['cuda_number']} "
+        if neural_network['GPU_number'] is not None and torch.cuda.is_available():
+            logfile.write(f"Use GPU device number           : {neural_network['GPU_number']}\n")
+            if error: assert neural_network['GPU_number'] <= torch.cuda.device_count()-1,\
+             f"Invalid GPU device number available GPU # {torch.cuda.device_count()-1} , set number {neural_network['GPU_number']} "
     logfile.write('\n----------------------------------------------------------------------------------------------\n')
     logfile.flush()
 
