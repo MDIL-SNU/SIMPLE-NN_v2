@@ -55,7 +55,7 @@ def run(input_file_name):
         train(inputs, logfile)
 
     if comm.rank == 0:
-        logfile.write(f"total wall time {time.time()-start_time} seconds\n")
+        logfile.write(f"Total wall time {time.time()-start_time} s.\n")
 
 def get_generate_function(logfile, descriptor_type='symmetry_function'):
     generator = {

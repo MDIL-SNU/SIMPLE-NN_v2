@@ -143,7 +143,7 @@ class swish(torch.nn.Module):
         return x * torch.sigmoid(x)
 
 def _initialize_model_and_weights(inputs, logfile, device):
-    logfile.write(f"USE {device} IN MODEL\n")
+    logfile.write(f"{device} is used in model.\n")
 
     model = {}
     for element in inputs['atom_types']:
@@ -162,7 +162,6 @@ def _initialize_model_and_weights(inputs, logfile, device):
 
     model = FCNDict(model) #Make full model with elementized dictionary model
     model.to(device=device)
-    logfile.write("INITIALIZATION MODEL DONE.\n")
 
     return model
 
