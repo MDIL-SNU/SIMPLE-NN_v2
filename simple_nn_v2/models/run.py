@@ -24,7 +24,7 @@ def train(inputs, logfile):
     if inputs['neural_network']['train']:
         train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='train', gdf=inputs['neural_network']['gdf'])
         if os.path.exists(inputs['neural_network']['valid_list']):
-            valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='valid', gdf=inputs['neural_network']['gdf'])
+            valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='valid', gdf=False)
         else:
             valid_loader = None
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, loss, train_loader, valid_loader)
@@ -44,15 +44,20 @@ def train(inputs, logfile):
             valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_valid')
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, float('inf'),\
             train_loader, valid_loader, atomic_e=True)
-    logfile.write(f"train done. {time.time()-start_time:10} seconds elapsed\n")
+    logfile.write(f"Elapsed time in training. {time.time()-start_time:10} s.\n")
 
 def _get_torch_device(inputs):
     if torch.cuda.is_available():
+<<<<<<< HEAD
         cuda_num = inputs['neural_network']['cuda_number']
         if isinstance(cuda_num, int):
             device = 'cuda'+':'+str(cuda_num) if cuda_num else 'cuda'
         else:
             device = 'cuda'
+=======
+        cuda_num = inputs['neural_network']['GPU_number']
+        device = 'cuda'+':'+str(cuda_num) if cuda_num else 'cuda'
+>>>>>>> 056bf971da3491867da21c873355e648c108c9c2
     else:
         device = 'cpu'
     return torch.device(device)

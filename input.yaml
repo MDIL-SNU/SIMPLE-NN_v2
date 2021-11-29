@@ -47,15 +47,6 @@ preprocessing:
             sigma:
                 species1: 0.02
                 species2: 0.06
-    weight_modifier: 
-        type:           'modified_sigmoid'
-        params: 
-            species1:
-                b:  100
-                c:  0.01
-            species2:
-                b:  100
-                c:  0.01
 #Input for traning
 neural_network:
     train_list:         'train_list'
@@ -104,6 +95,15 @@ neural_network:
     pca:    True
     scale:  True
     gdf:    False
+    weight_modifier: 
+        type:           'modified_sigmoid'
+        params: 
+            species1:
+                b:  100
+                c:  0.01
+            species2:
+                b:  100
+                c:  0.01
     #Resume parameters
     continue:               False #Checkpoint_file or 'weights'
     clear_prev_status:      False
@@ -113,4 +113,4 @@ neural_network:
     inter_op_parallelism_threads:   0
     intra_op_parallelism_threads:   0
     load_data_to_gpu:               False
-    cuda_number:                    False
+    GPU_number:                     False
