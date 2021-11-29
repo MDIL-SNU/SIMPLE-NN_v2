@@ -287,13 +287,35 @@ def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf=False):
                     partial(modified_sigmoid, **inputs['neural_network']['weight_modifier']['params'][item])
                 else:
                     modifier[inputs['atom_types'].index(item)+1] = None
-        gdf_scale = dict()
         #Initial loop for mean value
-        atomic_weights = torch.load('./atomic_weights')
+        gdf_scale = dict()
+        index_map = dict()
+        atom_map  = dict()
+        weight_sum = dict()     
+        weight_num = dict()     
+    
+        for idx, item in enumerate(inputs['atom_types']):
+            gdf_scale[idx+1] = 0
+            weight_sum[item] = 0
+            weight_num[item] = 0
+            index_map[idx+1] = item
+            atom_map[item] = idx+1
+            
+        with open(inputs['neural_network']['train_list'],'r') as f:
+            pt_list = f.readlines()
+        
+    
+        for filename in pt_list:
+            pt_file = torch.load(filename.strip())            
+            pt_aw   = pt_file['gdf']
+            pt_idx  = pt_file['atom_idx']
+            for at in inputs['atom_types']:
+                weight_sum[at] += torch.sum(pt_aw[atom_map[at] == pt_idx]).item()
+                weight_num[at] += pt_file['N'][at].item()
+ 
         for item in inputs['atom_types']:
-            if modifier and callable(modifier):
-                atomic_weights[item][:,0] = modifier[item](atomic_weights[item][:,0])
-            gdf_scale[inputs['atom_types'].index(item)+1] = np.mean(atomic_weights[item][:,0])
+            gdf_scale[atom_map[item]] = weight_sum[item] / weight_num[item]
+        #print(gdf_scale)
 
         #Create mapping function in gdf
         def gdf_scaler(gdf, atom_idx):

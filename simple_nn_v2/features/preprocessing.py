@@ -195,20 +195,12 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
             for item in inputs['atom_types']:
                 logfile.write("{:3}: sigma = {:4.3f}, c = {:4.3f}\n".format(item, dict_sigma[item], dict_c[item]))
 
-    #Extract GDF from saved file
-    elif isinstance(get_atomic_weights, six.string_types):
-        atomic_weights_train = torch.load(get_atomic_weights)
-        atomic_weights_valid = 'ones'
+    #grp.plot_gdfinv_density(atomic_weights_train, self.parent.inputs['atom_types'])
+    # Plot histogram only if atomic weights just have been calculated.
+    if comm.rank == 0 and callable(get_atomic_weights):
+        grp.plot_gdfinv_density(atomic_weights_train, inputs['atom_types'], auto_c=dict_c)
 
-        #grp.plot_gdfinv_density(atomic_weights_train, self.parent.inputs['atom_types'])
-        # Plot histogram only if atomic weights just have been calculated.
-        if comm.rank == 0 and callable(get_atomic_weights):
-            grp.plot_gdfinv_density(atomic_weights_train, inputs['atom_types'], auto_c=dict_c)
 
-        atomic_weights_train['type'] = inputs['preprocessing']['atomic_weights']['type']
-
-    if comm.rank == 0:
-        torch.save(atomic_weights_train, './atomic_weights')
 
 def _save_gdf_to_pt(atom_types, feature_list, gdf):
     for idx, name in enumerate(feature_list):

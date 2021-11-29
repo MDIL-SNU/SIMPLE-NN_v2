@@ -48,16 +48,8 @@ def train(inputs, logfile):
 
 def _get_torch_device(inputs):
     if torch.cuda.is_available():
-<<<<<<< HEAD
-        cuda_num = inputs['neural_network']['cuda_number']
-        if isinstance(cuda_num, int):
-            device = 'cuda'+':'+str(cuda_num) if cuda_num else 'cuda'
-        else:
-            device = 'cuda'
-=======
         cuda_num = inputs['neural_network']['GPU_number']
         device = 'cuda'+':'+str(cuda_num) if cuda_num else 'cuda'
->>>>>>> 056bf971da3491867da21c873355e648c108c9c2
     else:
         device = 'cpu'
     return torch.device(device)
