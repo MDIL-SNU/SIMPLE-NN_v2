@@ -1,4 +1,6 @@
 #!/bin/bash
+PYTHON_DIR='python3 '
+
 if [ ! -e run.py ];then
     cat << EOF > run.py
 from simple_nn_v2 import run
@@ -24,9 +26,8 @@ if [ ! -e ./checkpoint.tar ];then
         echo saved model to load does not exist. Run 3.train_model procedure first to train model
     fi 
 fi
-#In this procedure test performance of trained model using generated data & checkpoint
-#Checkpoint.tar is saved model that contains parameters of model
-#You can also read model parameters from saved potential for lammps 
-#by setting continue: 'weights' , potential_read
-python3 run.py
+if [ ! -e test_list ] && [ -e data ];then
+    ls -d data/ > test_list
+fi
+$PYTHON_DIR run.py
 

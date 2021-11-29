@@ -148,7 +148,7 @@ def load_structures(inputs, structure_file, structure_slicing, logfile, comm):
             file_path = comm.bcast(file_path, 0);
 
         if ase.__version__ >= '3.18.0':
-            structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'], parallel=False)
+            structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'], parallel=False if comm.rank == 1 else True)
         else:
             structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'], force_consistent=True, parallel=False)
     else:

@@ -13,6 +13,7 @@ from simple_nn_v2 import simple_nn
 from simple_nn_v2.init_inputs import initialize_inputs
 from simple_nn_v2.features.symmetry_function import generating
 from simple_nn_v2.features import data_generator
+from simple_nn_v2.features.mpi import DummyMPI
 
 # Minimum Setting for Testing Symmetry_function methods
 # Initialize input file, set Simple_nn object as parent of Symmetry_function object
@@ -43,7 +44,7 @@ save_dict = dict()
 
 for test_file, test_slicing in zip(test_file_list, test_slicing_list):
     print('Main structure  :   ',rootdir+test_file)
-    structures = data_generator.load_structures(inputs, './test_input/'+test_file, test_slicing, logfile)
+    structures = data_generator.load_structures(inputs, './test_input/'+test_file, test_slicing, logfile, comm=DummyMPI())
     save_dict[test_file] = structures
     print('Structures        :  ',structures)
     #if str_match:

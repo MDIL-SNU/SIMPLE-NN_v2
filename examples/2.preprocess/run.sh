@@ -1,4 +1,6 @@
 #!/bin/bash
+PYTHON_DIR='python3 '
+
 if [ ! -e run.py ];then
     cat << EOF > run.py
 from simple_nn_v2 import run
@@ -27,5 +29,5 @@ fi
 #to train_list, valid_list
 #Also create scaler from all dataset to ./scale_factor and Principle Component Analysis ./pca
 #This option can turn on & off by input.yaml options
-python3 run.py
+$PYTHON_DIR run.py
 

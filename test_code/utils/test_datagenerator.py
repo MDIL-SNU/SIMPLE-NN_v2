@@ -10,7 +10,7 @@ def test():
     #Set python test files to run
     test_list=[
              'parse.py',
-             'tag_weight.py',
+             #'tag_weight.py',
              'load_snap.py',
              'save_file.py',
               ]
