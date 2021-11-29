@@ -38,7 +38,7 @@ if not os.path.exists(structure_list):
 
 
 print('parse_structure_list() test')
-structure_tags, structure_weights, structure_file_list, structure_slicing_list, structure_tag_idx = data_generator.parse_structure_list(logfile, structure_list)
+structure_tags, structure_weights, structure_file_list, structure_slicing_list, structure_tag_idx = data_generator.parse_structure_list(logfile, structure_list,comm=None)
 print('structure_tags   :', structure_tags)
 assert structure_tags[0] == 'None' , f"Error occured : not match tags  {structure_tags[0]}"
 assert structure_tags[1] == atype , f"Error occured : not match tags  {structure_tags[1]}"

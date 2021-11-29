@@ -40,7 +40,7 @@ structure_tags = ['None', 'Data1', 'Data2', 'Data3']
 structure_weights = [1, 1, 3, 3]
 
 # 3. extract type_idx, atom_num from _get_structure_info()
-cell, cart, scale = generating._get_structure_coordination_info(structure)
+cell, scale, cart = generating._get_structure_coordination_info(structure)
 atom_num, atom_type_idx, atoms_per_type, atom_idx_per_type = generating._get_atom_types_info(structure, atom_types)
 atom_type_idx_p = ffi.cast("int *", atom_type_idx.ctypes.data)
 cart_p  = util_ft._gen_2Darray_for_ffi(cart, ffi)

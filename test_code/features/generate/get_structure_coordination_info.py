@@ -44,11 +44,14 @@ structure = structures[0]
 
 """
 
-cell, cart, scale= generating._get_structure_coordination_info(structure)
+cell, scale, cart= generating._get_structure_coordination_info(structure)
 cell_comp = np.copy(structure.cell, order='C')
 cart_comp=np.copy(structure.get_positions(wrap=True), order='C')
 scale_comp = np.copy(structure.get_scaled_positions(), order='C')
 
+#print(structure.get_positions(warp=True))
+print('-----------------------------')
+#print(cart)
 print('1. check lattice parameter')
 print('Lattice parameter')
 try:
@@ -73,7 +76,8 @@ print('Generated random index : ',rand_idx)
 try:
     print('Cartesian coordination')
     for idx in rand_idx:
-        print(f'IDX {idx} : ',cart[idx][0], cart[idx][1], cart[idx][2])
+        print(f'IDX {idx} cart : ',cart[idx][0], cart[idx][1], cart[idx][2])
+        print(f'IDX {idx} comp : ',cart_comp[idx][0], cart_comp[idx][1], cart_comp[idx][2])
         for xyz in range(3):
             assert cart[idx][xyz] == cart_comp[idx][xyz]
 except AssertionError:
