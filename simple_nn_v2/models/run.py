@@ -22,7 +22,7 @@ def train(inputs, logfile):
     loss = _set_initial_loss(inputs, logfile, checkpoint)
 
     if inputs['neural_network']['train']:
-        train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='train', gdf=inputs['neural_network']['gdf'])
+        train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='train', gdf=inputs['neural_network']['atomic_weights'])
         if os.path.exists(inputs['neural_network']['valid_list']):
             valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='valid', gdf=False)
         else:

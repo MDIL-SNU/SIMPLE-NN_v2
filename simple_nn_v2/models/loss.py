@@ -20,7 +20,7 @@ def calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoc
             F_ = calculate_F(inputs['atom_types'], x, dEdG, item, device, non_block)
             F = item['F'].type(dtype).to(device=device, non_blocking=non_block)
             if model.training:
-                f_loss = get_f_loss(inputs['neural_network']['F_loss_type'], F_, F, criterion, epoch_result, n_batch, item, weight, gdf=inputs['neural_network']['gdf'])
+                f_loss = get_f_loss(inputs['neural_network']['F_loss_type'], F_, F, criterion, epoch_result, n_batch, item, weight, gdf=inputs['neural_network']['atomic_weights'])
             else:
                 f_loss = get_f_loss(inputs['neural_network']['F_loss_type'], F_, F, criterion, epoch_result, n_batch, item, weight, gdf=False)
             batch_loss += inputs['neural_network']['force_coeff'] * f_loss
@@ -163,7 +163,7 @@ def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight
             tmp_idx = item['tot_num'][n].item()
             label = item['struct_type'][n]
             partial_f_loss = f_loss[batch_idx:(batch_idx+tmp_idx)]
-            partial_gdf = item['gdf'][batch_idx:(batch_idx+tmp_idx)]
+            partial_gdf = item['atomic_weights'][batch_idx:(batch_idx+tmp_idx)]
             partial_f_mean = torch.mean(partial_f_loss)
             progress_dict['f_err'][label].update(partial_f_mean.detach().item() * 3, tmp_idx)
             progress_dict['tot_f_err'].update(partial_f_mean.detach().item() * 3, tmp_idx)
@@ -181,7 +181,7 @@ def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight
             partial_f_mean = torch.mean(partial_f_loss)
             progress_dict['f_err'][label].update(partial_f_mean.detach().item() * 3, tmp_idx)
             progress_dict['tot_f_err'].update(partial_f_mean.detach().item() * 3, tmp_idx)
-            f_loss[batch_idx:(batch_idx+tmp_idx)] = partial_f_loss * weight[n].item() #* weight for hgdf
+            f_loss[batch_idx:(batch_idx+tmp_idx)] = partial_f_loss * weight[n].item() #* weight for gdf
             batch_idx += tmp_idx
 
     w_f_loss = torch.mean(f_loss)

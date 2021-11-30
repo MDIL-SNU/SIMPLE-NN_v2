@@ -167,9 +167,9 @@ def gdf_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_
     #    atomic_weights_train[item][:,0] = modifier[item](atomic_weights_train[item][:,0])
     gdf_list = list()
     for item in batch:
-        gdf_list.append(gdf_scaler(item['gdf'], item['atom_idx']))
+        gdf_list.append(gdf_scaler(item['atomic_weights'], item['atom_idx']))
     gdf_list = torch.cat(gdf_list, axis=0)
-    tmp_dict['gdf'] = gdf_list
+    tmp_dict['atomic_weights'] = gdf_list
     return tmp_dict
 
 def _make_empty_dict(atom_types):
@@ -283,35 +283,30 @@ def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf=False):
                     partial(modified_sigmoid, **inputs['neural_network']['weight_modifier']['params'][item])
                 else:
                     modifier[inputs['atom_types'].index(item)+1] = None
-        #Initial loop for mean value
+
+        # Scaling GDF values
         gdf_scale = dict()
-        index_map = dict()
-        atom_map  = dict()
-        weight_sum = dict()     
-        weight_num = dict()     
-    
-        for idx, item in enumerate(inputs['atom_types']):
-            gdf_scale[idx+1] = 0
-            weight_sum[item] = 0
-            weight_num[item] = 0
-            index_map[idx+1] = item
-            atom_map[item] = idx+1
-            
+        atomic_weights = dict()
+        for item in inputs['atom_types']:
+            atomic_weights[item] = torch.Tensor()
+
         with open(inputs['neural_network']['train_list'],'r') as f:
             pt_list = f.readlines()
-        
-    
+
         for filename in pt_list:
-            pt_file = torch.load(filename.strip())            
-            pt_aw   = pt_file['gdf']
-            pt_idx  = pt_file['atom_idx']
-            for at in inputs['atom_types']:
-                weight_sum[at] += torch.sum(pt_aw[atom_map[at] == pt_idx]).item()
-                weight_num[at] += pt_file['N'][at].item()
- 
+            pt_file = torch.load(filename.strip())
+            pt_aw = pt_file['atomic_weights']
+            s_idx = 0
+            e_idx = 0
+            for item in inputs['atom_types']:
+                s_idx = e_idx
+                e_idx += pt_file['N'][item]
+                atomic_weights[item] = torch.cat((atomic_weights[item], pt_aw[s_idx:e_idx]))
+
         for item in inputs['atom_types']:
-            gdf_scale[atom_map[item]] = weight_sum[item] / weight_num[item]
-        #print(gdf_scale)
+            if modifier and callable(modifier):
+                atomic_weights[item] = modifier[item](atomic_weights[item])
+            gdf_scale[inputs['atom_types'].index(item)+1] = torch.mean(atomic_weights[item])
 
         #Create mapping function in gdf
         def gdf_scaler(gdf, atom_idx):

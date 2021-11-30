@@ -1,6 +1,7 @@
 from __future__ import print_function
 import six
 import numpy as np
+import torch
 import os, sys, psutil, shutil
 import types, re, collections
 
@@ -81,7 +82,9 @@ def modified_sigmoid(gdf, b=150.0, c=1.0, module_type=None):
     :param c: float or double, coefficient for modified sigmoid
     """
     if module_type is None:
-        module_type = np
+        module_type = torch
+    #elif module_type is 'torch':
+    #    module_type = torch
 
     gdf = gdf / (1.0 + module_type.exp(-b * (gdf - c)))
     #gdf[:,0] = gdf[:,0] / (1.0 + np.exp(-b * gdf[:,0] + c))
