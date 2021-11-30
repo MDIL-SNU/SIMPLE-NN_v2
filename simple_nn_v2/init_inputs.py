@@ -177,7 +177,7 @@ def initialize_inputs(input_file_name, logfile):
     if len(inputs['atom_types']) == 0:
         raise KeyError
     if not inputs['neural_network']['use_force'] and \
-            inputs['descriptor']['atomic_weights']['type'] is not None:
+            inputs['preprocessing']['atomic_weights']['type'] is not None:
         logfile.write("Warning: Force training is off but atomic weights are given. Atomic weights will be ignored.\n")
     if inputs['neural_network']['optimizer']['method'] == 'L-BFGS' and \
             not inputs['neural_network']['full_batch']:
@@ -296,9 +296,13 @@ def check_inputs(inputs, logfile, run_type, error=False):
             if preprocessing['atomic_weights']['type']:
                 logfile.write(f"atomic_weights type         : {preprocessing['atomic_weights']['type']}\n")
                 if preprocessing['atomic_weights']['params']:
-                    for atype in preprocessing['atomic_weights']['params'].keys():
-                        for key, value in preprocessing['atomic_weights']['params'][atype].items():
-                            logfile.write(f"sigma for {key:2}                : {value}\n")
+                    if 'sigma' in preprocessing['atomic_weights']['params'].keys():
+                        if isinstance(preprocessing['atomic_weights']['params']['sigma'],dict):
+                            for key, value in preprocessing['atomic_weights']['params']['sigma'].items():
+                                logfile.write(f"sigma for {key:2}                : {value}\n")
+                        else:
+                            logfile.write(f"params                       : {preprocessing['atomic_weights']['params']['sigma']}\n")
+
             elif preprocessing['atomic_weights']['type']  not in ['gdf', 'user', 'file']:
                 logfile.write("Warning : set atomic weight types approatly. preprocessing.atomic_weights.type : gdf/user/file\n")
 
