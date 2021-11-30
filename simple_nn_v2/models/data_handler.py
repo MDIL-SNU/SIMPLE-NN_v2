@@ -2,7 +2,6 @@ import torch
 import numpy as np
 import os
 from functools import partial
-from glob import glob
 from simple_nn_v2.utils import modified_sigmoid
 
 
@@ -29,10 +28,7 @@ class FilelistDataset(torch.utils.data.Dataset):
         self.filelist = list()
         with open(filename) as fil:
             for line in fil:
-                temp_list = glob(line.strip())
-                temp_list.sort()
-                for item in temp_list:
-                    self.filelist.append(item)
+                self.filelist.append(line.strip())
 
     def __len__(self):
         return len(self.filelist)
