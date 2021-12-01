@@ -40,13 +40,11 @@ preprocessing:
         species1:       0.03
         species2:       0.03
     #GDF
-    calc_gdf:           False
-    atomic_weights: 
+    calc_atomic_weights: 
         type:            'gdf'
         params: 
-            sigma:
-                species1: 0.02
-                species2: 0.06
+            species1: 0.02
+            species2: 0.06
 #Input for traning
 neural_network:
     train_list:         'train_list'
@@ -94,7 +92,7 @@ neural_network:
     #Using Preprocess option
     pca:    True
     scale:  True
-    gdf:    False
+    atomic_weights:    False
     weight_modifier: 
         type:           'modified_sigmoid'
         params: 

@@ -45,7 +45,7 @@ def preprocess(inputs, logfile, comm):
             logfile.flush()
 
         # calculate gdf
-        if inputs['preprocessing']['calc_gdf']:
+        if inputs['preprocessing']['calc_atomic_weights']['type']:
             _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list, train_dir_list, scale, comm)
         logfile.flush()
     if comm.rank == 0:
@@ -144,12 +144,10 @@ def _calculate_pca_matrix(inputs, feature_list, scale):
 def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_dir_list, scale, comm):
 
     #Set gdf 
-    if inputs['preprocessing']['atomic_weights']['type'] == 'gdf':
+    if inputs['preprocessing']['calc_atomic_weights']['type'] == 'gdf':
         get_atomic_weights = _generate_gdf_file
-    elif inputs['preprocessing']['atomic_weights']['type'] == 'user':
+    elif inputs['preprocessing']['calc_atomic_weights']['type'] == 'user':
         get_atomic_weights = user_atomic_weights_function
-    elif inputs['preprocessing']['atomic_weights']['type'] == 'file':
-        get_atomic_weights = './atomic_weights'
     else:
         get_atomic_weights = None
 
@@ -173,14 +171,14 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
             local_idx_list[item] = idx_list_train[item][begin:end]
 
         #Extract parameters for GDF
-        if inputs['preprocessing']['atomic_weights']['params']:
-            if 'sigma' in inputs['preprocessing']['atomic_weights']['params'].keys():
-                sigma = inputs['preprocessing']['atomic_weights']['params']['sigma']
-                if isinstance(sigma, dict):
-                    #Set default sigma for not define species
-                    for atype in inputs['atom_types']:
-                        if atype not in sigma.keys():
-                            sigma[atype] = 0.02
+        if inputs['preprocessing']['calc_atomic_weights']['params']:
+            if isinstance(inputs['preprocessing']['calc_atomic_weights']['params'], dict):
+                sigma = inputs['preprocessing']['calc_atomic_weights']['params']
+                for atype in inputs['atom_types']:
+                    if atype not in sigma.keys():
+                        sigma[atype] = 0.02
+            elif inputs['preprocessing']['calc_atomic_weights']['params'] == 'Auto':
+                sigma = 'Auto'
             else:
                 sigma = 0.02 #Default value for sigma
 
@@ -215,6 +213,6 @@ def _save_gdf_to_pt(atom_types, feature_list, gdf):
 
         force_array = np.concatenate(force_array, axis=0)
         assert load_data['tot_num'] == len(force_array), f"Not consistant number of atoms {name} : {load_data['N']} , {len(force_array)}"
-        load_data['gdf'] = torch.tensor(force_array)
+        load_data['atomic_weights'] = torch.tensor(force_array)
         torch.save(load_data, name)
 

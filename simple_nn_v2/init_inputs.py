@@ -47,8 +47,7 @@ preprocess_default_inputs = \
                 'scale_width': 1.0,
                 'scale_rho' : None,
                 #GDF
-                'calc_gdf'  : False,
-                'atomic_weights': {
+                'calc_atomic_weights': {
                     'type'  : None,
                     'params': dict(),
                 },
@@ -122,7 +121,7 @@ model_default_inputs = \
                 #Using preprocessing results
                 'pca'   : True,
                 'scale' : True,
-                'gdf'   : False,
+                'atomic_weights'   : False,
                 #GDF weight modifier
                 'weight_modifier': {
                     'type'  : None,
@@ -177,7 +176,7 @@ def initialize_inputs(input_file_name, logfile):
     if len(inputs['atom_types']) == 0:
         raise KeyError
     if not inputs['neural_network']['use_force'] and \
-            inputs['preprocessing']['atomic_weights']['type'] is not None:
+            inputs['preprocessing']['calc_atomic_weights']['type'] is not None:
         logfile.write("Warning: Force training is off but atomic weights are given. Atomic weights will be ignored.\n")
     if inputs['neural_network']['optimizer']['method'] == 'L-BFGS' and \
             not inputs['neural_network']['full_batch']:
@@ -291,20 +290,17 @@ def check_inputs(inputs, logfile, run_type, error=False):
             logfile.write(f"use pca whitening           : {preprocessing['pca_whiten']}\n")
             if preprocessing['pca_whiten']:
                 logfile.write(f"pca min whitening level     : {preprocessing['pca_min_whiten_level']}\n")
-        logfile.write(f"calc GDF for atomic weight  : {preprocessing['calc_gdf']}\n")
-        if preprocessing['calc_gdf']:
-            if preprocessing['atomic_weights']['type']:
-                logfile.write(f"atomic_weights type         : {preprocessing['atomic_weights']['type']}\n")
-                if preprocessing['atomic_weights']['params']:
-                    if 'sigma' in preprocessing['atomic_weights']['params'].keys():
-                        if isinstance(preprocessing['atomic_weights']['params']['sigma'],dict):
-                            for key, value in preprocessing['atomic_weights']['params']['sigma'].items():
-                                logfile.write(f"sigma for {key:2}                : {value}\n")
-                        else:
-                            logfile.write(f"params                       : {preprocessing['atomic_weights']['params']['sigma']}\n")
-
-            elif preprocessing['atomic_weights']['type']  not in ['gdf', 'user', 'file']:
-                logfile.write("Warning : set atomic weight types approatly. preprocessing.atomic_weights.type : gdf/user/file\n")
+        if preprocessing['calc_atomic_weights']['type']:
+            logfile.write(f"atomic_weights type         : {preprocessing['calc_atomic_weights']['type']}\n")
+            if preprocessing['calc_atomic_weights']['params']:
+               # if 'sigma' in preprocessing['calc_atomic_weights']['params'].keys():
+                if isinstance(preprocessing['calc_atomic_weights']['params'], dict):
+                    for key, value in preprocessing['calc_atomic_weights']['params'].items():
+                        logfile.write(f"sigma for {key:2}                : {value}\n")
+                else:
+                    logfile.write(f"params                       : {preprocessing['calc_atomic_weights']['params']}\n")
+        elif preprocessing['calc_atomic_weights']['type']  not in ['gdf', 'user']:
+            logfile.write("Warning : set atomic weight types approatly. preprocessing.atomic_weights.type : gdf/user\n")
 
     #Check train model input is valid and write log
     elif run_type  == 'train_model':
@@ -366,8 +362,8 @@ def check_inputs(inputs, logfile, run_type, error=False):
                 if error: assert  os.path.exists(neural_network['scale']), f"{neural_network['scale']} file not exist.. set pca = False or make pca file\n"
             else:
                 if error: assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale_factor file\n"
-        logfile.write(f"use gdf in traning              : {neural_network['gdf']}\n")
-        if neural_network['gdf']:
+        logfile.write(f"use gdf in traning              : {neural_network['atomic_weights']}\n")
+        if neural_network['atomic_weights']:
             if neural_network['weight_modifier']['type'] != 'modified sigmoid':
                 logfile.write("Warning: We only support 'modified sigmoid'\n")
             else:
@@ -449,10 +445,10 @@ def check_inputs(inputs, logfile, run_type, error=False):
 def _to_boolean(inputs):
     check_list =  ['generate_features', 'preprocess',  'train_model']
     descriptor_list = ['compress_outcar','read_force','read_stress', 'dx_save_sparse', 'add_atom_idx', 'absolute_path']
-    preprocessing_list = ['shuffle', 'calc_pca', 'pca_whiten', 'calc_scale', 'calc_gdf']
+    preprocessing_list = ['shuffle', 'calc_pca', 'pca_whiten', 'calc_scale']
 
     neural_network_list = ['train', 'test', 'add_NNP_ref', 'train_atomic_E', 'shuffle_dataloader', 'double_precision', 'use_force', 'use_stress',\
-                        'dropout','full_batch', 'checkpoint_interval', 'print_structure_rmse', 'accurate_train_rmse', 'pca', 'scale', 'gdf',\
+                        'dropout','full_batch', 'checkpoint_interval', 'print_structure_rmse', 'accurate_train_rmse', 'pca', 'scale', 'atomic_weights',\
                         'clear_prev_status', 'clear_prev_optimizer', 'load_data_to_gpu']
 
 
