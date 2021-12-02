@@ -34,7 +34,6 @@ def preprocess(inputs, logfile, comm):
     if inputs['preprocessing']['calc_scale']:
         scale = _calculate_scale(inputs, logfile, train_feature_list, comm)
         torch.save(scale, 'scale_factor')
-        logfile.flush()
 
         # pca[atom_type][0]: principle axis matrix
         # pca[atom_type][1]: variance in each axis
@@ -42,12 +41,10 @@ def preprocess(inputs, logfile, comm):
         if inputs['preprocessing']['calc_pca']:   # boolean :
             pca = _calculate_pca_matrix(inputs, train_feature_list, scale)
             torch.save(pca, 'pca')
-            logfile.flush()
 
         # calculate gdf
         if inputs['preprocessing']['calc_atomic_weights']['type']:
             _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list, train_dir_list, scale, comm)
-        logfile.flush()
     if comm.rank == 0:
         logfile.write(f"Elapsed time in preprocessing: {time.time()-start_time:10} s.\n")
 
@@ -96,20 +93,20 @@ def _calculate_scale(inputs, logfile, feature_list, comm):
                 is_scaled[scale[elem][1,:] < 1e-15] = False
 
                 if logfile is not None and comm.rank == 0:
-                    logfile.write("{:-^70}\n".format(" Scaling information for {:} ".format(elem)))
+                    logfile.write("{:-^88}\n".format(" Scaling information for {:} ".format(elem)))
                     logfile.write("(scaled_value = (value - mean) * scale)\n")
-                    logfile.write("Index   Mean         Scale        Min(after)   Max(after)   Std(after)\n")
+                    logfile.write("Index            Mean            Scale        Min(after)      Max(after)      Std(after)\n")
                     scaled = (feature_list[elem] - scale[elem][0,:]) / scale[elem][1,:]
                     scaled_min = np.min(scaled, axis=0)
                     scaled_max = np.max(scaled, axis=0)
                     scaled_std = np.std(scaled, axis=0)
                     for i in range(scale[elem].shape[1]):
                         scale_str = "{:11.4e}".format(1/scale[elem][1,i]) if is_scaled[i] else "Not_scaled"
-                        logfile.write("{0:<5}  {1:>11.4e}  {2:>11}  {3:>11.4e}  {4:>11.4e}  {5:>11.4e}\n".format(
+                        logfile.write("{0:<8}  {1:>14.4e}  {2:>14}  {3:>14.4e}  {4:>14.4e}  {5:>14.4e}\n".format(
                             i, scale[elem][0,i], scale_str, scaled_min[i], scaled_max[i], scaled_std[i]))
 
         if logfile is not None and comm.rank == 0:
-            logfile.write("{:-^70}\n".format(""))
+            logfile.write("{:-^88}\n".format(""))
     elif os.path.exists(inputs['preprocessing']['calc_scale']):
         scale = torch.load(inputs['preprocessing']['calc_scale'])
 

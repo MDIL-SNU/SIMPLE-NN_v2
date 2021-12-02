@@ -4,6 +4,7 @@ import yaml
 import collections
 import torch
 import numpy as np
+import time
 
 default_inputs = {
     'generate_features': True,
@@ -182,11 +183,12 @@ def initialize_inputs(input_file_name, logfile):
             not inputs['neural_network']['full_batch']:
         logfile.write("Warning: Optimization method is L-BFGS but full batch mode is off. This might results bad convergence or divergence.\n")
 
-    if inputs['random_seed'] is not None:
-        seed = inputs['random_seed']
-        torch.manual_seed(seed)
-        np.random.seed(seed)
-        logfile.write("*** Random seed: {0:} ***\n".format(seed))
+    if inputs['random_seed'] is None:
+        inputs["random_seed"] = int(time.time()) 
+
+    inputs['neural_network']['energy_coeff'] = float(inputs['neural_network']['energy_coeff'])
+    inputs['neural_network']['force_coeff'] = float(inputs['neural_network']['force_coeff'])
+    inputs['neural_network']['stress_coeff'] = float(inputs['neural_network']['stress_coeff'])
 
     return inputs
 
@@ -235,7 +237,7 @@ def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, p
 def check_inputs(inputs, logfile, run_type, error=False):
     atom_types = inputs['atom_types']
     #Check input valid and write log
-    logfile.write("\n----------------------------------------------------------------------------------------------\n")
+    logfile.write("\n----------------------------------------------------------------------------------------\n")
     if run_type  == 'generate':
         logfile.write("\nInput for descriptor\n")
         descriptor = inputs['descriptor']
@@ -290,7 +292,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
             logfile.write(f"use pca whitening           : {preprocessing['pca_whiten']}\n")
             if preprocessing['pca_whiten']:
                 logfile.write(f"pca min whitening level     : {preprocessing['pca_min_whiten_level']}\n")
-        if preprocessing['calc_atomic_weights']['type']:
+        if preprocessing['calc_atomic_weights']['type'] in ['gdf', 'user']:
             logfile.write(f"atomic_weights type         : {preprocessing['calc_atomic_weights']['type']}\n")
             if preprocessing['calc_atomic_weights']['params']:
                # if 'sigma' in preprocessing['calc_atomic_weights']['params'].keys():
@@ -299,8 +301,8 @@ def check_inputs(inputs, logfile, run_type, error=False):
                         logfile.write(f"sigma for {key:2}                : {value}\n")
                 else:
                     logfile.write(f"params                       : {preprocessing['calc_atomic_weights']['params']}\n")
-        elif preprocessing['calc_atomic_weights']['type']  not in ['gdf', 'user']:
-            logfile.write("Warning : set atomic weight types approatly. preprocessing.atomic_weights.type : gdf/user\n")
+        elif preprocessing['calc_atomic_weights']['type'].upper() != 'NONE':
+            logfile.write("Warning : set atomic weight types appropriately. preprocessing.atomic_weights.type : gdf/user\n")
 
     #Check train model input is valid and write log
     elif run_type  == 'train_model':
@@ -362,7 +364,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
                 if error: assert  os.path.exists(neural_network['scale']), f"{neural_network['scale']} file not exist.. set pca = False or make pca file\n"
             else:
                 if error: assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale_factor file\n"
-        logfile.write(f"use gdf in traning              : {neural_network['atomic_weights']}\n")
+        logfile.write(f"use atomic_weights in traning              : {neural_network['atomic_weights']}\n")
         if neural_network['atomic_weights']:
             if neural_network['weight_modifier']['type'] != 'modified sigmoid':
                 logfile.write("Warning: We only support 'modified sigmoid'\n")
@@ -439,7 +441,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
             logfile.write(f"Use GPU device number           : {neural_network['GPU_number']}\n")
             if error: assert neural_network['GPU_number'] <= torch.cuda.device_count()-1,\
              f"Invalid GPU device number available GPU # {torch.cuda.device_count()-1} , set number {neural_network['GPU_number']} "
-    logfile.write('\n----------------------------------------------------------------------------------------------\n')
+    logfile.write('\n----------------------------------------------------------------------------------------\n')
     logfile.flush()
 
 def _to_boolean(inputs):

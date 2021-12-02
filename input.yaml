@@ -1,7 +1,6 @@
 generate_features: True
 preprocess: False
 train_model: False
-random_seed: False
 
 params:
     species1:   'your/dir/to/parameter/species1'
@@ -36,9 +35,6 @@ preprocessing:
     calc_scale:         True
     scale_type:         'minmax'
     scale_width:        1.0
-    scale_rho:
-        species1:       0.03
-        species2:       0.03
     #GDF
     calc_atomic_weights: 
         type:            'gdf'

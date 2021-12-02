@@ -1,2 +1,2 @@
-__version__ = "20.2"
+__version__ = "2.0.0"
 __git_sha__ = "unknown"
