@@ -107,17 +107,18 @@ def generate(inputs, logfile, comm):
                 errnos = comm.gather(errno) #List of error number
                 errnos = comm.bcast(errnos)
                 for errno in errnos:
-                    if comm.rank == 0:
-                        if errno == 1:
-                            err = "Not implemented symmetry function type."
+                    if errno == 1:
+                        err = "Not implemented symmetry function type."
+                        if comm.rank == 0:
                             logfie.write("\nError: {:}\n".format(err))
-                            raise NotImplementedError(err)
-                        elif errno == 2:
-                            err = "Zeta in G4/G5 must be greater or equal to 1.0."
+                        raise NotImplementedError(err)
+                    elif errno == 2:
+                        err = "Zeta in G4/G5 must be greater or equal to 1.0."
+                        if comm.rank == 0:
                             logfie.write("\nError: {:}\n".format(err))
-                            raise ValueError(err)
-                        else:
-                            assert errno == 0, "Unexpected error occred"
+                        raise ValueError(err)
+                    else:
+                        assert errno == 0, "Unexpected error occred"
 
                 _set_calculated_result(inputs, result, x, dx, da, atoms_per_type, element, symf_params_set, atom_num, comm)
 
