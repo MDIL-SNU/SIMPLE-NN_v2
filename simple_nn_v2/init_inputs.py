@@ -140,7 +140,7 @@ model_default_inputs = \
             }
         }
 
-def initialize_inputs(input_file_name, logfile):
+def initialize_inputs(input_file_name, logfile, comm):
     with open(input_file_name) as input_file:
         input_yaml = yaml.safe_load(input_file)
     if 'descriptor' in input_yaml.keys():
@@ -148,19 +148,18 @@ def initialize_inputs(input_file_name, logfile):
     else:
         descriptor_type = 'symmetry_function'
     params_type = input_yaml['params']
-               
+
     inputs = default_inputs
 
     for key in list(params_type.keys()):
         inputs['params'][key] = None
 
     descriptor_default_inputs = get_descriptor_default_inputs(logfile, descriptor_type=descriptor_type)
-    inputs = _deep_update(inputs, descriptor_default_inputs)
-
-    inputs = _deep_update(inputs, preprocess_default_inputs)
-    inputs = _deep_update(inputs, model_default_inputs)
+    inputs = _deep_update(inputs, descriptor_default_inputs, comm)
+    inputs = _deep_update(inputs, preprocess_default_inputs, comm)
+    inputs = _deep_update(inputs, model_default_inputs, comm)
     # update inputs using 'input.yaml'
-    inputs = _deep_update(inputs, input_yaml, warn_new_key=True, logfile=logfile)
+    inputs = _deep_update(inputs, input_yaml, comm, warn_new_key=True, logfile=logfile)
     #Change .T. , t to boolean
     _to_boolean(inputs)
     #add atom_types information
@@ -168,25 +167,30 @@ def initialize_inputs(input_file_name, logfile):
         inputs['atom_types'] = list(params_type.keys())
     elif not set(inputs['atom_types']) == set(params_type.keys()):
         inputs['atom_types'] = list(params_type.keys())
-        logfile.write("Warning: atom_types not met with params type. Overwritting to atom_types.\n")
+        if comm.rank == 0:
+            logfile.write("Warning: atom_types not met with params type. Overwritting to atom_types.\n")
     else:
-        logfile.write("Warning: atom_types is depreciated. Use params only.\n")
+        if comm.rank == 0:
+            logfile.write("Warning: atom_types is depreciated. Use params only.\n")
 
 
     if len(inputs['atom_types']) == 0:
         raise KeyError
     if not inputs['neural_network']['use_force'] and \
             inputs['preprocessing']['calc_atomic_weights']['type'] is not None:
-        logfile.write("Warning: Force training is off but atomic weights are given. Atomic weights will be ignored.\n")
+        if comm.rank == 0:
+            logfile.write("Warning: Force training is off but atomic weights are given. Atomic weights will be ignored.\n")
     if inputs['neural_network']['optimizer']['method'] == 'L-BFGS' and \
             not inputs['neural_network']['full_batch']:
-        logfile.write("Warning: Optimization method is L-BFGS but full batch mode is off. This might results bad convergence or divergence.\n")
+        if comm.rank == 0:
+            logfile.write("Warning: Optimization method is L-BFGS but full batch mode is off. This might results bad convergence or divergence.\n")
 
     if inputs['random_seed'] is not None:
         seed = inputs['random_seed']
         torch.manual_seed(seed)
         np.random.seed(seed)
-        logfile.write("*** Random seed: {0:} ***\n".format(seed))
+        if comm.rank == 0:
+            logfile.write("*** Random seed: {0:} ***\n".format(seed))
 
     return inputs
 
@@ -197,12 +201,11 @@ def get_descriptor_default_inputs(logfile, descriptor_type='symmetry_function'):
 
     if descriptor_type not in descriptor_inputs.keys():
         err = "'{}' type descriptor is not implemented.".format(descriptor_type)
-        logfile.write("\nError: {:}\n".format(err))
         raise NotImplementedError(err)
 
     return descriptor_inputs[descriptor_type]
 
-def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, parent='top'):
+def _deep_update(source, overrides, comm, warn_new_key=False, logfile=None, depth=0, parent='top'):
     """
     Update a nested dictionary or similar mapping.
     Modify ``source`` in place.
@@ -219,9 +222,10 @@ def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, p
     for key in overrides.keys():
         if isinstance(source, collections.Mapping):
             if warn_new_key and depth < 2 and key not in source:
-                logfile.write("Warning: Unidentified option in {:}: {:}\n".format(parent, key))
+                if comm.rank == 0:
+                    logfile.write("Warning: Unidentified option in {:}: {:}\n".format(parent, key))
             if isinstance(overrides[key], collections.Mapping) and overrides[key]:
-                returned = _deep_update(source.get(key, {}), overrides[key],
+                returned = _deep_update(source.get(key, {}), overrides[key], comm,
                                        warn_new_key=warn_new_key, logfile=logfile,
                                        depth=depth+1, parent=key)
                 source[key] = returned
@@ -233,6 +237,8 @@ def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, p
     return source
 
 def check_inputs(inputs, logfile, run_type, error=False):
+    errno = 0
+    err = None
     atom_types = inputs['atom_types']
     #Check input valid and write log
     logfile.write("\n----------------------------------------------------------------------------------------------\n")
@@ -244,7 +250,8 @@ def check_inputs(inputs, logfile, run_type, error=False):
         if error: assert set(atom_types)  == set(params.keys()), f"atom_types not consistant with params : {set(atom_types).symmetric_difference(params.keys())} "
         for atype in atom_types:
             if not os.path.exists(params[atype]):
-                raise Exception(f"In params {params[atype]:2} file not exist for {atype}")
+                errno = 1
+                err = f"In params {params[atype]:2} file not exist for {atype}"
             else:
                 logfile.write(f"{atype:2} parameters directory     : {params[atype]}\n")
         logfile.write(f"reference data format       : {descriptor['refdata_format']}\n")
@@ -267,7 +274,8 @@ def check_inputs(inputs, logfile, run_type, error=False):
             {set(atom_types).symmetric_difference(params.keys())} "
             for atype in atom_types:
                 if not os.path.exists(params[atype]):
-                    raise Exception(f"In params {params[atype]} file not exist for {atype}")
+                    errno = 1
+                    err = f"In params {params[atype]:2} file not exist for {atype}"
                 else:
                     logfile.write(f"{atype:2} parameters directory     : {params[atype]}\n")
         logfile.write(f"total data list             : {preprocessing['data_list']}\n")
@@ -312,7 +320,8 @@ def check_inputs(inputs, logfile, run_type, error=False):
             {set(atom_types).symmetric_difference(params.keys())} "
             for atype in atom_types:
                 if not os.path.exists(params[atype]):
-                    raise Exception(f"In params {params[atype]} file not exist for {atype}")
+                    errno = 1
+                    err = f"In params {params[atype]:2} file not exist for {atype}"
                 else:
                     logfile.write(f"{atype:2} parameters directory         : {params[atype]}\n")
  
@@ -441,6 +450,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
              f"Invalid GPU device number available GPU # {torch.cuda.device_count()-1} , set number {neural_network['GPU_number']} "
     logfile.write('\n----------------------------------------------------------------------------------------------\n')
     logfile.flush()
+    return errno, err
 
 def _to_boolean(inputs):
     check_list =  ['generate_features', 'preprocess',  'train_model']
@@ -452,7 +462,7 @@ def _to_boolean(inputs):
                         'clear_prev_status', 'clear_prev_optimizer', 'load_data_to_gpu']
 
 
-    #True TRUE T t true TrUe .T. ... 
+    #True TRUE T tatrue TrUe .T. ... 
     #False FALSE F f false FaLse .F. ... 
     def convert(dic, dic_key):
         check = dic[dic_key].upper()
