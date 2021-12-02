@@ -94,8 +94,9 @@ def parse_structure_list(logfile, structure_list, comm):
                         structure_tag_idx.append(structure_tags.index(tag))
                 except:
                     err = "Unexpected line format in [str_list]"
-                    logfile.write("\nError: {:}\n".format(err))
-                    logfile.write("ERROR LINE: {:}\n".format(line))
+                    if comm.rank == 0:
+                        logfile.write("\nError: {:}\n".format(err))
+                        logfile.write("ERROR LINE: {:}\n".format(line))
                     raise NotImplementedError(err)
 
     return structure_tags, structure_weights, structure_file_list, structure_slicing_list, structure_tag_idx
@@ -181,7 +182,8 @@ def save_to_datafile(inputs, data, data_idx, logfile):
         torch.save(data, tmp_filename)
     except:
         err = "Unexpected error during save data to .pt file"
-        logfile.write("\nError: {:}\n".format(err))
+        if comm.rank == 0:
+            logfile.write("\nError: {:}\n".format(err))
         raise NotImplementedError(err)
 
     return tmp_filename

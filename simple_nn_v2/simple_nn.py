@@ -42,19 +42,24 @@ def run(input_file_name):
                 print("MPI4PY does not support in train model. Set train_model: False")
             raise Exception
 
+
     if inputs['generate_features'] is True:
-        comm.barrier()
+        errno = 0
+        err = None
         if comm.rank == 0:
-            check_inputs(inputs, logfile, 'generate')
+            errno, err = check_inputs(inputs, logfile, 'generate')
+        check_errno(errno, err, comm)
+
         generate = get_generate_function(logfile, descriptor_type=inputs['descriptor']['type'])
-        comm.barrier()
         generate(inputs, logfile, comm)
 
     if inputs['preprocess'] is True:
-        comm.barrier()
+        errno = 0
+        err = None
         if comm.rank == 0:
-            check_inputs(inputs, logfile, 'preprocess')
-        comm.barrier()
+            errno, err = check_inputs(inputs, logfile, 'preprocess')
+        check_errno(errno, err, comm)
+
         preprocess(inputs, logfile, comm)
 
     if inputs['train_model'] is True:
@@ -71,7 +76,6 @@ def get_generate_function(logfile, descriptor_type='symmetry_function'):
 
     if descriptor_type not in generator.keys():
         err = "'{}' type descriptor is not implemented.".format(descriptor_type)
-        logfile.write("\nError: {:}\n".format(err))
         raise NotImplementedError(err)
 
     return generator[descriptor_type]
@@ -100,4 +104,10 @@ def write_inputs(inputs):
     """
     with open('input_cont.yaml', 'w') as fil:
         yaml.dump(inputs, fil, default_flow_style=False)
+
+def check_errno(errno, err, comm):
+    errno = comm.bcast(errno)
+    err = comm.bcast(err)
+    if errno != 0:
+        raise Exception(err)
 

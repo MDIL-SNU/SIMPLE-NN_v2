@@ -19,15 +19,17 @@ def preprocess(inputs, logfile, comm):
         logfile(file obj): logfile object
     """
     start_time = time.time()
-    data_list = inputs['preprocessing']['data_list']
-    _split_train_list_and_valid_list(inputs, data_list)
 
     # Extract specific feature values('x') from generated data files
     # feature_list.shape(): [(sum of atoms in each data file), (feature length)]
-    train_feature_list, train_idx_list, train_dir_list = util_feature._make_full_featurelist(inputs['preprocessing']['train_list'], 'x', inputs['atom_types'], use_idx=False)
-    train_feature_list = comm.bcast(train_feature_list)
-    train_idx_list = comm.bcast(train_idx_list)
-    train_dir_list = comm.bcast(train_dir_list)
+    train_feature_list = train_idx_list = train_dir_list = None
+    data_list = inputs['preprocessing']['data_list']
+    if comm.rank == 0:
+        _split_train_list_and_valid_list(inputs, data_list)
+        train_feature_list, train_idx_list, train_dir_list = util_feature._make_full_featurelist(inputs['preprocessing']['train_list'], 'x', inputs['atom_types'], use_idx=False)
+    train_feature_list = comm.bcast(train_feature_list, 0)
+    train_idx_list = comm.bcast(train_idx_list, 0)
+    train_dir_list = comm.bcast(train_dir_list, 0)
 
     # scale[atom_type][0]: (mid_range or mean) of each features
     # scale[atom_type][1]: (width or standard_deviation) of each features
