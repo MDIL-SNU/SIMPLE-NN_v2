@@ -141,7 +141,7 @@ model_default_inputs = \
             }
         }
 
-def initialize_inputs(input_file_name, logfile, comm):
+def initialize_inputs(input_file_name, logfile):
     with open(input_file_name) as input_file:
         input_yaml = yaml.safe_load(input_file)
     if 'descriptor' in input_yaml.keys():
@@ -156,11 +156,11 @@ def initialize_inputs(input_file_name, logfile, comm):
         inputs['params'][key] = None
 
     descriptor_default_inputs = get_descriptor_default_inputs(logfile, descriptor_type=descriptor_type)
-    inputs = _deep_update(inputs, descriptor_default_inputs, comm)
-    inputs = _deep_update(inputs, preprocess_default_inputs, comm)
-    inputs = _deep_update(inputs, model_default_inputs, comm)
+    inputs = _deep_update(inputs, descriptor_default_inputs)
+    inputs = _deep_update(inputs, preprocess_default_inputs)
+    inputs = _deep_update(inputs, model_default_inputs)
     # update inputs using 'input.yaml'
-    inputs = _deep_update(inputs, input_yaml, comm, warn_new_key=True, logfile=logfile)
+    inputs = _deep_update(inputs, input_yaml, warn_new_key=True, logfile=logfile)
     #Change .T. , t to boolean
     _to_boolean(inputs)
     #add atom_types information
@@ -168,23 +168,19 @@ def initialize_inputs(input_file_name, logfile, comm):
         inputs['atom_types'] = list(params_type.keys())
     elif not set(inputs['atom_types']) == set(params_type.keys()):
         inputs['atom_types'] = list(params_type.keys())
-        if comm.rank == 0:
-            logfile.write("Warning: atom_types not met with params type. Overwritting to atom_types.\n")
+        logfile.write("Warning: atom_types not met with params type. Overwritting to atom_types.\n")
     else:
-        if comm.rank == 0:
-            logfile.write("Warning: atom_types is depreciated. Use params only.\n")
+        logfile.write("Warning: atom_types is depreciated. Use params only.\n")
 
 
     if len(inputs['atom_types']) == 0:
         raise KeyError
     if not inputs['neural_network']['use_force'] and \
             inputs['preprocessing']['calc_atomic_weights']['type'] is not None:
-        if comm.rank == 0:
-            logfile.write("Warning: Force training is off but atomic weights are given. Atomic weights will be ignored.\n")
+        logfile.write("Warning: Force training is off but atomic weights are given. Atomic weights will be ignored.\n")
     if inputs['neural_network']['optimizer']['method'] == 'L-BFGS' and \
             not inputs['neural_network']['full_batch']:
-        if comm.rank == 0:
-            logfile.write("Warning: Optimization method is L-BFGS but full batch mode is off. This might results bad convergence or divergence.\n")
+        logfile.write("Warning: Optimization method is L-BFGS but full batch mode is off. This might results bad convergence or divergence.\n")
 
     if inputs['random_seed'] is None:
         inputs["random_seed"] = int(time.time()) 
@@ -207,7 +203,7 @@ def get_descriptor_default_inputs(logfile, descriptor_type='symmetry_function'):
 
     return descriptor_inputs[descriptor_type]
 
-def _deep_update(source, overrides, comm, warn_new_key=False, logfile=None, depth=0, parent='top'):
+def _deep_update(source, overrides, warn_new_key=False, logfile=None, depth=0, parent='top'):
     """
     Update a nested dictionary or similar mapping.
     Modify ``source`` in place.
@@ -224,10 +220,9 @@ def _deep_update(source, overrides, comm, warn_new_key=False, logfile=None, dept
     for key in overrides.keys():
         if isinstance(source, collections.Mapping):
             if warn_new_key and depth < 2 and key not in source:
-                if comm.rank == 0:
-                    logfile.write("Warning: Unidentified option in {:}: {:}\n".format(parent, key))
+                logfile.write("Warning: Unidentified option in {:}: {:}\n".format(parent, key))
             if isinstance(overrides[key], collections.Mapping) and overrides[key]:
-                returned = _deep_update(source.get(key, {}), overrides[key], comm,
+                returned = _deep_update(source.get(key, {}), overrides[key], 
                                        warn_new_key=warn_new_key, logfile=logfile,
                                        depth=depth+1, parent=key)
                 source[key] = returned
@@ -266,6 +261,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
         logfile.write(f"read force from data        : {descriptor['read_force']}\n")
         logfile.write(f"read stress from data       : {descriptor['read_stress']}\n")
         logfile.write(f"save dx as sparse tensor    : {descriptor['dx_save_sparse']}\n")
+        logfile.flush()
     #Check prerpcess input is valid and write log
     elif run_type  == 'preprocess':
         preprocessing = inputs['preprocessing']
@@ -311,6 +307,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
                     logfile.write(f"params                       : {preprocessing['calc_atomic_weights']['params']}\n")
         elif preprocessing['calc_atomic_weights']['type'].upper() != 'NONE':
             logfile.write("Warning : set atomic weight types appropriately. preprocessing.atomic_weights.type : gdf/user\n")
+        logfile.flush()
 
     #Check train model input is valid and write log
     elif run_type  == 'train_model':
@@ -450,6 +447,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
             logfile.write(f"Use GPU device number           : {neural_network['GPU_number']}\n")
             if error: assert neural_network['GPU_number'] <= torch.cuda.device_count()-1,\
              f"Invalid GPU device number available GPU # {torch.cuda.device_count()-1} , set number {neural_network['GPU_number']} "
+        logfile.flush()
     logfile.write('\n----------------------------------------------------------------------------------------\n')
     logfile.flush()
     return errno, err

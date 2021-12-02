@@ -136,6 +136,7 @@ def generate(inputs, logfile, comm):
 
         if comm.rank == 0:
             logfile.write(" ~ {}/data{}.pt\n".format(inputs['descriptor']['save_directory'], data_idx-1))
+            logfile.flush()
 
     if comm.rank == 0:
         data_list_fil.close()
