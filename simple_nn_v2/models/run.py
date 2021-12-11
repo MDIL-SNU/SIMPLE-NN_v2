@@ -47,19 +47,12 @@ def train(inputs, logfile):
     logfile.write(f"Elapsed time in training. {time.time()-start_time:10} s.\n")
 
 def _get_torch_device(inputs):
-    if torch.cuda.is_available():
+    if inputs['neural_network']['load_data_to_gpu'] and torch.cuda.is_available():
         cuda_num = inputs['neural_network']['GPU_number']
         device = 'cuda'+':'+str(cuda_num) if cuda_num else 'cuda'
     else:
         device = 'cpu'
     return torch.device(device)
-
-def _get_torch_device_optional(inputs):
-    if inputs['neural_network']['load_data_to_gpu']:
-        device = _get_torch_device(inputs)
-    else:
-        device = torch.device('cpu')
-    return device
 
 def _set_pararrelism(inputs, logfile):
     if inputs['neural_network']['intra_op_parallelism_threads'] != 0:
@@ -120,7 +113,7 @@ def _load_scale_factor_and_pca(inputs, logfile, checkpoint):
     return scale_factor, pca
 
 def _convert_to_tensor(inputs, logfile, scale_factor, pca):
-    device = _get_torch_device_optional(inputs)
+    device = _get_torch_device(inputs)
     for element in inputs['atom_types']:
         if scale_factor:
             max_plus_min  = torch.tensor(scale_factor[element][0], device=device)

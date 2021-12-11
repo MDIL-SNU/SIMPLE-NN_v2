@@ -90,7 +90,7 @@ neural_network:
     scale:  True
     atomic_weights:    False
     weight_modifier: 
-        type:           'modified_sigmoid'
+        type:           'modified sigmoid'
         params: 
             species1:
                 b:  100

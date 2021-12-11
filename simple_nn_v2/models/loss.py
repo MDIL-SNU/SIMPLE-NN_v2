@@ -162,14 +162,14 @@ def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight
         for n in range(n_batch): #Make structure_weighted force
             tmp_idx = item['tot_num'][n].item()
             label = item['struct_type'][n]
-            partial_f_loss = f_loss[batch_idx:(batch_idx+tmp_idx)]
-            partial_gdf = item['atomic_weights'][batch_idx:(batch_idx+tmp_idx)]
+            partial_f_loss = f_loss[batch_idx:batch_idx + tmp_idx]
+            partial_gdf = item['atomic_weights'][batch_idx:batch_idx + tmp_idx]
             partial_f_mean = torch.mean(partial_f_loss)
             progress_dict['f_err'][label].update(partial_f_mean.detach().item() * 3, tmp_idx)
             progress_dict['tot_f_err'].update(partial_f_mean.detach().item() * 3, tmp_idx)
-            for it in range(tmp_idx):
-                partial_f_loss[it] =  partial_f_loss[it] * partial_gdf[it]
-            f_loss[batch_idx:(batch_idx+tmp_idx)] = partial_f_loss
+            partial_gdf = partial_gdf.view([-1, 1])
+            partial_f_loss *= partial_gdf
+            f_loss[batch_idx:batch_idx + tmp_idx] = partial_f_loss
             batch_idx += tmp_idx
     #Non GDF scheme. Use structure weight factor
     else:
@@ -177,11 +177,11 @@ def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight
         for n in range(n_batch): #Make structure_weighted force
             tmp_idx = item['tot_num'][n].item()
             label = item['struct_type'][n]
-            partial_f_loss = f_loss[batch_idx:(batch_idx+tmp_idx)]
+            partial_f_loss = f_loss[batch_idx:batch_idx + tmp_idx]
             partial_f_mean = torch.mean(partial_f_loss)
             progress_dict['f_err'][label].update(partial_f_mean.detach().item() * 3, tmp_idx)
             progress_dict['tot_f_err'].update(partial_f_mean.detach().item() * 3, tmp_idx)
-            f_loss[batch_idx:(batch_idx+tmp_idx)] = partial_f_loss * weight[n].item() #* weight for gdf
+            f_loss[batch_idx:batch_idx + tmp_idx] = partial_f_loss * weight[n].item() #* weight for gdf
             batch_idx += tmp_idx
 
     w_f_loss = torch.mean(f_loss)
@@ -194,10 +194,10 @@ def get_s_loss(S_, S, criterion, progress_dict, n_batch, item, weight):
     for n in range(n_batch): #Make structure_weighted stress
         tmp_idx = 6
         label = item['struct_type'][n]
-        partial_s_loss = torch.mean(s_loss[batch_idx:(batch_idx+tmp_idx)] * 6)
+        partial_s_loss = torch.mean(s_loss[batch_idx:batch_idx + tmp_idx] * 6)
         progress_dict['s_err'][label].update(partial_s_loss.detach().item(), tmp_idx)
         progress_dict['tot_s_err'].update(partial_s_loss.detach().item(), tmp_idx)
-        s_loss[batch_idx:(batch_idx+tmp_idx)] = s_loss[batch_idx:(batch_idx+tmp_idx)] * weight[n].item()
+        s_loss[batch_idx:batch_idx + tmp_idx] = s_loss[batch_idx:batch_idx + tmp_idx] * weight[n].item()
         batch_idx += tmp_idx
 
     w_s_loss = torch.mean(s_loss)

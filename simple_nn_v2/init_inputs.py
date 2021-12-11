@@ -370,7 +370,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
                 if error: assert  os.path.exists(neural_network['scale']), f"{neural_network['scale']} file not exist.. set pca = False or make pca file\n"
             else:
                 if error: assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale_factor file\n"
-        logfile.write(f"use atomic_weights in traning              : {neural_network['atomic_weights']}\n")
+        logfile.write(f"use atomic_weights in traning   : {neural_network['atomic_weights']}\n")
         if neural_network['atomic_weights']:
             if neural_network['weight_modifier']['type'] != 'modified sigmoid':
                 logfile.write("Warning: We only support 'modified sigmoid'\n")
