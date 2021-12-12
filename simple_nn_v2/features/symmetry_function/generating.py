@@ -81,7 +81,7 @@ def generate(inputs, logfile, comm):
                 mpi_quotient  = atoms_per_type[element] // comm.size
                 mpi_remainder = atoms_per_type[element] %  comm.size
                 #MPI index     
-                begin_idx = comm.rank * mpi_quotient + min(comm.rank , mpi_remainder)
+                begin_idx = comm.rank * mpi_quotient + min(comm.rank, mpi_remainder)
                 end_idx = begin_idx + mpi_quotient
                 #Distribute mpi_remainder to mpi 
                 if mpi_remainder > comm.rank:
@@ -90,7 +90,7 @@ def generate(inputs, logfile, comm):
                 # cal_atom_idx(int list): atom index for calculation    ex) [2,3,4]
                 # cal_atom_num(int): atom numbers for calculation       ex) 3
                 cal_atom_idx, cal_atom_num, x, dx, da = _initialize_symmetry_function_variables(atom_idx_per_type,\
-                    element, symf_params_set, atom_num, mpi_range=(begin_idx,end_idx))
+                    element, symf_params_set, atom_num, mpi_range=(begin_idx, end_idx))
 
                 # Convert cal_atom_idx, x, dx, da into C type data
                 cal_atom_idx_p = ffi.cast('int *', cal_atom_idx.ctypes.data)

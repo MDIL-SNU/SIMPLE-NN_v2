@@ -88,7 +88,7 @@ def _calculate_scale(inputs, logfile, feature_list, comm):
             if len(feature_list[elem]) <= 0:
                 scale[elem][1,:] = 1.
             else:
-                scale[elem][0], scale[elem][1] = calculate_scale_factor(inputs, feature_list, elem)
+                scale[elem][0], scale[elem][1] = calculate_scale_factor(inputs, feature_list, elem, comm)
                 scale[elem][1, scale[elem][1,:] < 1e-15] = 1.
 
                 is_scaled = np.array([True] * inp_size)
