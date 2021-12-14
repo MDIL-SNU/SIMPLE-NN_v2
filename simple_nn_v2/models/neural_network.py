@@ -129,6 +129,8 @@ class FCN(torch.nn.Module):
                 self.lin.add_module(f'tanh_{i}', torch.nn.SELU())
             elif acti_func == 'swish':
                 self.lin.add_module(f'swish_{i}', swish())
+            else:
+                assert False
 
         self.lin.add_module(f'lin_{i+1}', torch.nn.Linear(hn, 1))
 
