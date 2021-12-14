@@ -23,11 +23,18 @@ class DummyMPI(object):
     def bcast(self, data, root=0):
         return data
 
-    def scatter(self,data, root=0):
+    def scatter(self, data, root=0):
         return data
 
-    def allgather(self,data):
+    def allgather(self, data):
         return [data]
+
+    def Allgatherv(self, sendbuf, recvbuf, count, displ, dtype):
+        if sendbuf.size != recvbuf.size:
+            assert False
+        for i in range(sendbuf.size):
+            recvbuf[i] = sendbuf[i]
+        return recvbuf
 
 class MPI4PY(object):
     def __init__(self):

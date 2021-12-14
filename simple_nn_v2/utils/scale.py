@@ -104,8 +104,5 @@ def uniform_gas(inputs, feature_list, atom_type, comm):
         else:
             assert False
 
-    if comm.size == 1:
-        return mean, sendbuf
-    else:
-        comm.Allgatherv(sendbuf, recvbuf, count, displ, "double")
-        return mean, recvbuf
+    comm.Allgatherv(sendbuf, recvbuf, count, displ, "double")
+    return mean, recvbuf
