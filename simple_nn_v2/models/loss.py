@@ -106,11 +106,11 @@ def get_e_loss(atom_types, loss_type, atomic_E, E_, n_atoms, item, criterion, pr
     if not atomic_e: # Normal
         e_loss = 0.
         if loss_type == 1:
-            e_loss = criterion(E_.squeeze() / n_atoms, item['E'].type(dtype).to(device=device, non_blocking=non_block) / n_atoms) * n_atoms
-        elif loss_type == 2:
-            e_loss = criterion(E_.squeeze(), item['E'].type(dtype).to(device=device, non_blocking=non_block))
-        else:
             e_loss = criterion(E_.squeeze() / n_atoms, item['E'].type(dtype).to(device=device, non_blocking=non_block) / n_atoms)
+        elif loss_type == 2:
+            e_loss = criterion(E_.squeeze() / n_atoms, item['E'].type(dtype).to(device=device, non_blocking=non_block) / n_atoms) * n_atoms
+        else:
+            e_loss = criterion(E_.squeeze(), item['E'].type(dtype).to(device=device, non_blocking=non_block))
 
         w_e_loss = torch.mean(e_loss * weight)
         for i, el in enumerate(e_loss):
@@ -147,14 +147,13 @@ def get_e_loss(atom_types, loss_type, atomic_E, E_, n_atoms, item, criterion, pr
     return w_e_loss
 
 def get_f_loss(loss_type, F_, F, criterion, progress_dict, n_batch, item, weight, gdf=False):
-    if loss_type == 2:
+    if loss_type == 1:
+        f_loss = criterion(F_, F)
+    else:
         # check the scale value: current = norm(force difference)
         # Force different scaling : larger force difference get higher weight !!
         force_diffscale = torch.sqrt(torch.norm(F_ - F, dim=1, keepdim=True).detach())
         f_loss = criterion(force_diffscale * F_, force_diffscale * F)
-        #aw_factor need
-    else:
-        f_loss = criterion(F_, F)
     
     #GDF : using force weight scheme by G vector
     if gdf:

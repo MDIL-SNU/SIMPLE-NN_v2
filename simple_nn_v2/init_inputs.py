@@ -175,9 +175,9 @@ def initialize_inputs(input_file_name, logfile):
 
     if len(inputs['atom_types']) == 0:
         raise KeyError
-    if not inputs['neural_network']['use_force'] and \
-            inputs['preprocessing']['calc_atomic_weights']['type'] is not None:
-        logfile.write("Warning: Force training is off but atomic weights are given. Atomic weights will be ignored.\n")
+    if not inputs['neural_network']['use_force'] and isinstance(inputs['preprocessing']['calc_atomic_weights'], dict):
+        if inputs['preprocessing']['calc_atomic_weights']['type'] is not None:
+            logfile.write("Warning: Force training is off but atomic weights are given. Atomic weights will be ignored.\n")
     if inputs['neural_network']['optimizer']['method'] == 'L-BFGS' and \
             not inputs['neural_network']['full_batch']:
         logfile.write("Warning: Optimization method is L-BFGS but full batch mode is off. This might results bad convergence or divergence.\n")
@@ -296,17 +296,20 @@ def check_inputs(inputs, logfile, run_type, error=False):
             logfile.write(f"use pca whitening           : {preprocessing['pca_whiten']}\n")
             if preprocessing['pca_whiten']:
                 logfile.write(f"pca min whitening level     : {preprocessing['pca_min_whiten_level']}\n")
-        if preprocessing['calc_atomic_weights']['type'] in ['gdf', 'user']:
-            logfile.write(f"atomic_weights type         : {preprocessing['calc_atomic_weights']['type']}\n")
-            if preprocessing['calc_atomic_weights']['params']:
-               # if 'sigma' in preprocessing['calc_atomic_weights']['params'].keys():
-                if isinstance(preprocessing['calc_atomic_weights']['params'], dict):
-                    for key, value in preprocessing['calc_atomic_weights']['params'].items():
-                        logfile.write(f"sigma for {key:2}                : {value}\n")
-                else:
-                    logfile.write(f"params                       : {preprocessing['calc_atomic_weights']['params']}\n")
-        elif preprocessing['calc_atomic_weights']['type'].upper() != 'NONE':
-            logfile.write("Warning : set atomic weight types appropriately. preprocessing.atomic_weights.type : gdf/user\n")
+        if preprocessing['calc_atomic_weights']:
+            logfile.write(f"calc_atomic_weights         : True\n")
+            if preprocessing['calc_atomic_weights']['type'] in ['gdf', 'user']:
+                logfile.write(f"atomic_weights type         : {preprocessing['calc_atomic_weights']['type']}\n")
+                if preprocessing['calc_atomic_weights']['params']:
+                    if isinstance(preprocessing['calc_atomic_weights']['params'], dict):
+                        for key, value in preprocessing['calc_atomic_weights']['params'].items():
+                            logfile.write(f"sigma for {key:2}                : {value}\n")
+                    else:
+                        logfile.write(f"params                       : {preprocessing['calc_atomic_weights']['params']}\n")
+            else:
+                logfile.write("Warning : set atomic weight types appropriately. preprocessing.atomic_weights.type : gdf/user\n")
+        else:
+            logfile.write(f"calc_atomic_weights         : {preprocessing['calc_atomic_weights']}\n")
         logfile.flush()
 
     #Check train model input is valid and write log
