@@ -1,9 +1,6 @@
 ./test_input/preprocess/data2.pt
 ./test_input/preprocess/data3.pt
-./test_input/preprocess/data1.pt
 ./test_input/preprocess/data5.pt
 ./test_input/preprocess/data6.pt
-./test_input/preprocess/data4.pt
 ./test_input/preprocess/data8.pt
-./test_input/preprocess/data7.pt
 ./test_input/preprocess/data9.pt

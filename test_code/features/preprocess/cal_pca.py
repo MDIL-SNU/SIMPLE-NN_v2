@@ -27,7 +27,7 @@ print("pca generate done")
 
 
 #Saving part
-#torch.save(pca, f"{rootdir}pca_match")
+torch.save(pca, f"{rootdir}pca_match")
 
 
 pca_match = torch.load(f"{rootdir}pca_match")

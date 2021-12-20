@@ -28,7 +28,7 @@ def test():
     inputs = dict()
     logfile = open('LOG','w')
     inputs['atom_types'] = ['Si']
-    inputs['preprocessing'] = { 'atomic_weights':{'type':'gdf','params':{'sigma':0.02}}, 'valid_list':None, 'weight_modifier':{'type':None},
+    inputs['preprocessing'] = { 'calc_atomic_weights':{'type':'gdf','params':{'sigma':0.02}}, 'valid_list':None, 'weight_modifier':{'type':None},
      'calc_scale':True, 'scale_type':'minmax', 'scale_width':1.0,'scale_rho':None, 'valid_rate':0.0}
 
     #Temporary symmetry function
@@ -77,7 +77,7 @@ def test():
             print('Symmetry function')
             print(torch.load(fil)['x'])
             print('Gaussian density function ')
-            print(torch.load(fil)['gdf'])
+            print(torch.load(fil)['atomic_weights'])
             print('_________________________________________________')
 
     print('\n\n')
@@ -108,15 +108,15 @@ def test():
     print('Assertion Check')
     for idx, fil in enumerate(train_dir_list):
         if os.path.exists(fil):
-            tmp_val_even = np.abs(torch.load(fil)['gdf'][0] - reduced_gdf[2*idx])
-            tmp_val_odd = np.abs(torch.load(fil)['gdf'][1] - reduced_gdf[2*idx+1])
+            tmp_val_even = np.abs(torch.load(fil)['atomic_weights'][0] - reduced_gdf[2*idx])
+            tmp_val_odd = np.abs(torch.load(fil)['atomic_weights'][1] - reduced_gdf[2*idx+1])
             assert (tmp_val_even < 1E-2), f"Error : Wrong GDF value diff {tmp_val_even} "
             assert (tmp_val_odd < 1E-2), f"Error : Wrong GDF value diff {tmp_val_odd} "
             print(fil + ' passed ')
     print('_________________________________________________')
 
     #Check GDF sigma = Auto Part
-    inputs['preprocessing']['atomic_weights']['params']['sigma'] = 'Auto'
+    inputs['preprocessing']['calc_atomic_weights']['params']['sigma'] = 'Auto'
     _calculate_gdf(inputs, logfile, train_feature_list, train_idx_list ,train_dir_list, scale_minmax, comm)
 
 if __name__ == '__main__':

@@ -10,8 +10,9 @@ params:
   O: ./test_input/generate/params_O
 descriptor:
   type: symmetry_function
-  valid_rate: 0.4
-  remain_pickle: True
   compress_outcar: True
-  save_to_pickle: False
+
+preprocessing:
+  valid_rate: 0.4
+  shuffle: False
 

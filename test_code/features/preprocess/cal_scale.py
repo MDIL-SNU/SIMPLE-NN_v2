@@ -19,8 +19,10 @@ print('_calculate_scale test')
 train_feature_list, train_idx, train_dir  = util_ft._make_full_featurelist(rootdir+'train_list', 'x', inputs['atom_types'])
 print('generate train_feature_list done ')
 print(f"Road pregenerated featurelist : {rootdir}feature_match")
-#torch.save(train_feature_list,rootdir+'feature_match')
-feature_match , match_idx, match_dir = torch.load(f"{rootdir}feature_match")
+#Generate save
+#torch.save([train_feature_list, train_idx, train_dir], rootdir+'feature_match')
+
+feature_match, train_idx, train_dir = torch.load(f"{rootdir}feature_match")
 
 if np.sum(train_feature_list['Si']-feature_match['Si']) == 0.0:
     print("Same train_feature_list generated")
@@ -33,6 +35,7 @@ scale = preprocessing._calculate_scale(inputs, logfile, train_feature_list, comm
 print("generate scale factor done")
 print(f"Road pregenerated scale : {rootdir}scale_match")
 
+#Generate value
 #torch.save(scale, rootdir+'scale_match')
 scale_match = torch.load(f"{rootdir}scale_match")
 

@@ -2,17 +2,12 @@ generate_features: true
 preprocess: false
 train_model: false
 random_seed: 100
-atom_types:
- - Si
- - O
 params:
   Si: ./test_input/params_Si
   O: ./test_input/params_O
+
 descriptor:
   type: symmetry_function
-  valid_rate: 0.4
-  remain_pickle: True
   compress_outcar: True
-  save_to_pickle: False
   save_directory: ./test_input/utils/data
 

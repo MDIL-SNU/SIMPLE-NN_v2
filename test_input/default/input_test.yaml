@@ -40,14 +40,8 @@ preprocessing:
     calc_gdf: True
     atomic_weights: 
        type: 'gdf'
-#       params: 
-#        Te:
-#          b: 100
     weight_modifier: 
        type: 'modified_sigmoid'
-#       params: 
-#        Te:
-#          b: 100
 
 neural_network:
    train_list: './train_list'
@@ -70,11 +64,6 @@ neural_network:
    double_precision: True
    weight_initializer:
       type: 'xavier normal'
-#      params:
-#          gain: 
-#          std: 
-#          mean: 
-#          var: 
    acti_func: 'sigmoid'
    dropout: False
 
@@ -123,9 +112,5 @@ neural_network:
    intra_op_parallelism_threads: 0
    load_data_to_gpu: False
    cuda_number: False
-
-replica:
-   add_NNP_ref: False
-   train_atomic_E: False
 
 
