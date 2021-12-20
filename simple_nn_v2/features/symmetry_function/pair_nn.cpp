@@ -752,7 +752,9 @@ void PairNN::read_file(char *fname) {
       else if (strncmp(tstr, "sigmoid", 7) == 0) nets[nnet].acti[ilayer] = 1;
       else if (strncmp(tstr, "tanh", 4) == 0) nets[nnet].acti[ilayer] = 2;
       else if (strncmp(tstr, "relu", 4) == 0) nets[nnet].acti[ilayer] = 3;
-      else nets[nnet].acti[ilayer] = 4;
+      else if (strncmp(tstr, "selu", 4) == 0) nets[nnet].acti[ilayer] = 4;
+      else if (strncmp(tstr, "swish", 5) == 0) nets[nnet].acti[ilayer] = 5;
+      else nets[nnet].acti[ilayer] = 6;
       inode = 0;
       stats = 7;
       t_wb = 0;
@@ -794,8 +796,7 @@ void PairNN::read_file(char *fname) {
       nets[i].powtwo[tt] = 0.0;
       nets[i].powint[tt] = false;
 
-      if (nets[i].slists[tt].stype == 4 || \
-          nets[i].slists[tt].stype == 5) {
+      if (nets[i].slists[tt].stype == 4 || nets[i].slists[tt].stype == 5) {
         if (nets[i].slists[tt].coefs[2] < 1.0) {
           error->all(FLERR, "Zeta in G4/G5 must be greater or equal to 1.0!");
         }
@@ -919,6 +920,12 @@ double PairNN::evalNet(const double* inpv, double *outv, Net &net){
     else if (net.acti[0] == 3) {
       net.nodes[0][i] = relu(net.nodes[0][i] + net.bias[0][i], net.dnodes[0][i]);
     }
+    else if (net.acti[0] == 4) {
+      net.nodes[0][i] = selu(net.nodes[0][i] + net.bias[0][i], net.dnodes[0][i]);
+    }
+    else if (net.acti[0] == 5) {
+      net.nodes[0][i] = swish(net.nodes[0][i] + net.bias[0][i], net.dnodes[0][i]);
+    }
     else {
       net.nodes[0][i] += net.bias[0][i];
       net.dnodes[0][i] = 1;
@@ -941,6 +948,12 @@ double PairNN::evalNet(const double* inpv, double *outv, Net &net){
         }
         else if (net.acti[l] == 3) {
           net.nodes[l][i] = relu(net.nodes[l][i] + net.bias[l][i], net.dnodes[l][i]);
+        }
+        else if (net.acti[l] == 4) {
+          net.nodes[l][i] = selu(net.nodes[l][i] + net.bias[l][i], net.dnodes[l][i]);
+        }
+        else if (net.acti[l] == 5) {
+          net.nodes[l][i] = swish(net.nodes[l][i] + net.bias[l][i], net.dnodes[l][i]);
         }
         else {
           net.nodes[l][i] += net.bias[l][i];

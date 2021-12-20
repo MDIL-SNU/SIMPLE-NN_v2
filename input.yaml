@@ -27,15 +27,15 @@ preprocessing:
     valid_list:         'valid_list' 
     shuffle:            True
     valid_rate:         0.1
-    #PCA parameters
-    calc_pca:           True
-    pca_whiten:         True
-    pca_min_whiten_level: 1.0e-8
     #Scaling parameters
     calc_scale:         True
     scale_type:         'minmax'
     scale_width:        1.0
-    #GDF
+    #PCA parameters
+    calc_pca:           True
+    pca_whiten:         True
+    pca_min_whiten_level: 1.0e-8
+    #Atomic weights
     calc_atomic_weights: 
         type:            'gdf'
         params: 
@@ -76,7 +76,7 @@ neural_network:
     optimizer:
         method: 'Adam'
     # Loss function related
-    E_loss_type:        0
+    E_loss_type:        1
     F_loss_type:        1
     # Logging & saving related (Epoch)
     show_interval:          1
@@ -90,7 +90,7 @@ neural_network:
     scale:  True
     atomic_weights:    False
     weight_modifier: 
-        type:           'modified_sigmoid'
+        type:           'modified sigmoid'
         params: 
             species1:
                 b:  100

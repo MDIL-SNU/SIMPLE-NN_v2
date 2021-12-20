@@ -1,4 +1,7 @@
 # SIMPLE-NN_v2
+<p align="center">
+<img src="./docs/logo.png", width="500"/>
+</p>
 SIMPLE-NN_v2(SNU Interatomic Machine-learning PotentiaL packagE – version Neural Network)
 
 If you use SIMPLE-NN_v2, please cite this article: 
@@ -11,46 +14,46 @@ If you want more information such as tuning parameters, please visit our online 
 ## Installation
 SIMPLE-NN use Pytorch and mpi4py(optional).
 
-Install Pytorch: https://pytorch.org/
+### Pytorch
+Install Pytorch: https://pytorch.org/get-started/locally
 
-### Importants for pytorch
-
-To use CUDA in model traning, you need to check CUDA version and match pytorch version to it.
-
-For example, in your system CUDA version is 11.3 and installing pytorch 1.10.0 version,  
-```python
-pip3 install torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
-```
-Check detailes in here [https://pytorch.org/get-started/locally/]
-
-If you want to know pytorch with CUDA is well installed, try 
+If CUDA is supported for Pytorch, 
 ```python
 import torch.cuda
 torch.cuda.is_available()
-#True if pytorch well installed
+#True
 ```
 
-install mpi4py:
+### mpi4py
+Install mpi4py:
 ```
 pip install mpi4py
 ```
 
-### From github
-```
+### SIMPLE-NN
+```bash
 git clone https://github.com/MDIL-SNU/SIMPLE-NN_v2.git
 cd SIMPLE-NN_v2
 python setup.py install
 ```
 
-### Install LAMMPS' module
+### LAMMPS' module
 Currently, we support the module for symmetry_function - Neural_network model.
+
+Install LAMMPS: https://github.com/lammps/lammps
+
+Only LAMMPS whose version is `29Oct2020` or later is supported.
+
 Copy the source code to LAMMPS src directory.
 ```
 cp /path/to/simple-nn_v2/features/symmetry_function/pair_nn.* /path/to/lammps/src/
 cp /path/to/simple-nn_v2/features/symmetry_function/symmetry_function.h /path/to/lammps/src/
 ```
 Compile LAMMPS code.
-Only LAMMPS whose version is `29Oct2020` or later is supported.
+```bash
+cd /path/to/lammps/src/
+make mpi
+```
 
 ## Usage
 To use SIMPLE-NN_v2, 3 types of files (input.yaml, params_XX, structure_list) are required.
@@ -116,6 +119,7 @@ Run the code below:
 
 run.py:
 """
+
 from simple_nn_v2 import run
 run('input.yaml')
 ```

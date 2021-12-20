@@ -23,8 +23,18 @@ class DummyMPI(object):
     def bcast(self, data, root=0):
         return data
 
-    def scatter(self,data, root=0):
+    def scatter(self, data, root=0):
         return data
+
+    def allgather(self, data):
+        return [data]
+
+    def Allgatherv(self, sendbuf, recvbuf, count, displ, dtype):
+        if sendbuf.size != recvbuf.size:
+            assert False
+        for i in range(sendbuf.size):
+            recvbuf[i] = sendbuf[i]
+        return recvbuf
 
 class MPI4PY(object):
     def __init__(self):
@@ -39,6 +49,7 @@ class MPI4PY(object):
 
     def disconnect(self):
         self.comm.Disconnect()
+
     def free(self):
         self.comma.Free()
 
@@ -51,5 +62,16 @@ class MPI4PY(object):
     def bcast(self, data, root=0):
         return self.comm.bcast(data, root=root)
 
-    def scatter(self,data, root=0):
+    def scatter(self, data, root=0):
         return self.comm.scatter(data, root=root)
+
+    def allgather(self, data):
+        return self.comm.allgather(data)
+
+    def Allgatherv(self, sendbuf, recvbuf, count, displ, dtype):
+        if dtype == "double":
+            return self.comm.Allgatherv(sendbuf, [recvbuf, count, displ, self.MPI.DOUBLE])
+        elif dtype == "int":
+            return self.comm.Allgatherv(sendbuf, [recvbuf, count, displ, self.MPI.INT])
+        else:
+            assert False

@@ -168,7 +168,8 @@ def gdf_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_
     gdf_list = list()
     for item in batch:
         gdf_list.append(gdf_scaler(item['atomic_weights'], item['atom_idx']))
-    gdf_list = torch.cat(gdf_list, axis=0)
+    non_blocking = True if (load_data_to_gpu and torch.cuda.is_available()) else False
+    gdf_list = _set_tensor_to_device(torch.cat(gdf_list, axis=0), device, non_blocking, load_data_to_gpu)
     tmp_dict['atomic_weights'] = gdf_list
     return tmp_dict
 

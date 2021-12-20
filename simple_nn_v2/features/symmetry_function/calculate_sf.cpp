@@ -40,7 +40,7 @@ extern "C" int calculate_sf(double** cell, double** cart, double** scale,
     // Check for not implemented symfunc type.
     for (int s=0; s < nsyms; ++s) {
         bool implemented = false;
-        for (int i=0; i < sizeof(IMPLEMENTED_TYPE) / sizeof(IMPLEMENTED_TYPE[0]); i++) {
+        for (unsigned int i=0; i < sizeof(IMPLEMENTED_TYPE) / sizeof(IMPLEMENTED_TYPE[0]); i++) {
             if (params_i[s][0] == IMPLEMENTED_TYPE[i]) {
                 implemented = true;
                 break;

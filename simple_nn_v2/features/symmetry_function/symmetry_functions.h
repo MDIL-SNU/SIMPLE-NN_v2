@@ -40,6 +40,25 @@ static inline double relu(double x, double &deriv) {
     }
 }
 
+static inline double selu(double x, double &deriv) {
+    double alpha = 1.6732632423543772848170429916717;
+    double scale = 1.0507009873554804934193349852946;
+    if (x > 0) {
+        deriv = scale;
+        return deriv*x;
+    } else {
+        deriv = scale*alpha*exp(x);
+        return deriv - scale*alpha;
+    }
+}
+
+static inline double swish(double x, double &deriv) {
+    double expl = 1./(1.+exp(-x));
+    double dexpl = expl*(1-expl);
+    deriv =  expl + x*dexpl;
+    return x*expl;
+}
+
 static inline void cutf2(const double dist, const double cutd, double& f, double& df, int slot) {
     static double f_[3], df_[3], dist_[3], cutd_[3];
     if (dist_[slot] == dist && cutd_[slot] == cutd) {
