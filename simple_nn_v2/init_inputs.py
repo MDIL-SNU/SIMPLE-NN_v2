@@ -38,20 +38,17 @@ preprocess_default_inputs = \
                 'valid_list': './valid_list',
                 'shuffle'   : True,
                 'valid_rate': 0.1,
-                #PCA
-                'calc_pca'  : True,
-                'pca_whiten': True,
-                'pca_min_whiten_level': 1e-8,
                 #Scale
                 'calc_scale': True,
                 'scale_type': 'minmax',
                 'scale_width': 1.0,
                 'scale_rho' : None,
+                #PCA
+                'calc_pca'  : True,
+                'pca_whiten': True,
+                'pca_min_whiten_level': 1e-8,
                 #GDF
-                'calc_atomic_weights': {
-                    'type'  : None,
-                    'params': dict(),
-                },
+                'calc_atomic_weights': False,
             }
         }
 
@@ -112,7 +109,7 @@ model_default_inputs = \
                 'F_loss_type'   : 1,
                 # Logging & saving related (Epoch)
                 'show_interval' : 10,
-                'checkpoint_interval':  False,
+                'checkpoint_interval':  0,
                 'energy_criteria'   :   None,
                 'force_criteria'    :   None,
                 'stress_criteria'   :   None,
@@ -134,9 +131,10 @@ model_default_inputs = \
                 'clear_prev_status'     : False,
                 'clear_prev_optimizer'  : False,
                 #Parallelism
+                'use_gpu': True,
                 'inter_op_parallelism_threads': 0,
                 'intra_op_parallelism_threads': 0,
-                'load_data_to_gpu'  : False,
+                'load_data_to_gpu'  : True,
                 'GPU_number'       : None
             }
         }
@@ -186,9 +184,12 @@ def initialize_inputs(input_file_name, logfile):
         inputs["random_seed"] = int(time.time()) 
 
     inputs['neural_network']['energy_coeff'] = float(inputs['neural_network']['energy_coeff'])
-    inputs['neural_network']['force_coeff'] = float(inputs['neural_network']['force_coeff'])
+    inputs['neural_network']['force_coeff']  = float(inputs['neural_network']['force_coeff'])
     inputs['neural_network']['stress_coeff'] = float(inputs['neural_network']['stress_coeff'])
 
+    if inputs['neural_network']['add_NNP_ref'] or inputs['neural_network']['train_atomic_E']:
+        inputs['neural_network']['use_force'] = False
+        inputs['neural_network']['use_stress'] = False
 
     return inputs
 
@@ -305,7 +306,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
                         for key, value in preprocessing['calc_atomic_weights']['params'].items():
                             logfile.write(f"sigma for {key:2}                : {value}\n")
                     else:
-                        logfile.write(f"params                       : {preprocessing['calc_atomic_weights']['params']}\n")
+                        logfile.write(f"params                      : {preprocessing['calc_atomic_weights']['params']}\n")
             else:
                 logfile.write("Warning : set atomic weight types appropriately. preprocessing.atomic_weights.type : gdf/user\n")
         else:
@@ -375,10 +376,8 @@ def check_inputs(inputs, logfile, run_type, error=False):
                 if error: assert  os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale_factor file\n"
         logfile.write(f"use atomic_weights in traning   : {neural_network['atomic_weights']}\n")
         if neural_network['atomic_weights']:
-            if neural_network['weight_modifier']['type'] != 'modified sigmoid':
-                logfile.write("Warning: We only support 'modified sigmoid'\n")
-            else:
-                logfile.write(f"\nWeight modifier type      : {neural_network['weight_modifier']['type']}\n")
+            if neural_network['weight_modifier']['type'] == 'modified sigmoid':
+                logfile.write(f"Weight modifier type            : {neural_network['weight_modifier']['type']}\n")
                 if neural_network['weight_modifier']['params']:
                     logfile.write(f" ---parameters for weight modifier--- \n")
                     for atype in neural_network['weight_modifier']['params'].keys():
@@ -386,6 +385,11 @@ def check_inputs(inputs, logfile, run_type, error=False):
                         for key, val in neural_network['weight_modifier']['params'][atype].items():
                             logfile.write(f" ({key} = {val}) ")
                         logfile.write("\n")
+            elif neural_network['weight_modifier']['type']:
+                logfile.write("Warning: We only support 'modified sigmoid'\n")
+                logfile.write(f"Weight modifier type            : None\n")
+            else:
+                logfile.write(f"Weight modifier type            : None\n")
  
         logfile.write("\n  OPTIMIZATION\n")
         logfile.write(f"optimization method             : {neural_network['optimizer']['method']}\n")
@@ -414,7 +418,7 @@ def check_inputs(inputs, logfile, run_type, error=False):
         logfile.write(f"force  loss function type       : {neural_network['F_loss_type']}\n")
         logfile.write("\n  LOGGING & SAVING\n")
         logfile.write(f"interval (epoch) for show       : {neural_network['show_interval']}\n")
-        if neural_network['checkpoint_interval']:
+        if neural_network['checkpoint_interval'] > 0:
             logfile.write(f"interval (epoch) for checkpoint : {neural_network['checkpoint_interval']}\n")
         if neural_network['energy_criteria'] is not None:
             if error: assert float(neural_network['energy_criteria']) > 0, f"Invalid value for energy_criteria : {neural_netowkr['energy_criteria']}"
@@ -429,16 +433,16 @@ def check_inputs(inputs, logfile, run_type, error=False):
         #logfile.write(f"stop traning criterion if T < V : {neural_network['break_man']}\n")
         if neural_network['continue']:
             logfile.write("\n  CONTINUE\n")
-            logfile.write(f"continue from checkpoint     : {neural_network['continue']}\n")
+            logfile.write(f"continue from checkpoint        : {neural_network['continue']}\n")
             if neural_network['continue'] == 'weights':
                 if error: assert os.path.exists('./potential_saved'), "neural_network.continue : weights must need LAMMPS potential. Set potential ./potential_saved" 
                 logfile.write(f"read neural network model parameters from ./potential_saved\n")
             else:
                 if error: assert os.path.exists(neural_network['continue']), "Cannot find checkpoint file : {neural_network['continue']}. Please set file right or neural_network.contiue : false " 
             logfile.write(f"clear previous status (epoch)   : {neural_network['clear_prev_status']}\n")
-            logfile.write(f"clear previous optimizer          : {neural_network['clear_prev_optimizer']}\n")
+            logfile.write(f"clear previous optimizer        : {neural_network['clear_prev_optimizer']}\n")
             if not neural_network["clear_prev_status"]:
-                logfile.write(f"start epoch         : {neural_network['start_epoch']}\n")
+                logfile.write(f"start epoch                     : {neural_network['start_epoch']}\n")
         logfile.write("\n  PARALLELISM\n")
         logfile.write(f"load data directly to gpu       : {neural_network['load_data_to_gpu']}\n")
         logfile.write(f"number of workers in dataloader : {neural_network['workers']}\n")
