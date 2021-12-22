@@ -1,0 +1,81 @@
+SIMPLE_NN v2.0.0 (76a6186)                                              SEED:        123
+----------------------------------------------------------------------------------------
+                _____ _ _      _ _ ___  _     _____       __    _ __    _               
+               / ____| | \    / | '__ \| |   |  ___|     |  \  | |  \  | |              
+              | |___ | |  \  /  | |__) | |   | |___  ___ |   \ | |   \ | |              
+               \___ \| |   \/   |  ___/| |   |  ___||___|| |\ \| | |\ \| |              
+               ____| | | |\  /| | |    | |___| |___      | | \   | | \   |              
+              |_____/|_|_| \/ |_|_|    |_____|_____|     |_|  \__|_|  \__|              
+
+----------------------------------------------------------------------------------------
+Input for neural_network
+
+Si parameters directory         : params_Si
+O  parameters directory         : params_O
+
+  INPUT DATA
+train                           : False
+test                            : True
+test_list                       : ./test_list
+add NNP reference to files      : False
+train atomic energy             : False
+shuffle dataloader              : True
+
+  NETWORK
+nodes                           : 30-30
+use force in traning            : True
+use stress in training          : False
+double precision                : True
+activation function type        : sigmoid
+use dropout network             : False
+weight initializer              : xavier normal
+use pca in traning              : True
+use scale in traning            : True
+use atomic_weights in traning   : False
+
+  OPTIMIZATION
+optimization method             : Adam
+batch size                      : 10
+use full batch for input        : False
+total traning epoch             : 1000
+learning rate                   : 0.0001
+regularization (L2)             : 1e-06
+
+  LOSS FUNCTION
+energy coefficient              : 1.0
+force coefficient               : 0.1
+scale for loss function         : 1.0
+energy loss function type       : 0
+force  loss function type       : 1
+
+  LOGGING & SAVING
+interval (epoch) for show       : 10
+print structure RMSE            : False
+
+  CONTINUE
+continue from checkpoint        : checkpoint.tar
+clear previous status (epoch)   : False
+clear previous optimizer        : False
+start epoch                     : 1
+
+  PARALLELISM
+load data directly to gpu       : True
+number of workers in dataloader : 0
+CPU core number in pytorch      : 0
+Thread number in pytorch        : 0
+
+----------------------------------------------------------------------------------------
+Parallelism intra_thread : 1 inter_thread : 16
+cuda is used in model.
+Load pytorch model from [checkpoint.tar]
+Load scale factor from checkpoint
+Load pca from checkpoint
+Load previous loss : 6.32e-03
+Evaluation(Testing) model 
+DFT, NNP result saved at 'result_saved'
+----------------------------------------------------------------------------------------------
+Epoch       0 E RMSE(T V) 3.1632e-02          - F RMSE(T V) 2.4954e-01          - learning_rate: 0.0000e+00
+Data load: 0.0000e+00 s/epoch Total load: 0.0000e+00 s/epoch Elapsed: 0.0000e+00 s
+----------------------------------------------------------------------------------------------
+Elapsed time in training. 13.414902210235596 s.
+Total wall time 13.812340497970581 s.

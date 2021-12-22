@@ -38,7 +38,7 @@ def train(inputs, logfile):
         save_atomic_E(inputs, logfile, model, ref_loader, device)
         logfile.write("Adding NNP Energy to pt files Done\n")
 
-    if inputs['neural_network']['train_atomic_E']:
+    elif inputs['neural_network']['train_atomic_E']:
         train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_train')
         if os.path.exists(inputs['neural_network']['valid_list']):
             valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_valid')
@@ -47,7 +47,7 @@ def train(inputs, logfile):
     logfile.write(f"Elapsed time in training. {time.time()-start_time:10} s.\n")
 
 def _get_torch_device(inputs):
-    if inputs['neural_network']['load_data_to_gpu'] and torch.cuda.is_available():
+    if inputs['neural_network']['use_gpu'] and torch.cuda.is_available():
         cuda_num = inputs['neural_network']['GPU_number']
         device = 'cuda'+':'+str(cuda_num) if cuda_num else 'cuda'
     else:

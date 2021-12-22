@@ -1,0 +1,13 @@
+generate_features: false
+preprocess: true
+train_model: false
+random_seed: 123
+
+params:
+    Si: params_Si
+    O:  params_O
+
+preprocessing:
+    valid_rate: 0.1
+    calc_scale: True
+    calc_pca: True

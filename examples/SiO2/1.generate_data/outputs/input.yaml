@@ -1,0 +1,12 @@
+generate_features: true
+preprocess: false
+train_model: false
+random_seed: 123
+
+params:
+    Si: params_Si
+    O:  params_O
+
+descriptor:
+    type: symmetry_function
+    absolute_path: false

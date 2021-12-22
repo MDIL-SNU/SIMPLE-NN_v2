@@ -1,0 +1,19 @@
+generate_features: false
+preprocess: false
+train_model: true
+random_seed: 123
+
+params:
+    Si: params_Si
+    O:  params_O
+
+neural_network:
+    train: false
+    test: true
+    optimizer: 
+        method: Adam
+    nodes: 30-30
+    batch_size: 10
+    continue: checkpoint.tar
+    scale: True
+    pca: True
