@@ -15,7 +15,7 @@ If you want more information such as tuning parameters, please visit our online 
 - Python >= 3.6
 - LAMMPS >= 29Oct2020
 
-We can handle the output file of various quantum calculation code such as `ABINIT`, `CASTEP`, `CP2K`, `Quantum espresso`, `Gaussian`, and `VASP` as dataset via atomic simulation environment module [ASE](https://wiki.fysik.dtu.dk/ase/index.html).
+We can handle the output file of various quantum calculation code such as `ABINIT`, `CASTEP`, `CP2K`, `Quantum espresso`, `Gaussian`, and `VASP` as dataset via atomic simulation environment module ([ASE](https://wiki.fysik.dtu.dk/ase/index.html)).
 
 Please check [here](https://wiki.fysik.dtu.dk/ase/ase/io/io.html) whether ASE module can read the output of your quantum calculation or not. 
 
@@ -23,7 +23,7 @@ Please check [here](https://wiki.fysik.dtu.dk/ase/ase/io/io.html) whether ASE mo
 ### 1. Pytorch
 Install PyTorch: https://pytorch.org/get-started/locally
 
-Choose the PyTorch of stable release for `Python`. If you have CUDA-capable system, please the PyTorch with CUDA. It boosts the training speed.
+Choose the PyTorch of stable release for `Python`. If you have CUDA-capable system, please the PyTorch with CUDA that makes training much faster.
 
 To theck if your GPU driver and CUDA is enabled by PyTorch, run the following commands in python interpretor to return whether or not the CUDA driver is enabled: 
 ```python
