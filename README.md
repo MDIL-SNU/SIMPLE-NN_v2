@@ -111,9 +111,14 @@ Each line contains coefficients for one symmetry function. The format is defined
 
 First column indicates the type of symmetry function. Currently 2, 4 and 5 are available. 
 
-Second and third columns indicate the type index of atoms which starts from 1. The radial symmetry function (type 2) requires only one neighbor atom, so that third column is set to zero. The angular symmtery function (type 4 and 5) needs two neighbor atom.
+Second and third columns indicate the type index of neighboring atoms. The index follows the order defined in `params` in the `input.yaml`. Because the radial symmetry function (type 2) requires only one neighbor atom, the third column is set to zero.
+```bash
+params:
+    Si: params_Si
+    O: params_O
+```
 
-The remaining parameters represent cutoff distance, &eta, &zeta, and &lambda in the symmetry function.
+The remaining parameters represent cutoff distance, \eta, \zeta, and \lambda in the symmetry function.
 
 ### structure_list
 structure_list contains the path of reference data. The format is described below:
