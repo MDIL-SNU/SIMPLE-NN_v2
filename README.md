@@ -14,7 +14,7 @@ If you want more information such as tuning parameters, please visit our online 
 ## Main features
 SIMPLE-NN is Python code to construct the neural network interatomic potential that can be used in Large-scale Atomic/Molecular Massively Parall Simulator (LAMMPS) for atomic simulation.
 - PCA matrix transformation and whitening
-- Uniform training using weighted atomic loss function
+- Uniform training for the biased sampling
 - Replica ensemble for quantifying the uncertainty
 
 ## Requirement
