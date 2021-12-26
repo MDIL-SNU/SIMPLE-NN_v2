@@ -8,24 +8,30 @@ If you use SIMPLE-NN_v2, please cite this article:
 
 K. Lee, D. Yoo, W. Jeong, S. Han, SIMPLE-NN: An efficient package for training and executing neural-network interatomic potentials, *Computer Physics Communications* (2019), https://doi.org/10.1016/j.cpc.2019.04.014.
 
-Here do we describe minimal instruction to run the example of SIMPLE-NN
-If you want more information such as tuning parameters, please visit our online manual(https://simple-nn.readthedocs.io)
+Here do we describe minimal instruction to run the example of SIMPLE-NN.
+If you want more information such as tuning parameters, please visit our online manual(https://simple-nn.readthedocs.io).
+
+## Main features
+SIMPLE-NN is Python code to construct the neural network interatomic potential that can be used in Large-scale Atomic/Molecular Massively Parall Simulator (LAMMPS) for atomic simulation.
+- PCA matrix transformation and whitening
+- Uniform training using weighted atomic loss function
+- Replica ensemble for quantifying the uncertainty
 
 ## Requirement
 - Python >= 3.6
 - LAMMPS >= 29Oct2020
 
-We can handle the output file of various quantum calculation code such as `ABINIT`, `CASTEP`, `CP2K`, `Quantum espresso`, `Gaussian`, and `VASP` as dataset via atomic simulation environment module ([ASE](https://wiki.fysik.dtu.dk/ase/index.html)).
+SIMPLE-NN can handle the output file of various quantum calculation codes such as `ABINIT`, `CASTEP`, `CP2K`, `Quantum espresso`, `Gaussian`, and `VASP` as dataset via atomic simulation environment ([ASE](https://wiki.fysik.dtu.dk/ase/index.html)) module.
 
-Please check [here](https://wiki.fysik.dtu.dk/ase/ase/io/io.html) whether ASE module can read the output of your quantum calculation or not. 
+Please visit [here](https://wiki.fysik.dtu.dk/ase/ase/io/io.html) to check whether ASE module can read the output of your quantum calculation code or not. 
 
 ## Installation
 ### 1. Pytorch
 Install PyTorch: https://pytorch.org/get-started/locally
 
-Choose the PyTorch of stable release for `Python`. If you have CUDA-capable system, please the PyTorch with CUDA that makes training much faster.
+Choose the PyTorch of stable release for `Python`. If you have CUDA-capable system, please download PyTorch with CUDA that makes training much faster.
 
-To theck if your GPU driver and CUDA is enabled by PyTorch, run the following commands in python interpretor to return whether or not the CUDA driver is enabled: 
+To check if your GPU driver and CUDA are enabled by PyTorch, run the following commands in python to return whether or not the CUDA driver is enabled: 
 ```python
 import torch.cuda
 torch.cuda.is_available()
@@ -91,10 +97,11 @@ neural_network:
 ```
 
 ### params_XX
-params_XX (XX means atom type that is included your target system) indicates the coefficients of symmetry functions.
-Each line contains coefficients for one symmetry function. detailed format is described below:
+params_XX (XX means atom symbol included your target system) contains the coefficients of symmetry functions.
+Please read this [paper](https://aip.scitation.org/doi/10.1063/1.3553717) for detailed functional form of symmetry function.
+Each line contains coefficients for one symmetry function. The format is defined as following:
 
-```text
+```bash
 2 1 0 6.0 0.003214 0.0 0.0
 2 1 0 6.0 0.035711 0.0 0.0
 4 1 1 6.0 0.000357 1.0 -1.0
@@ -102,13 +109,11 @@ Each line contains coefficients for one symmetry function. detailed format is de
 4 1 1 6.0 0.089277 1.0 -1.0
 ```
 
-First one indicates the type of symmetry function. Currently G2, G4 and G5 is available.
+First column indicates the type of symmetry function. Currently 2, 4 and 5 are available. 
 
-Second and third indicates the type index of neighbor atoms which starts from 1. For radial symmetry function, 1 neighbor atom is need to calculate the symmetry function value. Thus, third parameter is set to zero. For angular symmtery function, 2 neighbor atom is needed. The order of second and third do not affect to the calculation result.
+Second and third columns indicate the type index of atoms which starts from 1. The radial symmetry function (type 2) requires only one neighbor atom, so that third column is set to zero. The angular symmtery function (type 4 and 5) needs two neighbor atom.
 
-Fourth one means the cutoff radius for cutoff function.
-
-The remaining parameters are the coefficients applied to each symmetry function.
+The remaining parameters represent cutoff distance, &eta, &zeta, and &lambda in the symmetry function.
 
 ### structure_list
 structure_list contains the path of reference data. The format is described below:
@@ -119,9 +124,10 @@ structure_list contains the path of reference data. The format is described belo
 /path/to/{1..10}/output_file :
 ``` 
 The first and second columns stand for the path of reference data and index, repsecitvely.
+The detailed description of index format is explained [here](https://wiki.fysik.dtu.dk/ase/ase/io/io.html) 
 
 ### Script for running SIMPLE-NN
-After preparing input.yaml, params_XX and structure_list, one can run SIMPLE-NN using the script below:
+After preparing input.yaml, params_XX and structure_list, you can run SIMPLE-NN using `run.py` written below:
 
 ```python
 """
@@ -135,6 +141,15 @@ run.py:
 
 from simple_nn_v2 import run
 run('input.yaml')
+```
+
+### Script for using neural network interatomic potential in LAMMPS
+To execute atomic simulation using neural network potential in LAMMPS, `pair_style` and `pair_coeff` in the input script for LAMMPS are written like this:
+
+The atomic symbols after the name of the potential file can be changed depending on your target system.
+```bash
+pair_style nn
+pair_coeff * * potential_saved Si O
 ```
 
 ## Example
