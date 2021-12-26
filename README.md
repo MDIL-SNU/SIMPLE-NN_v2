@@ -118,7 +118,7 @@ params:
     O: params_O
 ```
 
-The remaining parameters represent cutoff distance, \eta, \zeta, and \lambda in the symmetry function.
+The remaining parameters represent cutoff distance, η, ζ, and λ in the symmetry function.
 
 ### structure_list
 structure_list contains the path of reference data. The format is described below:
