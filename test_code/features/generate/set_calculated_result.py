@@ -1,13 +1,13 @@
 import sys
 #sys.path.append('../../../../../')
 sys.path.append('./')
-from simple_nn_v2 import simple_nn
-from simple_nn_v2.init_inputs import initialize_inputs
-from simple_nn_v2.features.symmetry_function import generating
-from simple_nn_v2.features.symmetry_function import utils as symf_utils
-from simple_nn_v2.features.symmetry_function._libsymf import lib, ffi
-from simple_nn_v2.utils import features as util_ft
-from simple_nn_v2.features.symmetry_function.mpi import DummyMPI
+from simple_nn import simple_nn
+from simple_nn.init_inputs import initialize_inputs
+from simple_nn.features.symmetry_function import generating
+from simple_nn.features.symmetry_function import utils as symf_utils
+from simple_nn.features.symmetry_function._libsymf import lib, ffi
+from simple_nn.utils import features as util_ft
+from simple_nn.features.symmetry_function.mpi import DummyMPI
 
 
 # Minimum Setting for Testing Symmetry_function methods

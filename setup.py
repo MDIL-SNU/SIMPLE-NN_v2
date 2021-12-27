@@ -12,7 +12,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 # Read version number.
-exec(open('simple_nn_v2/_version.py').read())
+exec(open('simple_nn/_version.py').read())
 
 def git_sha():
     try:
@@ -21,7 +21,7 @@ def git_sha():
         sha = 'unknown'
     return sha
 
-with open('simple_nn_v2/_version.py', 'w') as fp:
+with open('simple_nn/_version.py', 'w') as fp:
     fp.write('__version__ = "{0:}"\n'.format(__version__))
     fp.write('__git_sha__ = "{0:}"\n'.format(git_sha()))
 
@@ -59,7 +59,7 @@ def is_installed(pkg):
 # TODO: install requires add
 # FIXME: fill the empty part
 setup(
-    name='simple-nn_v2',
+    name='simple-nn',
     version=__version__,
     description='Package for generating atomic potentials using neural network.',
     long_description=long_description,
@@ -92,11 +92,11 @@ setup(
     install_requires=install_requires,
     setup_requires=setup_requires,
     cffi_modules=[
-        "simple_nn_v2/features/symmetry_function/libsymf_builder.py:ffibuilder",
-        "simple_nn_v2/utils/libgdf_builder.py:ffibuilder",
+        "simple_nn/features/symmetry_function/libsymf_builder.py:ffibuilder",
+        "simple_nn/utils/libgdf_builder.py:ffibuilder",
     ],
 )
 
-with open('simple_nn_v2/_version.py', 'w') as fp:
+with open('simple_nn/_version.py', 'w') as fp:
     fp.write('__version__ = "{0:}"\n'.format(__version__))
     fp.write('__git_sha__ = "unknown"\n')

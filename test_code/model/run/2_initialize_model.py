@@ -1,8 +1,8 @@
 import sys
 sys.path.insert(0, '../../../')
-from simple_nn_v2 import simple_nn
-from simple_nn_v2.init_inputs import initialize_inputs
-from simple_nn_v2.models import run
+from simple_nn import simple_nn
+from simple_nn.init_inputs import initialize_inputs
+from simple_nn.models import run
 
 import torch
 from torch.nn import Linear

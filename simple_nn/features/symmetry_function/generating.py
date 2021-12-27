@@ -6,9 +6,9 @@ import numpy as np
 from ase import io, units
 import ase
 
-from simple_nn_v2.features import data_generator
-from simple_nn_v2.utils.features import _gen_2Darray_for_ffi
-from simple_nn_v2.features.symmetry_function import utils  as utils_symf
+from simple_nn.features import data_generator
+from simple_nn.utils.features import _gen_2Darray_for_ffi
+from simple_nn.features.symmetry_function import utils  as utils_symf
 
 try:
     from ._libsymf import lib, ffi

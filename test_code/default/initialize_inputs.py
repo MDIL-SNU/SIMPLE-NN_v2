@@ -1,7 +1,7 @@
 import sys
 sys.path.append('./')
-from simple_nn_v2 import simple_nn
-from simple_nn_v2 import init_inputs
+from simple_nn import simple_nn
+from simple_nn import init_inputs
 import torch
 
 

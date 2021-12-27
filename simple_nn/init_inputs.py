@@ -105,7 +105,7 @@ model_default_inputs = \
                 'lr_decay'      : None,
                 'regularization': 1e-6, #L2 regularization
                 # Loss function related
-                'E_loss_type'   : 0,
+                'E_loss_type'   : 1,
                 'F_loss_type'   : 1,
                 # Logging & saving related (Epoch)
                 'show_interval' : 10,

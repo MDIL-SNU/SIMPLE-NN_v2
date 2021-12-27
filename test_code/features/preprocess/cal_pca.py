@@ -6,11 +6,11 @@ import torch
 import numpy as np
 import sklearn
 
-from simple_nn_v2 import simple_nn
-from simple_nn_v2.init_inputs import initialize_inputs
-from simple_nn_v2.features.symmetry_function import generate
-from simple_nn_v2.utils import features as util_ft
-from simple_nn_v2.features import preprocessing
+from simple_nn import simple_nn
+from simple_nn.init_inputs import initialize_inputs
+from simple_nn.features.symmetry_function import generate
+from simple_nn.utils import features as util_ft
+from simple_nn.features import preprocessing
 
 rootdir='./test_input/preprocess/'
 logfile = open(rootdir+'LOG', 'w', 10)

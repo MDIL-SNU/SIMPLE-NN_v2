@@ -12,13 +12,13 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 #os.system('python libsymf_builder.py')
 
-from simple_nn_v2.utils import _make_full_featurelist
-from simple_nn_v2.init_inputs import  initialize_inputs
-from simple_nn_v2.models.run import run_model
+from simple_nn.utils import _make_full_featurelist
+from simple_nn.init_inputs import  initialize_inputs
+from simple_nn.models.run import run_model
 
 
-from  simple_nn_v2.features.symmetry_function import generate
-from  simple_nn_v2.features import preprocess
+from  simple_nn.features.symmetry_function import generate
+from  simple_nn.features import preprocess
 
 logfile = sys.stdout
 logfile = open('LOG', 'w', 10)

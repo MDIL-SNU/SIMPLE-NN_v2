@@ -3,9 +3,9 @@ import sys
 #For pytest
 #sys.path.append('../../../../../')
 sys.path.append('./')
-from simple_nn_v2 import simple_nn
-from simple_nn_v2.init_inputs import initialize_inputs
-from simple_nn_v2.features.symmetry_function import generating
+from simple_nn import simple_nn
+from simple_nn.init_inputs import initialize_inputs
+from simple_nn.features.symmetry_function import generating
 import numpy as np
 from ase import io
 
