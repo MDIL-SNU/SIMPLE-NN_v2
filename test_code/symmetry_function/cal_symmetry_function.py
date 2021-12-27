@@ -80,8 +80,8 @@ def _cutoff_func(dist, cutoff):
     return out
 
 #Gaussian function(G2) to use
-def _gaussian(dist, cutoff, eta, r_s = 0):
-    out = np.exp(-eta*(dist-r_s)**2)*_cutoff_func(dist , cutoff)
+def _gaussian(dist, cutoff, eta, r_s=0):
+    out = np.exp(-eta*(dist-r_s)**2)*_cutoff_func(dist, cutoff)
     out = np.float64(out)
     return out
 
@@ -90,44 +90,48 @@ def _gaussian(dist, cutoff, eta, r_s = 0):
 def generate_sf(index, param_d):
     cutoff = param_d[0]
     if index == 2: 
-        eta = param_d[1]; r_s = param_d[2]
+        eta = param_d[1]
+        r_s = param_d[2]
         # G2 SF 
         def sym_func(dist_list):
             output = 0
             for dist in dist_list:
-                output += _gaussian(dist,cutoff,eta)
+                output += _gaussian(dist, cutoff, eta)
             output = np.float64(output)
             return output
     elif index == 4: 
-        eta = param_d[1]; zeta = param_d[2] ; lamda = param_d[3]
+        eta = param_d[1]
+        zeta = param_d[2]
+        lamda = param_d[3]
         # G4 SF 
         def sym_func(dist_list):
             output = 0
-            angle = 0
             for dist in dist_list:    # dist = [dist_ij,dist_ik ,dist_jk]
                 if dist[2] < cutoff:  #Cufoff for distance Rjk
                     #G4 symmetry function
                     tmp = 0
-                    dist_ij , dist_ik , dist_jk = dist
-                    angle_rad = np.arccos((dist_ij**2+dist_ik**2-dist_jk**2)/(2*dist_ij*dist_ik))
-                    tmp  = _gaussian(dist_ij, cutoff , eta)*_gaussian(dist_ik, cutoff , eta)*_gaussian(dist_jk, cutoff , eta)
-                    tmp *= (1 + lamda * np.cos(angle_rad))**zeta
+                    dist_ij, dist_ik, dist_jk = dist
+                    cosine = (dist_ij**2+dist_ik**2-dist_jk**2)/(2*dist_ij*dist_ik)
+                    tmp  = _gaussian(dist_ij, cutoff, eta)*_gaussian(dist_ik, cutoff, eta)*_gaussian(dist_jk, cutoff, eta)
+                    tmp *= (1 + lamda * cosine)**zeta
                     tmp  = np.float64(tmp)
                     output += tmp
             output *= 2.0**(1-zeta)
             output = np.float64(output)  
             return output
     elif index == 5: 
-        eta = param_d[1]; zeta = param_d[2] ; lamda = param_d[2]
+        eta = param_d[1]
+        zeta = param_d[2]
+        lamda = param_d[3]
         # G5 SF 
         def sym_func(dist_list):
             output = 0
             for dist in dist_list:   # dist = [dist_ij,dist_ik, dist_jk] type
                 tmp = 0
                 #G5 symmetry function 
-                dist_ij , dist_ik , dist_jk = dist                                            
-                angle_rad = np.arccos((dist_ij**2+dist_ik**2-dist_jk**2)/(2*dist_ij*dist_ik))
-                tmp  = _gaussian(dist_ij, cutoff , eta)*_gaussian(dist_ik, cutoff , eta)
+                dist_ij, dist_ik, dist_jk = dist                                            
+                cosine = (dist_ij**2+dist_ik**2-dist_jk**2)/(2*dist_ij*dist_ik)
+                tmp  = _gaussian(dist_ij, cutoff, eta)*_gaussian(dist_ik, cutoff, eta)
                 tmp *= (1 + lamda * np.cos(angle_rad))**zeta
                 tmp  = np.float64(tmp)
                 output += tmp
@@ -269,8 +273,8 @@ class Test_symmetry_function:
                 #Generate Symmetry function list from parameters
                 sf_list = list()
                 tmp = None # Temporary function
-                for i ,  params in enumerate(par_d):
-                    tmp = generate_sf(index = int(par_i[i][0]) , param_d  = params)
+                for i, params in enumerate(par_d):
+                    tmp = generate_sf(index=int(par_i[i][0]), param_d=params)
                     sf_list.append(tmp)
                 self.length[atom] = len(sf_list)
                 self.symmetry_function_dict[atom] =  sf_list
@@ -281,6 +285,7 @@ class Test_symmetry_function:
             elif data_name.split('.')[-1] == 'pickle':
                 self.data =  load_pickle(data_name)
                 self.data_sf = self.data['x']
+
     def set_structure(self, output_name):
         self.structure = open_outcar(output_name) 
         self.distance  = Distance_atoms(self.structure) # Load Distance_atoms structure

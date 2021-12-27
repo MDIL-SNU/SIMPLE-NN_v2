@@ -1,59 +1,75 @@
 .. _install:
 
-=======
-Install
-=======
+============
+Installation
+============
 
-Install SIMPLE-NN
-=================
-SIMPLE-NN is tested and supported on the following versions of Python:
-
-- Python :code:`3.6-3.9`
-
+------------
 Requirements
 ------------
-In SIMPLE-NN, various Python modules are used. 
-Most of these modules are installed automatically during the install process of SIMPLE-NN.
-However, we recommend to install Tensorflow manually for better performance.
-In addition, you need to install mpi4py(optional) manually if you want to use MPI.
-(MPI is supported only in generate_features and preprocess part. See :doc:`/simple_nn/Simple_nn` section.) 
-Detailed information for installing Tensorflow and mpi4py can be found from the links below.
+- Python :code:`3.6-3.9`
+- LAMMPS :code:`29Oct2020` or later
 
-**Install Tensorflow**: https://www.tensorflow.org/install/
+1. Pytorch
+----------
+Install PyTorch: https://pytorch.org/get-started/locally
 
-Tensorflow :code:`r1.6`-:code:`r1.13` is supported.
+Choose the PyTorch of stable release for `Python`. If you have CUDA-capable system, please download PyTorch with CUDA that makes training much faster.
 
-**Install mpi4py**: https://mpi4py.readthedocs.io/en/stable/install.html
+To check if your GPU driver and CUDA are enabled by PyTorch, run the following commands in python to return whether or not the CUDA driver is enabled: 
+.. code_block:: python3
 
+    import torch.cuda
+    torch.cuda.is_available()
 
-Install from source
--------------------
+2. SIMPLE-NN
+------------
+We encourage you to use `virtualenv` or `conda` for convenient module managenement.
+.. code_block:: bash
 
+    cd SIMPLE-NN_v2
+    python setup.py install
+
+If you run into permission issues, add a `--user` tag after the last command.
+2-1. From github url
+====================
+.. code_block:: bash
+
+    git clone https://github.com/MDIL-SNU/SIMPLE-NN_v2.git
+
+2-2. From source file
+=====================
 You can download a current SIMPLE-NN source package from link below. 
 Once you have a zip file, unzip it. This will create SIMPLE-NN directory.
 After unzipping the file, run the command below to install SIMPLE-NN.
 
-**Download SIMPLE-NN**: https://github.com/MDIL-SNU/SIMPLE-NN_v2
+Download SIMPLE-NN: https://github.com/MDIL-SNU/SIMPLE-NN_v2
 
-::
+3. LAMMPS
+---------
+Currently, we support the module for symmetry_function - Neural_network model.
 
-    cd SIMPLE-NN
-    python setup.py install
-    # If root permission is not available, add --user command like below
-    # python setup.py install --user
+Download LAMMPS: https://github.com/lammps/lammps
 
-Currently, pip install is not supported but will be addressed.
+Only LAMMPS whose version is `29Oct2020` or later is supported.
 
+Copy the source code to LAMMPS src directory.
+.. code_block:: bash
 
+    cp SIMPLE-NN_v2/simple-nn/features/symmetry_function/pair_nn.* /path/to/lammps/src/
+    cp SIMPLE-NN_v2/simple-nn/features/symmetry_function/symmetry_function.h /path/to/lammps/src/
 
-Install LAMMPS implementation
-=============================
+Compile LAMMPS code.
+.. code_block:: bash
 
-To utilize LAMMPS package for SIMPLE-NN generated NN potentials, 
-you must copy the source codes to LAMMPS/src directory with the following command 
-and compile LAMMPS package.
+    cd /path/to/lammps/src/
+    make mpi
 
-::
+4. mpi4py (optional)
+--------------------
+SIMPLE-NN supports the parallel CPU computation in dataset generation and preprocessing for an additional speed gain.
 
-    cp SIMPLE-NN/simple_nn/features/symmetry_function/symmetry_functions.h /path/to/lammps/src/
-    cp SIMPLE-NN/simple_nn/features/symmetry_function/pair_nn.* /path/to/lammps/src/
+Install mpi4py:
+.. code_block:: bash
+
+    pip install mpi4py
