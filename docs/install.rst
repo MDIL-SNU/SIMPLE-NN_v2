@@ -8,7 +8,7 @@ Install SIMPLE-NN
 =================
 SIMPLE-NN is tested and supported on the following versions of Python:
 
-- Python :code:`2.7`, :code:`3.4-3.6`
+- Python :code:`3.6-3.9`
 
 Requirements
 ------------
@@ -33,7 +33,7 @@ You can download a current SIMPLE-NN source package from link below.
 Once you have a zip file, unzip it. This will create SIMPLE-NN directory.
 After unzipping the file, run the command below to install SIMPLE-NN.
 
-**Download SIMPLE-NN**: https://github.com/MDIL-SNU/SIMPLE-NN
+**Download SIMPLE-NN**: https://github.com/MDIL-SNU/SIMPLE-NN_v2
 
 ::
 

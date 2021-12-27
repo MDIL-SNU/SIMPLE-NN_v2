@@ -8,13 +8,13 @@ ffibuilder.cdef(
                                     double**, double**, double**);"""
 )
 ffibuilder.set_source(
-    "simple_nn_v2.features.symmetry_function._libsymf",
+    "simple_nn.features.symmetry_function._libsymf",
     '#include "calculate_sf.h"',
     sources=[
-        "simple_nn_v2/features/symmetry_function/calculate_sf.cpp",
+        "simple_nn/features/symmetry_function/calculate_sf.cpp",
     ],
     source_extension=".cpp",
-    include_dirs=["simple_nn_v2/features/symmetry_function/"],
+    include_dirs=["simple_nn/features/symmetry_function/"],
 )
 
 if __name__ == "__main__":

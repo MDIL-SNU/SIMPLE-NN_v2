@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.append('./')
 
-from simple_nn_v2 import simple_nn
+from simple_nn import simple_nn
 
 logfile = open('LOG', 'w', 10)
 

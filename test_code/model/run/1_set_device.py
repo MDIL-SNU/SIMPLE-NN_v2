@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(0, '../../../')
-from simple_nn_v2.models import run
+from simple_nn.models import run
 
 import torch
 

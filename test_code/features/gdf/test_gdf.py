@@ -13,9 +13,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 #os.system('python libsymf_builder.py')
 
-from simple_nn_v2.features.preprocessing import _calculate_gdf
-from simple_nn_v2.features.preprocessing import _calculate_scale
-from simple_nn_v2.features.mpi import DummyMPI, MPI4PY
+from simple_nn.features.preprocessing import _calculate_gdf
+from simple_nn.features.preprocessing import _calculate_scale
+from simple_nn.features.mpi import DummyMPI, MPI4PY
 
 
 import numpy as np
