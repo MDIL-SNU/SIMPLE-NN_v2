@@ -16,9 +16,3 @@ Welcome to SIMPLE-NN's documentation!
    examples/examples
    features/features
    models/models
-
-.. toctree::
-   :maxdepth: 3
-   :caption: Modules
-
-   simple_nn
