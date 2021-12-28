@@ -126,8 +126,6 @@ After :code:`Neural_network.train` method, you can find the output files listed 
       the network information at the XXXXth iteration.
 
 
-.. MDwithLAMMPS_
-
 MD simulation with LAMMPS
 =========================
 
