@@ -7,8 +7,11 @@ Installation
 ------------
 Requirements
 ------------
+- OS :code:`Unix`
 - Python :code:`3.6-3.9`
 - LAMMPS :code:`29Oct2020` or later
+
+----
 
 ----------
 Procedures
@@ -44,7 +47,7 @@ After unzipping the file, run the command below to install SIMPLE-NN.
 
 Download SIMPLE-NN: https://github.com/MDIL-SNU/SIMPLE-NN_v2
 
-------
+----
 
 We encourage you to use `virtualenv` or `conda` for convenient module managenement when you install SIMPLE-NN.
 
