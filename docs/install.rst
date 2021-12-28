@@ -7,7 +7,6 @@ Installation
 ------------
 Requirements
 ------------
-- OS :code:`Unix`
 - Python :code:`3.6-3.9`
 - LAMMPS :code:`29Oct2020` or later
 
@@ -78,7 +77,7 @@ Compile LAMMPS code.
 .. code-block:: bash
 
     cd /path/to/lammps/src/
-    make mpi
+    make mpi (or serial)
 
 4. mpi4py (optional)
 --------------------
