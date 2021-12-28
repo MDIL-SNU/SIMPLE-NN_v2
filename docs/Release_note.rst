@@ -1,7 +1,7 @@
-.. _Version history:
+.. _Release_note:
 
-Version history
-=================
+Release note
+============
 
 v21.1
 --------

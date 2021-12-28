@@ -282,7 +282,7 @@ In the script below, :code:`test_result_noscale` is the test result file from th
 
 .. _W. Jeong, K. Lee, D. Yoo, D. Lee and S. Han, J. Phys. Chem. C 122 (2018) 22790: https://pubs.acs.org/doi/abs/10.1021/acs.jpcc.8b08063
 
-Uncertainty Estimation
+Uncertainty estimation
 ======================
 
 Replica ensemble [#f2]_ is used to estimate the atomic-resolution uncertainty. 

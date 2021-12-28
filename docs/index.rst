@@ -8,9 +8,9 @@ Welcome to SIMPLE-NN's documentation!
 
 .. toctree::
    :maxdepth: 4
-   :caption: Contents
+   :caption: User guide
 
-   Version history
+   Release_note
    install
    tutorials/tutorial
    examples/examples
