@@ -1,6 +1,6 @@
 
 <p align="left">
-<img src="./docs/logo.png", width="150"/>
+<img src="./docs/logo.png", width="200"/>
 </p>
 SIMPLE-NN (SNU Interatomic Machine-learning PotentiaL packagE – version Neural Network)
 
