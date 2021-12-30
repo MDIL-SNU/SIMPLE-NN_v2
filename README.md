@@ -10,8 +10,10 @@ SIMPLE-NN is an open package that constructs Behler-Parrinello-type neural-netwo
 - Training over total energies, forces, and stresses.
 - Symmetry function vectors for atomic features
 - PCA matrix transformation and whitening of training data for fast and accurate learning. 
-- Uniform training for the biased sampling (https://doi.org/10.1021/acs.jpcc.8b08063)
-- Replica ensemble for quantifying the uncertainty (https://doi.org/10.1021/acs.jpclett.0c01614)
+- Supports GPU via PyTorch
+- Parallelization via ...
+- Uniform training to rectify sample bias (https://doi.org/10.1021/acs.jpcc.8b08063)
+- Replica ensemble for uncertainty estimation (https://doi.org/10.1021/acs.jpclett.0c01614)
 - Compatible with results of most ab initio codes such as Quantum-Espresso and VASP via ASE module.
 
 ## Requirement
