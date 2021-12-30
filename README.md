@@ -15,10 +15,7 @@ SIMPLE-NN is an open package that constructs Behler-Parrinello-type neural-netwo
 - Uniform training to rectify sample bias (https://doi.org/10.1021/acs.jpcc.8b08063)
 - Replica ensemble for uncertainty estimation (https://doi.org/10.1021/acs.jpclett.0c01614)
 - Compatible with results of most ab initio codes such as Quantum-Espresso and VASP via ASE module.
-
-## Requirement
-- Python: `3.6-3.9`
-- LAMMPS: `29Oct2020` or later
+- Requires Python `3.6-3.9` and LAMMPS (`29Oct2020` or later)
 
 Installation, manual, and full details: https://simple-nn-v2.readthedocs.io
 
