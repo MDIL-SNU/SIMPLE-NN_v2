@@ -20,5 +20,5 @@ SIMPLE-NN is an open package that constructs Behler-Parrinello-type neural-netwo
 
 Installation, manual, and full details: https://simple-nn-v2.readthedocs.io
 
-If you use SIMPLE-NN, please cite the following paper: 
+If you use SIMPLE-NN, please cite:  
 K. Lee, D. Yoo, W. Jeong, and S. Han, "SIMPLE-NN: An efficient package for training and executing neural-network interatomic potentials", Comp. Phys. Comm.  **242**, 95 (2019) https://doi.org/10.1016/j.cpc.2019.04.014.
