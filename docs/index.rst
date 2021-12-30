@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to SIMPLE-NN's documentation!
+Welcome to SIMPLE-NN documentation!
 =====================================
 
 SIMPLE-NN (SNU Interatomic Machine-learning PotentiaL packagE – version Neural Network)
