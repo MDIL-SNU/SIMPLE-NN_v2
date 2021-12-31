@@ -117,7 +117,6 @@ And for running test mode, you need to copy the :code:`train_list`
 file generated in :ref:`gen_test_data` section
 to :code:`SIMPLE-NN/examples/SiO2/error_check` and change filename to :code:`test_list`.
 Edit the path to data directory in :code:`test_list` file accordingly.
-For example, it should be changed from :code:`./data/training_data_0000_to_0006.tfrecord` to :code:`../generate_test_data/data/training_data_0000_to_0006.tfrecord` in this example.
 Also, copy :code:`scale_factor` and :code:`params_*` to the current directory.
 These files contain information on data set, so you have to carry them with the data set.
 Input files introduced in this section can be found in 
