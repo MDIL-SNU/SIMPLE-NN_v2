@@ -8,7 +8,7 @@ Introduction
 This section demonstrate SIMPLE-NN with examples. 
 Example files are in :code:`SIMPLE-NN/examples/`.
 In this example, snapshots from 500K MD trajectory of 
-amorphous SiO\ :sub:`2`\  (60 atoms) are used as training set.  
+amorphous SiO\ :sub:`2`\  (72 atoms) are used as training set.  
 
 .. Note::
 
@@ -17,8 +17,8 @@ amorphous SiO\ :sub:`2`\  (60 atoms) are used as training set.
 
 .. _Generate NNP:
 
-Generate NNP
-============
+1. Generate NNP
+===============
 
 To generate NNP using symmetry function and neural network, 
 you need three types of input file (input.yaml, str_list, params_XX) 
@@ -285,88 +285,8 @@ In the script below, :code:`test_result_noscale` is the test result file from th
 Uncertainty estimation
 ======================
 
-Replica ensemble [#f2]_ is used to estimate the atomic-resolution uncertainty. 
-Please read above paper for details.
-We recommend you to make independent directories for each step
-
-.. Note::
-  Before following steps, you have prepared :code:`*.pickle` in :code:`path/data/`.
-  If not, please run with below options first.
-
-::
-
-    #input.yaml
-    generate_feature: true
-    preprocess: false
-    train_model: false
-
-    symmetry_function:
-      remain_pickle: true (default: false)
-
-
-Step 1. Extract the atomic energy
----------------------------------
-Extract the atomic energy that will be used for reference of replicas.
-Make :code:`test_list` as described in `Potential test`_ and prepare the :code:`potential_saved`
-
-::
-
-    #input.yaml
-    generate_feature: false
-    preprocess: false
-    train_model: true
-
-    neural_network:
-      NNP_to_pickle: true
-      test: false
-      train: false
-      continue: true (or weights)
-
-Step 2. Write the data into tfrecord
-------------------------------------
-Convert :code:`*.pickles` into :code:`tfrecord` to feed input data during training
-
-::
-
-    #input.yaml
-    generate_feature: false
-    preprocess: true
-    train_model: false
-
-    symmetry_function:
-      add_NNP_ref: true
-      continue: true
-
-Step 3. Train with atomic energy
---------------------------------
-Train model with atomic energy only to speed up (:code:`use_force` and :code:`use_stress` are :code:`false`). Choose a suitable the number of nodes and standard deviation of initial weight. Repeat this step several times by changing the number of nodes.
-
-::
-
-    #input.yaml
-    generate_feature: false
-    preprocess: false
-    train_model: true
-
-    neural_network:
-      NNP_to_pickle: false
-      use_force: false
-      use_stress: false
-      nodes: (user's choice)
-      test: false
-      train: true
-      continue: false
-      E_loss: 3
-      weight_initializer:
-        params:
-          stddev: (user's choice)
-
-    symmetry_function:
-      add_NNP_ref: true
-      continue: true
-
-Step 4. Molecular dynamics
---------------------------
+Molecular dynamics
+------------------
 
 .. Note::
   Before this step, you have to compile your LAMMPS with :code:`pair_nn_replica.cpp` and :code:`pair_nn_replica.h`.
