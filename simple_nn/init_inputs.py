@@ -24,7 +24,7 @@ symmetry_function_descriptor_default_inputs = \
                 'refdata_format':   'vasp-out',
                 'compress_outcar':  True,
                 'read_force'    :   True,
-                'read_stress'   :   False,
+                'read_stress'   :   True,
                 'dx_save_sparse':   True,
                 'add_atom_idx'  :   True,
                 'absolute_path' :   True,
@@ -72,7 +72,7 @@ model_default_inputs = \
                 # Network related
                 'nodes'     : '30-30',
                 'use_force' : True,
-                'use_stress': False,
+                'use_stress': True,
 
                 'weight_initializer': {
                     'type'  : 'xavier normal',
