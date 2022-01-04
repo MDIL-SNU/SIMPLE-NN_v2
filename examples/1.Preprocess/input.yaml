@@ -1,5 +1,5 @@
 generate_features: true
-preprocess: false
+preprocess: true
 train_model: false
 random_seed: 123
 
