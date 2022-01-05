@@ -10,6 +10,9 @@ Example files are in :code:`SIMPLE-NN/examples/`.
 In this example, snapshots from 500K MD trajectory of 
 amorphous SiO\ :sub:`2`\  (72 atoms) are used as training set.  
 
+.. code-block:: bash
+    python run.py
+
 .. _preprocess:
 
 1. Preprocess
@@ -19,6 +22,8 @@ To preprocess the *ab initio* calculation result for training dataset of NNP,
 you need three types of input file (:code:`input.yaml`, :code:`structure_list`, and :code:`params_XX`).
 The example files except params_Si and params_O are introduced below.
 Detail of params_Si and params_O can be found in :doc:`/features/symmetry_function/symmetry_function` section.
+In this example, 70 symmetry functions consist of 8 radial symmetry functions per 2-body combination 
+and 18 angular symmetry functions per 3-body combination.
 Input files introduced in this section can be found in 
 :code:`SIMPLE-NN/examples/1.Preprocess`.
 
@@ -44,14 +49,10 @@ Input files introduced in this section can be found in
     ../ab_initio_output/OUTCAR_comp ::100
 
 With this input file, SIMPLE-NN calculates feature vectors and its derivatives (:code:`generate_features`) and 
-generates training/validation dataset (:code:`preprocess`).
-
+generates training/validation dataset (:code:`preprocess`). 
 Sample VASP OUTCAR file (the file is compressed to reduce the file size) is in :code:`SIMPLE-NN/examples/ab_initio_output`.
 
 In MD trajectory, snapshots are sampled only in the interval of 100 MD steps for simplicity.
-
-In this example, 70 symmetry functions consist of 8 radial symmetry functions per 2-body combination 
-and 18 angular symmetry functions per 3-body combination.
 
 Output files can be found in :code:`SIMPLE-NN/examples/1.Preprocess_answer`.
 
@@ -97,7 +98,7 @@ Input files introduced in this section can be found in :code:`SIMPLE-NN/examples
 
 To evaluate the quality of training by correlation between reference dataset and NNP as well as RMSE, :code:`test_list` should be prepared. 
 :code:`test_list` contains the path of testset preprocessed as '.pt' format. 
-In this example, :code:`test_list` is made by concatenating `train_list` and `valid_list` in :ref:`training` for simplicity. 
+In this example, :code:`test_list` is made by concatenating :code:`train_list` and :code:`valid_list` in :ref:`training` for simplicity. 
 Testset in :code:`test_list` also can be generated separately as described in :code:`1. Preprocess`. 
 In this case, we recommende you to just change the filename of :code:`train_list` into :code:`test_list` after :ref:`preprocess` with :code:`valid_rate` of 0.0. 
 The potential to be tested is written after :code:`continue`. The any results of :ref:`training` such as :code:`checkpoint.tar` and :code:`potential_saved`, can be used.
@@ -122,7 +123,7 @@ Input files introduced in this section can be found in
 :code:`SIMPLE-NN/examples/3.Evaluation`.
 
 .. Note::
-  You need to copy :code:`pca` and :code:`scale_factor` files if you write down the name of LAMMPS potential in :code:`continue`. 
+  You need to copy :code:`pca` and :code:`scale_factor` files if you write down the name of LAMMPS potential in :code:`continue` in :code:`input.yaml`. 
 
 After running SIMPLE-NN with the setting above, 
 new output file named :code:`test_result` is generated. 
@@ -142,14 +143,23 @@ To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
 
 .. code-block:: bash
 
+    units metal
+
     pair_style nn
-    pair_coeff * * /path/to/potential_saved Si O
+    pair_coeff * * /path/to/potential_saved_bestmodel Si O
+
+Input script for example of NVT MD simulation at 300 K are provided in :code:`SIMPLE-NN/example/4.Molecular dynamics`.
+Run LAMMPS via the following command.  
+
+.. code-block:: bash
+
+    /path/to/lammps/src/lmp_mpi < lammps.in
+
+Output files can be found in :code:`SIMPLE-NN/examples/4.Molecular_dynamics`.
 
 5. Parameter tuning (GDF)
 =========================
 
-GDF
----
 GDF [#f1]_ is used to reduce the force errors of the sparsely sampled atoms. 
 To use GDF, you need to calculate the :math:`\rho(\mathbf{G})` 
 by adding the following lines to the :code:`symmetry_function` section in :code:`input.yaml`.
@@ -195,8 +205,6 @@ can be visualized with the following script.
 The graph of interval-averaged force errors with respect to the 
 :math:`\rho(\mathbf{G})^{-1}` is generated as :code:`ferror_vs_GDFinv_XX.pdf`
 
-.. .. image:: /images/ref_forceerror
-
 If default GDF is not sufficient to reduce the force error of sparsely sampled training points, 
 One can use scale function to increase the effect of GDF. In scale function, 
 :math:`b` controls the decaying rate for low :math:`\rho(\mathbf{G})^{-1}` and 
@@ -237,9 +245,6 @@ In the script below, :code:`test_result_noscale` is the test result file from th
 
 6. Uncertainty estimation
 =========================
-
-Molecular dynamics
-------------------
 
 .. Note::
   Before this step, you have to compile your LAMMPS with :code:`pair_nn_replica.cpp` and :code:`pair_nn_replica.h`.

@@ -46,7 +46,7 @@ preprocess_default_inputs = \
                 #PCA parameters
                 'calc_pca'  : True,
                 'pca_whiten': True,
-                'min_whiten_level': 1e-8,
+                'min_whiten_level': 1.0e-8,
                 #Atomic weights
                 'calc_atomic_weights': False,
             }
@@ -316,12 +316,12 @@ def check_inputs(inputs, logfile):
         assert neural_network['train'] is True or neural_network['test'] is True, f"In valid mode train : false, test : false. Check your input"
         logfile.write(f"Use force in traning        : {neural_network['use_force']}\n")
         logfile.write(f"Use stress in training      : {neural_network['use_stress']}\n")
+        logfile.write(f"Shuffle dataloader          : {neural_network['shuffle_dataloader']}\n")
         logfile.write(f"Add NNP reference to files  : {neural_network['add_NNP_ref']}\n")
         if inputs['neural_network']['add_NNP_ref'] is True:
             logfile.write(f"Reference list              : {neural_network['ref_list']}\n")
 
         logfile.write(f"Train atomic energy         : {neural_network['train_atomic_E']}\n")
-        logfile.write(f"Shuffle dataloader          : {neural_network['shuffle_dataloader']}\n")
         logfile.write("\nNETWORK\n")
         logfile.write(f"Nodes                       : {neural_network['nodes']}\n")
         for node in neural_network['nodes'].split('-'):

@@ -1,6 +1,6 @@
 generate_features:  True
-preprocess:         False
-train_model:        False
+preprocess:         True
+train_model:        True
 params:
     species1:   'your/dir/to/parameter/species1'
     species2:   'your/dir/to/parameter/species2'
@@ -13,32 +13,28 @@ descriptor:
     compress_outcar:    True
     save_directory:     'data'
     save_list:          'total_list'
-    absolute_path:      False
+    absolute_path:      True
     read_force:         True
     read_stress:        True 
-    dx_save_sparse:     False
+    dx_save_sparse:     True
 
 # Input for preprocess
 preprocessing: 
-    data_list:          'total_list'
-    train_list:         'train_list'
-    valid_list:         'valid_list' 
-    valid_rate:         0.1
-    shuffle:            True
+    data_list:              'total_list'
+    train_list:             'train_list'
+    valid_list:             'valid_list' 
+    valid_rate:             0.1
+    shuffle:                True
     # Scaling parameters
-    calc_scale:         True
-    scale_type:         'minmax'
-    scale_width:        1.0
+    calc_scale:             True
+    scale_type:             'minmax'
+    scale_width:            1.0
     # PCA parameters
-    calc_pca:           True
-    pca_whiten:         True
-    min_whiten_level: 1.0e-8
+    calc_pca:               True
+    pca_whiten:             True
+    min_whiten_level:       1.0e-8
     # Atomic weights
-    calc_atomic_weights: 
-        type:           'gdf'
-        params: 
-            species1:   0.02
-            species2:   0.06
+    calc_atomic_weights:    False
 
 # Input for traning
 neural_network:
@@ -51,9 +47,9 @@ neural_network:
     test:               False
     use_force:          True
     use_stress:         True
+    shuffle_dataloader: True
     add_NNP_ref:        False
     train_atomic_E:     False
-    shuffle_dataloader: True
     # Network
     nodes:              '30-30'
     acti_func:          'sigmoid'
@@ -65,14 +61,7 @@ neural_network:
     scale:              True
     atomic_weights:     False
     weight_modifier: 
-        type:           'modified sigmoid'
-        params: 
-            species1:
-                b:      100
-                c:      0.01
-            species2:
-                b:      100
-                c:      0.01
+        type:           null
     # Optimization
     optimizer:
         method:         'Adam'
@@ -80,7 +69,7 @@ neural_network:
     full_batch:         False
     total_epoch:        1000
     learning_rate:      0.0001
-    decay_rate:         0.9999
+    decay_rate:         null
     l2_regularization:  1.0e-6
     # Loss function
     loss_scale:         1.
@@ -90,22 +79,22 @@ neural_network:
     force_coeff:        0.1 
     stress_coeff:       1.0e-6
     # Logging & saving
-    show_interval:          1
+    show_interval:          10
     save_interval:          0
-    energy_criteria:        False
-    force_criteria:         False
-    stress_criteria:        False
-    print_structure_rmse:   True
+    energy_criteria:        null
+    force_criteria:         null
+    stress_criteria:        null
+    print_structure_rmse:   False
     # Restart
-    continue:               False
+    continue:               null
     clear_prev_status:      False
     clear_prev_optimizer:   False
-    start_epoch:            0
+    start_epoch:            1
     # Parallelism
     use_gpu:            True
-    GPU_number:         False
+    GPU_number:         null
     inter_op_threads:   0
     intra_op_threads:   0
     load_data_to_gpu:   False
-    workers:            0 
+    subprocesses:            0 
 
