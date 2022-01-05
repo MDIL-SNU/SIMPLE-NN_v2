@@ -1,0 +1,78 @@
+LAMMPS (29 Oct 2020)
+units metal
+
+read_data SiO2.dat
+Reading data file ...
+  triclinic box = (0.0000000 0.0000000 0.0000000) to (9.8420000 8.5234220 10.800000) with tilt (-4.9210000 0.0000000 0.0000000)
+  1 by 1 by 1 MPI processor grid
+  reading atoms ...
+  72 atoms
+  read_data CPU = 0.000 seconds
+
+pair_style nn
+pair_coeff * * potential_saved_bestmodel Si O
+
+fix int all nvt temp 300.0 300.0 $(100.0*dt)
+fix int all nvt temp 300.0 300.0 0.10000000000000000555
+
+thermo 10
+thermo_style custom step temp pe
+
+velocity all create 300.0 123 dist gaussian
+timestep 0.002
+
+run 100
+Neighbor list info ...
+  update every 1 steps, delay 10 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 8
+  ghost atom cutoff = 8
+  binsize = 4, bins = 4 3 3
+  1 neighbor lists, perpetual/occasional/extra = 1 0 0
+  (1) pair nn, perpetual
+      attributes: full, newton on
+      pair build: full/bin/atomonly
+      stencil: full/bin/3d
+      bin: standard
+Per MPI rank memory allocation (min/avg/max) = 3.111 | 3.111 | 3.111 Mbytes
+Step Temp PotEng 
+       0          300   -556.24657 
+      10    317.69685   -556.40051 
+      20    324.70403   -556.47221 
+      30    280.37664    -556.1006 
+      40    322.97009   -556.51888 
+      50    301.98074   -556.36124 
+      60     317.2869   -556.58191 
+      70    299.76349   -556.52244 
+      80    292.98555    -556.5766 
+      90     281.1805   -556.59969 
+     100    266.38538    -556.6014 
+Loop time of 9.15543 on 1 procs for 100 steps with 72 atoms
+
+Performance: 1.887 ns/day, 12.716 hours/ns, 10.922 timesteps/s
+99.8% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 9.1544     | 9.1544     | 9.1544     |   0.0 | 99.99
+Neigh   | 0          | 0          | 0          |   0.0 |  0.00
+Comm    | 0.00046349 | 0.00046349 | 0.00046349 |   0.0 |  0.01
+Output  | 0.00020599 | 0.00020599 | 0.00020599 |   0.0 |  0.00
+Modify  | 0.00023794 | 0.00023794 | 0.00023794 |   0.0 |  0.00
+Other   |            | 0.0001566  |            |       |  0.00
+
+Nlocal:        72.0000 ave          72 max          72 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:        1346.00 ave        1346 max        1346 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:        0.00000 ave           0 max           0 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+FullNghs:      12172.0 ave       12172 max       12172 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 12172
+Ave neighs/atom = 169.05556
+Neighbor list builds = 0
+Dangerous builds = 0
+Total wall time: 0:00:09
