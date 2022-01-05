@@ -43,7 +43,7 @@ def train(inputs, logfile):
             valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_valid')
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, float('inf'),\
             train_loader, valid_loader, atomic_e=True)
-    logfile.write(f"Elapsed time in training. {time.time()-start_time:10} s.\n")
+    logfile.write(f"Elapsed time in training: {time.time()-start_time:10} s.\n")
 
 def _get_torch_device(inputs):
     if inputs['neural_network']['use_gpu'] and torch.cuda.is_available():
@@ -66,7 +66,7 @@ def _load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, op
     elif inputs['neural_network']['continue']: # load pytorch type checkpoint
         checkpoint = torch.load(inputs['neural_network']['continue'], map_location=device)
         model.load_state_dict(checkpoint['model'])
-        logfile.write("Load pytorch model from [{0}]\n".format(inputs['neural_network']['continue']))
+        logfile.write("Load pytorch model from '{}'\n".format(inputs['neural_network']['continue']))
 
         if not inputs['neural_network']['clear_prev_optimizer']:
             optimizer.load_state_dict(checkpoint['optimizer'])
@@ -85,10 +85,10 @@ def _load_scale_factor_and_pca(inputs, logfile, checkpoint):
     if checkpoint:  # load from checkpoint file
         if inputs['neural_network']['scale']:
             scale_factor = checkpoint['scale_factor']
-            logfile.write("Load scale factor from checkpoint\n")
+            logfile.write("Load scale factor from '{}'\n".format(inputs['neural_network']['continue']))
         if inputs['neural_network']['pca']:
             pca = checkpoint['pca']
-            logfile.write("Load pca from checkpoint\n")
+            logfile.write("Load pca from '{}'\n".format(inputs['neural_network']['continue']))
     else:  # load from 'scale_factor', 'pca' file
         if inputs['neural_network']['scale']:
             if type(inputs['neural_network']['scale']) is not bool:
@@ -121,7 +121,6 @@ def _set_initial_loss(inputs, logfile, checkpoint):
     loss = float('inf')
     if checkpoint and not inputs['neural_network']['clear_prev_status']:
         loss = checkpoint['loss']
-        logfile.write("Load previous loss : {0:6.2e}\n".format(checkpoint['loss']))
 
     return loss
 
@@ -167,9 +166,9 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
                 update_recalc_results(train_epoch_result, recalc_epoch_result)
 
             total_time = time.time() - start_time
-            logger._show_avg_rmse(inputs, logfile, epoch, optimizer.param_groups[0]['lr'], total_time, train_epoch_result, valid_epoch_result)
+            logger._show_avg_rmse(logfile, epoch, optimizer.param_groups[0]['lr'], total_time, train_epoch_result, valid_epoch_result)
             if inputs['neural_network']['print_structure_rmse']:
-                logger._show_structure_rmse(inputs, logfile, train_epoch_result, valid_epoch_result)
+                logger._show_structure_rmse(logfile, train_epoch_result, valid_epoch_result)
 
         # save checkpoint for each save_interval
         if inputs['neural_network']['save_interval'] and (epoch % inputs['neural_network']['save_interval'] == 0):
@@ -180,7 +179,7 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
             save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint_latest.pth.tar')
             model.write_lammps_potential(filename='./potential_saved_latest', inputs=inputs, scale_factor=scale_factor, pca=pca)
 
-        #Break if energy, force, stress is under their criteria
+        # Break if energy, force, and stress are under their criteria
         if criteria_dict:
             breaksignal = True
             for err_type in criteria_dict.keys():
@@ -209,10 +208,25 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
 
     logfile.write("Best loss lammps potential written at {0} epoch\n".format(best_epoch))
 
-#Evalutaion model & save result  -> result_saved
+# Evalutaion model & save result  -> test_result
 def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader):
+
+    def test_show_avg_rmse(logfile, key, title, epoch_result):
+        t_sum = 0
+        t_count = 0
+        for label in epoch_result['struct_labels']:
+            t_sum   += epoch_result[key][label].sum
+            t_count += epoch_result[key][label].count
+        t_rmse = (t_sum / t_count) ** 0.5
+        logfile.write("{}: {:.4e} ".format(title, t_rmse))
+
+    def test_show_structure_rmse(logfile, key, label, epoch_result):
+        if epoch_result[key][label].sum == 0:
+            logfile.write("{:>10}".format('-'))
+        else:
+            logfile.write("{:.4e}".format(epoch_result[key][label].sqrt_avg))
+
     struct_labels = _get_structure_labels(test_loader, valid_loader=None)
-    logfile.write("Evaluation(Testing) model \n")
     dtype = torch.get_default_dtype()
     non_block = False if (device == torch.device('cpu')) else True
 
@@ -225,18 +239,33 @@ def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader
     for i, item in enumerate(test_loader):
         n_batch = item['E'].size(0)
         _, calc_results = loss.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, False, dtype, use_force, use_stress, atomic_e=False)
-        #TODO: Add E, F, S to pt file as option  "NNP_to_pt"
+        #TODO: Add E, F, S to pt file as option "NNP_to_pt"
         _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress)
 
     torch.save(res_dict, 'test_result')
-    logfile.write(f"DFT, NNP result saved at 'result_saved'\n")
+    logfile.write(f"Evaluation results are saved as 'test_result'\n")
+    logfile.write("-" * 88 + '\n')
+    for key, title in zip(['e_err', 'f_err', 's_err'], ['E RMSE', 'F RMSE', 'S RMSE']):
+        if key in epoch_result.keys():
+            test_show_avg_rmse(logfile, key, title, epoch_result)
+    logfile.write("\n")
 
-    logger._show_avg_rmse(inputs, logfile, 0, 0, 0, epoch_result, None)
+    if inputs['neural_network']['print_structure_rmse'] is True:
+        logfile.write("Structure breakdown:\n")
+        logfile.write("  {0:<14}".format('label'))
+        log += "      E_RMSE"
+        if 'f_err' in epoch_result.keys():
+            log += "      F_RMSE"
+        if 's_err' in epoch_result.keys():
+            log += "      S_RMSE"
+        logfile.write(log+'\n')
+        for label in epoch_result['struct_labels']:
+            logfile.write("  {:14}".format(label))
+            for key in ['e_err', 'f_err', 's_err']:
+                if key in epoch_result.keys():
+                    test_show_structure_rmse(logfile, key, label, epoch_result)
 
-    if inputs['neural_network']['print_structure_rmse']: 
-        logger._show_structure_rmse(inputs, logfile, epoch_result, None)
-
-#Main loop for calculations 
+# Main loop for calculations 
 def progress_epoch(inputs, data_loader, struct_labels, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=False):
     use_force = inputs['neural_network']['use_force'] if not atomic_e else False
     use_stress = inputs['neural_network']['use_stress'] if not atomic_e else False
