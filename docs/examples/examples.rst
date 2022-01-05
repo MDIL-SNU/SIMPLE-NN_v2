@@ -10,8 +10,17 @@ Example files are in :code:`SIMPLE-NN/examples/`.
 In this example, snapshots from 500K MD trajectory of 
 amorphous SiO\ :sub:`2`\  (72 atoms) are used as training set.  
 
+To run the following examples, prepare the required inputs and run SIMPLE-NN like: 
+
 .. code-block:: bash
+
     python run.py
+
+If you install :code:`mpi4py`, additional speed gain can be obtained in :ref:`preprocess` through MPI parallelization.
+
+.. code-block:: bash
+
+    mpirun -np numproc python run.py
 
 .. _preprocess:
 
