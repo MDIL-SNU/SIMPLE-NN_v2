@@ -148,8 +148,8 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
     criteria_dict = _set_stop_rmse_criteria(inputs, logfile)
     best_epoch = inputs['neural_network']['start_epoch']
 
-    if inputs['neural_network']['lr_decay']:
-        scheduler = ExponentialLR(optimizer=optimizer, gamma=inputs['neural_network']['lr_decay'])
+    if inputs['neural_network']['decay_rate']:
+        scheduler = ExponentialLR(optimizer=optimizer, gamma=inputs['neural_network']['decay_rate'])
 
     start_time = time.time()
     for epoch in tqdm(range(inputs['neural_network']['start_epoch'], total_epoch+1)):
@@ -202,7 +202,7 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
                 logfile.write("checkpoint_criterion.pth.tar & potential_saved_criterion written\n")
                 break
 
-        if inputs['neural_network']['lr_decay']:
+        if inputs['neural_network']['decay_rate']:
             scheduler.step()
         # soft termination 
         if os.path.exists('./stoptrain'):

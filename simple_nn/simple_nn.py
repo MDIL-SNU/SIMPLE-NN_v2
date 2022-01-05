@@ -42,28 +42,20 @@ def run(input_file_name):
                 print("MPI4PY does not support in train model. Set train_model: False")
             raise Exception
 
+    errno = 0
+    err = None
+    if comm.rank == 0:
+        errno, err = check_inputs(inputs, logfile)
+    check_errno(errno, err, comm)
 
     if inputs['generate_features'] is True:
-        errno = 0
-        err = None
-        if comm.rank == 0:
-            errno, err = check_inputs(inputs, logfile, 'generate')
-        check_errno(errno, err, comm)
-
         generate = get_generate_function(logfile, descriptor_type=inputs['descriptor']['type'])
         generate(inputs, logfile, comm)
 
     if inputs['preprocess'] is True:
-        errno = 0
-        err = None
-        if comm.rank == 0:
-            errno, err = check_inputs(inputs, logfile, 'preprocess')
-        check_errno(errno, err, comm)
-
         preprocess(inputs, logfile, comm)
 
     if inputs['train_model'] is True:
-        check_inputs(inputs, logfile, 'train_model')
         train(inputs, logfile)
 
     if comm.rank == 0:
@@ -90,13 +82,13 @@ def _log_header(inputs, logfile):
     logfile.write("SIMPLE_NN v{0:} ({1:})".format(__version__, __git_sha__))
     logfile.write("{:>50}: {:>10}\n".format("SEED", inputs["random_seed"]))
     logfile.write("{}\n".format('-'*88))
-
     logfile.write("{:^88}\n".format("  _____ _ _      _ _ ___  _     _____       __    _ __    _ "))
     logfile.write("{:^88}\n".format(" / ____| | \    / | '__ \| |   |  ___|     |  \  | |  \  | |"))
     logfile.write("{:^88}\n".format("| |___ | |  \  /  | |__) | |   | |___  ___ |   \ | |   \ | |"))
     logfile.write("{:^88}\n".format(" \___ \| |   \/   |  ___/| |   |  ___||___|| |\ \| | |\ \| |"))
     logfile.write("{:^88}\n".format(" ____| | | |\  /| | |    | |___| |___      | | \   | | \   |"))
     logfile.write("{:^88}\n".format("|_____/|_|_| \/ |_|_|    |_____|_____|     |_|  \__|_|  \__|"))
+    logfile.write("\n")
 
 def write_inputs(inputs):
     """

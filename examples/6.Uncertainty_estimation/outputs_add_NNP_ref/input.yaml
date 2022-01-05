@@ -1,0 +1,19 @@
+generate_features: false
+preprocess: false
+train_model: true
+random_seed: 123
+
+params:
+    Si: params_Si
+    O:  params_O
+
+neural_network:
+    train: false
+    test: false
+    add_NNP_ref: true
+    train_atomic_E: false
+    continue: checkpoint.pth.tar
+
+    nodes: 30-30
+    scale: true
+    pca: true

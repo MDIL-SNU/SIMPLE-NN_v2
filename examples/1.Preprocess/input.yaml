@@ -1,6 +1,6 @@
-generate_features: true
-preprocess: true
-train_model: false
+generate_features: True
+preprocess: True
+train_model: False
 random_seed: 123
 
 params:
@@ -9,4 +9,11 @@ params:
 
 descriptor:
     type: symmetry_function
-    absolute_path: false
+    read_force: False
+    read_stress: False
+    absolute_path: False
+
+preprocessing:
+    valid_rate: 0.1
+    calc_scale: True
+    calc_pca: True

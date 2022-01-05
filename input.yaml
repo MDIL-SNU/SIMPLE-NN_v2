@@ -1,110 +1,110 @@
-generate_features: True
-preprocess: False
-train_model: False
-
+generate_features:  True
+preprocess:         False
+train_model:        False
 params:
     species1:   'your/dir/to/parameter/species1'
     species2:   'your/dir/to/parameter/species2'
 
-#Input for generate fearues
+# Input for generate fearues
 descriptor: 
     type:               'symmetry_function'
     struct_list:        'structure_list'
-    save_list:          'total_list'
     refdata_format:     'vasp-out'
     compress_outcar:    True
     save_directory:     'data'
+    save_list:          'total_list'
+    absolute_path:      False
     read_force:         True
     read_stress:        True 
     dx_save_sparse:     False
-    add_atom_idx:       True 
-    absolute_path:      False
 
-#Input for preprocess
+# Input for preprocess
 preprocessing: 
     data_list:          'total_list'
     train_list:         'train_list'
     valid_list:         'valid_list' 
-    shuffle:            True
     valid_rate:         0.1
-    #Scaling parameters
+    shuffle:            True
+    # Scaling parameters
     calc_scale:         True
     scale_type:         'minmax'
     scale_width:        1.0
-    #PCA parameters
+    # PCA parameters
     calc_pca:           True
     pca_whiten:         True
-    pca_min_whiten_level: 1.0e-8
-    #Atomic weights
+    min_whiten_level: 1.0e-8
+    # Atomic weights
     calc_atomic_weights: 
-        type:            'gdf'
+        type:           'gdf'
         params: 
-            species1: 0.02
-            species2: 0.06
-#Input for traning
+            species1:   0.02
+            species2:   0.06
+
+# Input for traning
 neural_network:
+    # Data
     train_list:         'train_list'
     valid_list:         'valid_list' 
     test_list:          'test_list'
     ref_list:           'ref_list'
     train:              True
     test:               False
+    use_force:          True
+    use_stress:         True
     add_NNP_ref:        False
     train_atomic_E:     False
     shuffle_dataloader: True
-    workers:            0 
-    # Network related
+    # Network
     nodes:              '30-30'
-    regularization:     1.0e-6 #L2 regularization
-    use_force:          True
-    use_stress:         True
+    acti_func:          'sigmoid'
     double_precision:   True
     weight_initializer:
         type:           'xavier normal'
-    acti_func:          'sigmoid'
     dropout:            False
-    # Optimization related
-    batch_size:         10
-    full_batch:         False
-    total_epoch:        5
-    learning_rate:      0.0001
-    lr_decay:           0.9999
-    stress_coeff:       1.0e-6
-    force_coeff:        0.1 
-    energy_coeff:       1.
-    loss_scale:         1.
+    pca:                True
+    scale:              True
+    atomic_weights:     False
+    weight_modifier: 
+        type:           'modified sigmoid'
+        params: 
+            species1:
+                b:      100
+                c:      0.01
+            species2:
+                b:      100
+                c:      0.01
+    # Optimization
     optimizer:
-        method: 'Adam'
-    # Loss function related
+        method:         'Adam'
+    batch_size:         16
+    full_batch:         False
+    total_epoch:        1000
+    learning_rate:      0.0001
+    decay_rate:         0.9999
+    l2_regularization:  1.0e-6
+    # Loss function
+    loss_scale:         1.
     E_loss_type:        1
     F_loss_type:        1
-    # Logging & saving related (Epoch)
+    energy_coeff:       1.
+    force_coeff:        0.1 
+    stress_coeff:       1.0e-6
+    # Logging & saving
     show_interval:          1
     checkpoint_interval:    False
     energy_criteria:        False
     force_criteria:         False
     stress_criteria:        False
     print_structure_rmse:   True
-    #Using Preprocess option
-    pca:    True
-    scale:  True
-    atomic_weights:    False
-    weight_modifier: 
-        type:           'modified sigmoid'
-        params: 
-            species1:
-                b:  100
-                c:  0.01
-            species2:
-                b:  100
-                c:  0.01
-    #Resume parameters
-    continue:               False #Checkpoint_file or 'weights'
+    # Restart
+    continue:               False
     clear_prev_status:      False
     clear_prev_optimizer:   False
     start_epoch:            0
-    #Parallelism
+    # Parallelism
+    use_gpu:                        True
+    GPU_number:                     False
+    load_data_to_gpu:               False
+    workers:                        0 
     inter_op_parallelism_threads:   0
     intra_op_parallelism_threads:   0
-    load_data_to_gpu:               False
-    GPU_number:                     False

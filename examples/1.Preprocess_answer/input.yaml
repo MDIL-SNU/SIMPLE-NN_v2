@@ -1,0 +1,17 @@
+generate_features: True
+preprocess: True
+train_model: False
+random_seed: 123
+
+params:
+    Si: params_Si
+    O:  params_O
+
+descriptor:
+    type: symmetry_function
+    absolute_path: False
+
+preprocessing:
+    valid_rate: 0.1
+    calc_scale: True
+    calc_pca: True

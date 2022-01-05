@@ -4,7 +4,7 @@ def _initialize_optimizer(inputs, model, user=None):
     optim_type  = inputs['neural_network']['optimizer']['method']
     optim_params =inputs['neural_network']['optimizer']['params'] if inputs['neural_network']['optimizer']['params'] else {}
     lr=inputs['neural_network']['learning_rate']
-    regularization = float(inputs['neural_network']['regularization'])
+    regularization = float(inputs['neural_network']['l2_regularization'])
 
     optimizer = {
         'Adadelta': torch.optim.Adadelta,

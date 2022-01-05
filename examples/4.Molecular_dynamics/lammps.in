@@ -1,0 +1,10 @@
+units metal
+
+read_data SiO2.dat
+
+pair_style nn
+pair_coeff * * potential_saved Si O
+
+fix int all nvt temp 300.0 300.0 $(100.0*dt) 
+
+run 10

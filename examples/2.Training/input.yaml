@@ -1,6 +1,6 @@
-generate_features: false
-preprocess: false
-train_model: true
+generate_features: False
+preprocess: False
+train_model: True
 random_seed: 123
 
 params:
@@ -8,10 +8,10 @@ params:
     O:  params_O
 
 neural_network:
+    nodes: 30-30
+    batch_size: 16
     optimizer: 
         method: Adam
-    nodes: 30-30
-    batch_size: 10
     total_epoch: 1000
     learning_rate: 0.001
     scale: True

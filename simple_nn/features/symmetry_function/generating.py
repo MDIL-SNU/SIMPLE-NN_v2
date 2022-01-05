@@ -143,6 +143,7 @@ def generate(inputs, logfile, comm):
         if inputs['descriptor']['compress_outcar']:
             os.remove('./tmp_comp_OUTCAR')
         logfile.write(f"Elapsed time in generating: {time.time()-start_time:10} s\n")
+        logfile.write("{}\n".format('-'*88))
 
 # Extract structure information from structure (atom numbers, cart, scale, cell)
 # Return variables related to structure information (atom_type_idx, type_num, type_atom_idx)
@@ -217,31 +218,41 @@ def _check_error(errnos, logfile):
 # Set resulatant Dictionary
 def _set_calculated_result(inputs, result, x, dx, da, type_num, element, symf_params_set, atom_num, comm):
     if type_num[element] != 0:
-        result['x'][element] = np.array(comm.gather(x,root=0))
-        result['dx'][element] = np.array(comm.gather(dx,root=0))
-        result['da'][element] = np.array(comm.gather(da,root=0))
+        result['x'][element] = np.array(comm.gather(x, root=0))
         if comm.rank == 0:
             result['x'][element] = np.concatenate(result['x'][element], axis=0).\
                             reshape([type_num[element], symf_params_set[element]['num']])
-            result['dx'][element] = np.concatenate(result['dx'][element], axis=0).\
-                            reshape([type_num[element], symf_params_set[element]['num'], atom_num, 3])
-            result['da'][element] = np.concatenate(result['da'][element], axis=0).\
-                            reshape([type_num[element], symf_params_set[element]['num'], 3, 6])
+        if inputs['descriptor']['read_force'] is True:
+            result['dx'][element] = np.array(comm.gather(dx, root=0))
+            if comm.rank == 0:
+                result['dx'][element] = np.concatenate(result['dx'][element], axis=0).\
+                                reshape([type_num[element], symf_params_set[element]['num'], atom_num, 3])
+        if inputs['descriptor']['read_stress'] is True:
+            result['da'][element] = np.array(comm.gather(da, root=0))
+            if comm.rank == 0:
+                result['da'][element] = np.concatenate(result['da'][element], axis=0).\
+                                reshape([type_num[element], symf_params_set[element]['num'], 3, 6])
+
     else:
         result['x'][element] = np.zeros([0, symf_params_set[element]['num']])
-        result['dx'][element] = np.zeros([0, symf_params_set[element]['num'], atom_num, 3])
-        result['da'][element] = np.zeros([0, symf_params_set[element]['num'], 3, 6])
-    if  comm.rank == 0:
+        if inputs['descriptor']['read_force'] is True:
+            result['dx'][element] = np.zeros([0, symf_params_set[element]['num'], atom_num, 3])
+        if inputs['descriptor']['read_stress'] is True:
+            result['da'][element] = np.zeros([0, symf_params_set[element]['num'], 3, 6])
+
+    if comm.rank == 0:
         result['x'][element] = torch.tensor(result['x'][element])
-        #Sparse tensor mapping here
-        if inputs['descriptor']['dx_save_sparse']:
-            tmp_tensor = torch.tensor(result['dx'][element])
-            result['dx_size'][element] = tmp_tensor.size()
-            result['dx'][element] = tmp_tensor.reshape(-1).to_sparse()
-            tmp_tensor = None
-        else:
-            result['dx'][element] = torch.tensor(result['dx'][element])
-        result['da'][element] = torch.tensor(result['da'][element])
+        if inputs['descriptor']['read_force'] is True:
+            #Sparse tensor mapping here
+            if inputs['descriptor']['dx_save_sparse']:
+                tmp_tensor = torch.tensor(result['dx'][element])
+                result['dx_size'][element] = tmp_tensor.size()
+                result['dx'][element] = tmp_tensor.reshape(-1).to_sparse()
+                tmp_tensor = None
+            else:
+                result['dx'][element] = torch.tensor(result['dx'][element])
+        if inputs['descriptor']['read_stress'] is True:
+            result['da'][element] = torch.tensor(result['da'][element])
 
 # Check ase version, E, F, S extract from structure, Raise Error 
 def _extract_EFS(inputs, structure, logfile, comm):
@@ -259,7 +270,7 @@ def _extract_EFS(inputs, structure, logfile, comm):
             try:
                 F = structure.get_forces()
             except:
-                err = "There is not force information! Set 'use_force': False"
+                err = "There is not force information! Set 'read_force': False"
                 if comm.rank == 0:
                     logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)
@@ -270,7 +281,7 @@ def _extract_EFS(inputs, structure, logfile, comm):
                 S = -1 * structure.get_stress() / units.GPa * 10
                 S = S[[0, 1, 2, 5, 3, 4]]
             except:
-                err = "There is not stress information! Set 'use_stress': False"
+                err = "There is not stress information! Set 'read_stress': False"
                 if comm.rank == 0:
                     logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)
