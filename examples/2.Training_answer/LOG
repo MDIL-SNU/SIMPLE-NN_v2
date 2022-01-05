@@ -467,5 +467,5 @@ Epoch    1000 E RMSE(T V) 7.8467e-04 6.9296e-04 F RMSE(T V) 1.2639e-01 2.4724e-0
 Data load(T V): 8.7738e-01 4.8213e-02 s/epoch Total time(T V): 1.1842e+00 5.9305e-02 s/epoch Elapsed: 7.5230e+02 s
 ----------------------------------------------------------------------------------------------
 Best loss lammps potential written at 987 epoch
-Elapsed time in training. 757.2113778591156 s.
+Elapsed time in training: 757.2113778591156 s.
 Total wall time: 757.2241942882538 s.

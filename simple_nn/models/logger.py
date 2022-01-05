@@ -62,19 +62,14 @@ def _init_meters(struct_labels, use_force, use_stress, atomic_e):
 
     return progress_dict
 
-#Show avg rmse
-def _show_avg_rmse(inputs, logfile, epoch, lr, total_time, train_progress_dict, valid_progress_dict=None):
-    log = "-" * 94
-    logfile.write(log+'\n')
+# Show avg rmse
+def _show_avg_rmse(logfile, epoch, lr, total_time, train_progress_dict, valid_progress_dict=None):
+    logfile.write("-" * 88 + '\n')
 
-    log=""
-    log += "Epoch {0:>7d}".format(epoch)
-
+    log = "Epoch {0:>7d}".format(epoch)
     log += _formatting_avg_rmse('e_err', 'E RMSE', train_progress_dict, valid_progress_dict)
-    #if inputs['neural_network']['use_force']:
     if 'f_err' in train_progress_dict.keys():
         log += _formatting_avg_rmse('f_err', 'F RMSE', train_progress_dict, valid_progress_dict)
-    #if inputs['neural_network']['use_stress']:
     if 's_err' in train_progress_dict.keys():
         log += _formatting_avg_rmse('s_err', 'S RMSE', train_progress_dict, valid_progress_dict)
     log += " learning_rate: {0:.4e}\n".format(lr)
@@ -86,10 +81,9 @@ def _show_avg_rmse(inputs, logfile, epoch, lr, total_time, train_progress_dict, 
         log += "Data load: {0:.4e} s/epoch".format(train_progress_dict['data_time'].val)
         log += " Total load: {0:.4e} s/epoch".format(train_progress_dict['batch_time'].val)
     log += " Elapsed: {0:.4e} s".format(total_time)
-    logfile.write(log+'\n')
+    logfile.write(log + '\n')
 
-    log = "-" * 94
-    logfile.write(log+'\n')
+    logfile.write("-" * 88 + '\n')
 
 def _formatting_avg_rmse(key, title, t_progress_dict, v_progress_dict):
     # calc average rmse
@@ -115,10 +109,10 @@ def _formatting_avg_rmse(key, title, t_progress_dict, v_progress_dict):
 
     return log
 
-#Show structure rmse
-def _show_structure_rmse(inputs, logfile, train_epoch_result, valid_epoch_result):
-    logfile.write("structural breakdown:\n")
-    log = "  {:<20}".format('label')
+# Show structure rmse
+def _show_structure_rmse(logfile, train_epoch_result, valid_epoch_result):
+    logfile.write("Structure breakdown:\n")
+    log = "  {:<14}".format('label')
     log += "   E_RMSE(T)   E_RMSE(V)"
 
     if 'f_err' in train_epoch_result.keys():
@@ -129,7 +123,7 @@ def _show_structure_rmse(inputs, logfile, train_epoch_result, valid_epoch_result
 
     for label in train_epoch_result['struct_labels']:
         log = ""
-        log += "  {0:20}".format(label)
+        log += "  {0:l4}".format(label)
         log += _formatting_structure_rmse('e_err', label, train_epoch_result, valid_epoch_result)
 
         if 'f_err' in train_epoch_result.keys():
@@ -138,7 +132,7 @@ def _show_structure_rmse(inputs, logfile, train_epoch_result, valid_epoch_result
             log += _formatting_structure_rmse('s_err', label, train_epoch_result, valid_epoch_result)
         logfile.write(log+'\n')
 
-    log = "-" * 94
+    log = "-" * 88
     logfile.write(log+'\n')
 
 def _formatting_structure_rmse(key, label, t_progress_dict, v_progress_dict):

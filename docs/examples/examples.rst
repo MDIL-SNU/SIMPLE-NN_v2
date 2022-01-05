@@ -10,18 +10,13 @@ Example files are in :code:`SIMPLE-NN/examples/`.
 In this example, snapshots from 500K MD trajectory of 
 amorphous SiO\ :sub:`2`\  (72 atoms) are used as training set.  
 
-.. Note::
-
-    Since we set the relative path for reference file in :code:`str_list`, 
-    You need to move to the directory indicated in each section below to run the examples.
-
-.. _Generate NNP:
+.. _preprocess:
 
 1. Preprocess
 =============
 
-To generate NNP using symmetry function and neural network, 
-you need three types of input file (input.yaml, structure_list, params_XX).
+To preprocess the *ab initio* calculation result for training dataset of NNP, 
+you need three types of input file (:code:`input.yaml`, :code:`structure_list`, and :code:`params_XX`).
 The example files except params_Si and params_O are introduced below.
 Detail of params_Si and params_O can be found in :doc:`/features/symmetry_function/symmetry_function` section.
 Input files introduced in this section can be found in 
@@ -33,7 +28,6 @@ Input files introduced in this section can be found in
     generate_features: True
     preprocess: True
     train_model: False
-    random_seed: 123
 
     params:
         Si: params_Si
@@ -51,15 +45,22 @@ Input files introduced in this section can be found in
 
 With this input file, SIMPLE-NN calculates feature vectors and its derivatives (:code:`generate_features`) and 
 generates training/validation dataset (:code:`preprocess`).
+
 Sample VASP OUTCAR file (the file is compressed to reduce the file size) is in :code:`SIMPLE-NN/examples/ab_initio_output`.
+
 In MD trajectory, snapshots are sampled only in the interval of 100 MD steps for simplicity.
+
 In this example, 70 symmetry functions consist of 8 radial symmetry functions per 2-body combination 
 and 18 angular symmetry functions per 3-body combination.
 
 Output files can be found in :code:`SIMPLE-NN/examples/1.Preprocess_answer`.
 
+.. _training:
+
 2. Training
 ===========
+
+To train the NNP with the preprocessed dataset, you need to prepare the :code:`input.yaml`, :code:`train_list`, :code:`valid_list`, :code:`scale_factor`, and :code:`pca`. The last two files improves the loss convergence and training quality.
 
 .. code-block:: yaml
 
@@ -67,7 +68,6 @@ Output files can be found in :code:`SIMPLE-NN/examples/1.Preprocess_answer`.
     generate_features: False
     preprocess: False
     train_model: True
-    random_seed: 123
 
     params:
         Si: params_Si
@@ -80,6 +80,7 @@ Output files can be found in :code:`SIMPLE-NN/examples/1.Preprocess_answer`.
             method: Adam
         total_epoch: 1000
         learning_rate: 0.001
+
         scale: True
         pca: True
      
@@ -89,110 +90,57 @@ In this example, we use the dataset calculated in :code:`SIMPLE-NN/examples/1.Pr
 The 70-30-30-1 network is optimized by Adam optimizer with the 0.001 of learning rate and batch size of 8 during 1000 epochs. 
 The input feature vectors whose size is 70 are converted by :code:`scale_factor`, following PCA matrix transformation by :code:`pca`
 The execution log and energy, force, and stress root-mean-squared-error (RMSE) are stored in :code:`LOG`. 
+Input files introduced in this section can be found in :code:`SIMPLE-NN/examples/2.Training`.
 
 3. Evaluation
-==============
+=============
 
-.. _gen_test_data:
+To evaluate the quality of training by correlation between reference dataset and NNP as well as RMSE, :code:`test_list` should be prepared. 
+:code:`test_list` contains the path of testset preprocessed as '.pt' format. 
+In this example, :code:`test_list` is made by concatenating `train_list` and `valid_list` in :ref:`training` for simplicity. 
+Testset in :code:`test_list` also can be generated separately as described in :code:`1. Preprocess`. 
+In this case, we recommende you to just change the filename of :code:`train_list` into :code:`test_list` after :ref:`preprocess` with :code:`valid_rate` of 0.0. 
+The potential to be tested is written after :code:`continue`. The any results of :ref:`training` such as :code:`checkpoint.tar` and :code:`potential_saved`, can be used.
 
-Generate test dataset
----------------------
-Generating a test dataset is same as generating a training/validation dataset.
-In this example, we use same VASP OUTCAR to generate test dataset.
-Input files introduced in this section can be found in 
-:code:`SIMPLE-NN/examples/generate_test_data`.
-
-::
+.. code-block:: yaml
 
     # input.yaml
-    generate_features: true
-    preprocess: true
-    train_model: false
-    atom_types:
-      - Si
-      - O
+    generate_features: False
+    preprocess: False
+    train_model: True
 
-    symmetry_function:
-      params:
+    params:
         Si: params_Si
-        O: params_O
-      valid_rate: 0.
+        O:  params_O
 
-In this case, :code:`train_model` is set to :code:`false` 
-because training process is not required to generate test dataset.
-In addition, valid_rate also set to 0.
-:code:`str_list` is same as `Generate NNP`_ section.
-
-.. Note::
-
-    To prevent overwriting of the existing training/validation dataset,
-    create a new folder and create a test dataset.
-
-
-.. _test_mode:
-
-Error check
------------
-
-To check the error for test dataset, use the setting below.
-And for running test mode, you need to copy the :code:`train_list` 
-file generated in :ref:`gen_test_data` section
-to :code:`SIMPLE-NN/examples/SiO2/error_check` and change filename to :code:`test_list`.
-Edit the path to data directory in :code:`test_list` file accordingly.
-Also, copy :code:`scale_factor` and :code:`params_*` to the current directory.
-These files contain information on data set, so you have to carry them with the data set.
-Input files introduced in this section can be found in 
-:code:`SIMPLE-NN/examples/SiO2/error_check`.
-
-::
-
-    # input.yaml
-    generate_features: false
-    preprocess: false
-    train_model: true
-    atom_types:
-      - Si
-      - O
-
-    symmetry_function:
-      params:
-        Si: params_Si
-        O: params_O
-       
     neural_network:
-      method: Adam
-        nodes: 30-30
-      batch_size: 10
-      train: false
-      test: true
-      continue: true
+        train: False
+        test: True
+        continue: checkpoint_bestmodel.pth.tar
+
+Input files introduced in this section can be found in 
+:code:`SIMPLE-NN/examples/3.Evaluation`.
 
 .. Note::
-  You need to change the filename from :code:`SAVER_iterationXXXX.*` to :code:`SAVER.*` to use the option :code:`continue: true`
-  and modify the checkpoints file (remove '_iterationXXXX' in the text). 
-  If you use the option :code:`continue: weights`, 
-  change the filename from :code:`potential_saved_iterationXXXX` to :code:`potential_saved`.
+  You need to copy :code:`pca` and :code:`scale_factor` files if you write down the name of LAMMPS potential in :code:`continue`. 
 
 After running SIMPLE-NN with the setting above, 
 new output file named :code:`test_result` is generated. 
-The file is pickle format and you can open this file with python code of below::
+The file is pickle format and you can open this file with python code of below
 
-    from six.moves import cPickle as pickle
+.. code-block:: python
 
-    with open('test_result') as fil:
-        res = pickle.load(fil) # For Python 2
-
-    with open('test_result', 'rb') as fil:
-        res = pickle.load(fil, encoding='latin1') # For Python 3
+    import torch
+    result = torch.load('test_result')
 
 In the file, DFT energies/forces, NNP energies/forces are included.
-
+We also provide the python code (:code:`correlation.py`) that makes parity plots from :code:`test_result`. 
 
 4. Molecular dynamics
 =====================
 To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
 
-.. code:: bash
+.. code-block:: bash
 
     pair_style nn
     pair_coeff * * /path/to/potential_saved Si O
@@ -244,7 +192,6 @@ can be visualized with the following script.
 
     grp.plot_error_vs_gdfinv(['Si','O'], 'test_result')
 
-where :code:`test_result` is generated after :ref:`test_mode` as the output file. 
 The graph of interval-averaged force errors with respect to the 
 :math:`\rho(\mathbf{G})^{-1}` is generated as :code:`ferror_vs_GDFinv_XX.pdf`
 

@@ -1,0 +1,80 @@
+SIMPLE_NN v2.0.0 (6f01a63)                                              SEED:        123
+----------------------------------------------------------------------------------------
+                _____ _ _      _ _ ___  _     _____       __    _ __    _               
+               / ____| | \    / | '__ \| |   |  ___|     |  \  | |  \  | |              
+              | |___ | |  \  /  | |__) | |   | |___  ___ |   \ | |   \ | |              
+               \___ \| |   \/   |  ___/| |   |  ___||___|| |\ \| | |\ \| |              
+               ____| | | |\  /| | |    | |___| |___      | | \   | | \   |              
+              |_____/|_|_| \/ |_|_|    |_____|_____|     |_|  \__|_|  \__|              
+
+----------------------------------------------------------------------------------------
+
+Input for parameters
+Si parameters directory     : params_Si
+O  parameters directory     : params_O
+
+Input for neural_network
+
+INPUT DATA
+Train                       : False
+Test                        : True
+Test_list                   : ./test_list
+Use force in traning        : True
+Use stress in training      : True
+Add NNP reference to files  : False
+Train atomic energy         : False
+Shuffle dataloader          : True
+
+NETWORK
+Nodes                       : 30-30
+Activation function type    : sigmoid
+Double precision            : True
+Use dropout network         : False
+Weight initializer          : xavier normal
+Use scale                   : True
+Use pca                     : True
+Use atomic_weights          : False
+
+OPTIMIZATION
+Optimization method         : Adam
+Batch size                  : 16
+Use full batch              : False
+Total traning epoch         : 1000
+Learning rate               : 0.0001
+L2_regularization           : 1e-06
+
+LOSS FUNCTION
+Scale for loss function     : 1.0
+Energy loss function type   : 1
+Force loss function type    : 1
+Energy coefficient          : 1.0
+Force coefficient           : 0.1
+Stress coefficient          : 1e-06
+
+LOGGING & SAVING
+Show interval               : 10
+Print structure RMSE        : False
+
+CONTINUE
+Continue from checkpoint    : checkpoint_bestmodel.pth.tar
+Clear previous epoch        : False
+Clear previous optimizer    : False
+Start epoch                 : 1
+
+PARALLELISM
+GPU training                : True
+Intra op parallelism thread : 1
+Inter op parallelism thread : 16
+Direct data loading to gpu  : True
+# of subprocesses in loading: 0
+
+----------------------------------------------------------------------------------------
+cuda is used in model.
+Load pytorch model from 'checkpoint_bestmodel.pth.tar'
+Load scale factor from 'checkpoint_bestmodel.pth.tar'
+Load pca from 'checkpoint_bestmodel.pth.tar'
+Evaluation results are saved as 'test_result'
+----------------------------------------------------------------------------------------
+E RMSE: 7.6432e-04 F RMSE: 1.4311e-01 S RMSE: 5.8788e+00 
+Elapsed time in training: 5.806792259216309 s.
+Total wall time: 5.839373588562012 s.
