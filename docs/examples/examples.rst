@@ -47,20 +47,16 @@ Input files introduced in this section can be found in
 .. code-block:: bash
 
     # str_list
-    ../ab_initio_output/OUTCAR_comp ::10
+    ../ab_initio_output/OUTCAR_comp ::100
 
-With this input file, SIMPLE-NN calculates feature vectors and its derivatives (:code:`generate_features`), 
-generate training/validation dataset (:code:`preprocess`) and optimize the network (:code:`train_model`).
+With this input file, SIMPLE-NN calculates feature vectors and its derivatives (:code:`generate_features`) and 
+generates training/validation dataset (:code:`preprocess`).
 Sample VASP OUTCAR file (the file is compressed to reduce the file size) is in :code:`SIMPLE-NN/examples/ab_initio_output`.
-In MD trajectory, snapshots are sampled in the interval of 10 MD steps.
+In MD trajectory, snapshots are sampled only in the interval of 100 MD steps for simplicity.
 In this example, 70 symmetry functions consist of 8 radial symmetry functions per 2-body combination 
 and 18 angular symmetry functions per 3-body combination.
-Thus, this model uses 70-30-30-1 network for both Si and O. 
-The network is optimized by Adam optimizer with the 0.001 of learning rate and batch size is 10. 
 
 Output files can be found in :code:`SIMPLE-NN/examples/1.Preprocess_answer`.
-In the folder, generated dataset is stored in :code:`data` folder
-and execution log and energy, force, and stress root-mean-squared-error (RMSE) are stored in :code:`LOG`. 
 
 2. Training
 ===========
@@ -68,9 +64,9 @@ and execution log and energy, force, and stress root-mean-squared-error (RMSE) a
 .. code-block:: yaml
 
     # input.yaml
-    generate_features: false
-    preprocess: false
-    train_model: true
+    generate_features: False
+    preprocess: False
+    train_model: True
     random_seed: 123
 
     params:
@@ -78,15 +74,21 @@ and execution log and energy, force, and stress root-mean-squared-error (RMSE) a
         O:  params_O
 
     neural_network:
+        nodes: 30-30
+        batch_size: 8
         optimizer: 
             method: Adam
-        nodes: 30-30
-        batch_size: 10
         total_epoch: 1000
         learning_rate: 0.001
         scale: True
         pca: True
      
+With this input file, SIMPLE-NN optimizes the neural network (:code:`train_model`).
+The paths of training/validation dataset should be written in :code:`train_list` and :code:`valid_list`, respectively. 
+In this example, we use the dataset calculated in :code:`SIMPLE-NN/examples/1.Preprocess_answer`.
+The 70-30-30-1 network is optimized by Adam optimizer with the 0.001 of learning rate and batch size of 8 during 1000 epochs. 
+The input feature vectors whose size is 70 are converted by :code:`scale_factor`, following PCA matrix transformation by :code:`pca`
+The execution log and energy, force, and stress root-mean-squared-error (RMSE) are stored in :code:`LOG`. 
 
 3. Evaluation
 ==============
@@ -98,7 +100,7 @@ Generate test dataset
 Generating a test dataset is same as generating a training/validation dataset.
 In this example, we use same VASP OUTCAR to generate test dataset.
 Input files introduced in this section can be found in 
-:code:`SIMPLE-NN/examples/SiO2/generate_test_data`.
+:code:`SIMPLE-NN/examples/generate_test_data`.
 
 ::
 
@@ -196,7 +198,7 @@ To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
     pair_coeff * * /path/to/potential_saved Si O
 
 5. Parameter tuning (GDF)
-================
+=========================
 
 GDF
 ---
@@ -287,7 +289,7 @@ In the script below, :code:`test_result_noscale` is the test result file from th
 .. _W. Jeong, K. Lee, D. Yoo, D. Lee and S. Han, J. Phys. Chem. C 122 (2018) 22790: https://pubs.acs.org/doi/abs/10.1021/acs.jpcc.8b08063
 
 6. Uncertainty estimation
-======================
+=========================
 
 Molecular dynamics
 ------------------
