@@ -142,12 +142,12 @@ def _calculate_pca_matrix(inputs, feature_list, scale):
         pca_temp = PCA()
         scale_process = (feature_list[elem] - scale[elem][0].reshape(1,-1) ) / scale[elem][1].reshape(1,-1)
         pca_temp.fit(scale_process)
-        min_level = inputs['preprocessing']['pca_min_whiten_level'] if inputs['preprocessing']['pca_whiten'] else 0.0
+        min_level = inputs['preprocessing']['min_whiten_level'] if inputs['preprocessing']['pca_whiten'] else 0.0
         # PCA transformation = x * pca[0] - pca[2] (divide by pca[1] if whiten)
         pca[elem] = [pca_temp.components_.T,
                      np.sqrt(pca_temp.explained_variance_ + min_level),
                      np.dot(pca_temp.mean_, pca_temp.components_.T)]
-    pca['pca_whiten'] =  inputs['preprocessing']['pca_min_whiten_level'] if inputs['preprocessing']['pca_whiten'] else None
+    pca['pca_whiten'] =  inputs['preprocessing']['min_whiten_level'] if inputs['preprocessing']['pca_whiten'] else None
 
     return pca
 

@@ -81,7 +81,7 @@ class FCNDict(torch.nn.Module):
                 FIL.write('LAYER 0 linear PCA\n')
                 pca_mat = np.copy(pca[item][0].cpu().numpy())
                 pca_mean = np.copy(pca[item][2].cpu().numpy())
-                if inputs['preprocessing']['pca_min_whiten_level'] is not None:
+                if inputs['preprocessing']['min_whiten_level'] is not None:
                     pca_mat /= pca[item][1].cpu().numpy().reshape([1, -1])
                     pca_mean /= pca[item][1].cpu().numpy()
 

@@ -77,7 +77,7 @@ Compile LAMMPS code.
 .. code-block:: bash
 
     cd /path/to/lammps/src/
-    make mpi (or serial)
+    make mpi
 
 4. mpi4py (optional)
 --------------------
