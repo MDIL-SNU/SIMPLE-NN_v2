@@ -91,7 +91,7 @@ neural_network:
     stress_coeff:       1.0e-6
     # Logging & saving
     show_interval:          1
-    checkpoint_interval:    False
+    save_interval:          0
     energy_criteria:        False
     force_criteria:         False
     stress_criteria:        False
@@ -102,9 +102,10 @@ neural_network:
     clear_prev_optimizer:   False
     start_epoch:            0
     # Parallelism
-    use_gpu:                        True
-    GPU_number:                     False
-    load_data_to_gpu:               False
-    workers:                        0 
-    inter_op_parallelism_threads:   0
-    intra_op_parallelism_threads:   0
+    use_gpu:            True
+    GPU_number:         False
+    inter_op_threads:   0
+    intra_op_threads:   0
+    load_data_to_gpu:   False
+    workers:            0 
+

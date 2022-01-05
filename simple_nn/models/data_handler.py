@@ -245,7 +245,7 @@ def _make_dataloader(inputs, dataset_list, scale_factor, pca, device, use_force,
       
         data_loader = torch.utils.data.DataLoader(\
             dataset_list, batch_size=batch_size, shuffle=shuffle, collate_fn=partial_collate,\
-            num_workers=inputs['neural_network']['workers'], pin_memory=False)
+            num_workers=inputs['neural_network']['subprocesses'], pin_memory=False)
 
     return data_loader
 

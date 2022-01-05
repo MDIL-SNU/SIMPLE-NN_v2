@@ -11,7 +11,6 @@ def train(inputs, logfile):
     if inputs['neural_network']['double_precision']:
         torch.set_default_dtype(torch.float64)
     device = _get_torch_device(inputs)
-    _set_pararrelism(inputs, logfile)
 
     model = neural_network._initialize_model_and_weights(inputs, logfile, device)
     optimizer = optimizers._initialize_optimizer(inputs, model)
@@ -53,13 +52,6 @@ def _get_torch_device(inputs):
     else:
         device = 'cpu'
     return torch.device(device)
-
-def _set_pararrelism(inputs, logfile):
-    if inputs['neural_network']['intra_op_parallelism_threads'] != 0:
-        torch.set_num_threads(inputs['neural_network']['intra_op_parallelism_threads'])
-    if inputs['neural_network']['inter_op_parallelism_threads'] != 0:
-        torch.set_num_interop_threads(inputs['neural_network']['inter_op_parallelism_threads'])
-    logfile.write("Parallelism intra_thread : {0} inter_thread : {1}\n".format(torch.get_num_threads(), torch.get_num_interop_threads()))
 
 def _load_model_weights_and_optimizer_from_checkpoint(inputs, logfile, model, optimizer, device):
     checkpoint = None
@@ -142,8 +134,8 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
     total_epoch = int(inputs['neural_network']['total_epoch'])
     total_iter = int(inputs['neural_network']['total_epoch'] * max_len)
     batch_size = 'full_batch' if inputs['neural_network']['full_batch'] else inputs['neural_network']['batch_size']
-    logfile.write("Total training iteration : {0} , epoch : {1}, batch number : {2}, batch size : {3}, workers : {4}\n"\
-    .format(total_iter, total_epoch, max_len, batch_size, inputs['neural_network']['workers']))
+    logfile.write("Total iteration: {0} , epoch: {1}, batch number: {2}, batch size: {3}, subprocesses : {4}\n"\
+    .format(total_iter, total_epoch, max_len, batch_size, inputs['neural_network']['subprocesses']))
 
     criteria_dict = _set_stop_rmse_criteria(inputs, logfile)
     best_epoch = inputs['neural_network']['start_epoch']
@@ -179,12 +171,12 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
             if inputs['neural_network']['print_structure_rmse']:
                 logger._show_structure_rmse(inputs, logfile, train_epoch_result, valid_epoch_result)
 
-        # save checkpoint for each checkpoint_interval
-        if inputs['neural_network']['checkpoint_interval'] and (epoch % inputs['neural_network']['checkpoint_interval'] == 0):
+        # save checkpoint for each save_interval
+        if inputs['neural_network']['save_interval'] and (epoch % inputs['neural_network']['save_interval'] == 0):
             save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename=f'checkpoint_epoch_{epoch}.pth.tar')
             model.write_lammps_potential(filename='./potential_saved_epoch_{0}'.format(epoch), inputs=inputs, scale_factor=scale_factor, pca=pca)
             logfile.write("Lammps potential written at {0} epoch\n".format(epoch))
-        elif not inputs['neural_network']['checkpoint_interval']:
+        elif not inputs['neural_network']['save_interval']:
             save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint_latest.pth.tar')
             model.write_lammps_potential(filename='./potential_saved_latest', inputs=inputs, scale_factor=scale_factor, pca=pca)
 

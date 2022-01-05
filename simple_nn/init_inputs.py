@@ -113,7 +113,7 @@ model_default_inputs = \
                 'stress_coeff'  : 0.000001,
                 # Logging & saving
                 'show_interval' : 10,
-                'checkpoint_interval':  0,
+                'save_interval':  0,
                 'energy_criteria'   :   None,
                 'force_criteria'    :   None,
                 'stress_criteria'   :   None,
@@ -129,9 +129,9 @@ model_default_inputs = \
                 'use_gpu': True,
                 'GPU_number'       : None,
                 'load_data_to_gpu'  : True,
-                'workers'   : 0,
-                'inter_op_parallelism_threads': 0,
-                'intra_op_parallelism_threads': 0,
+                'subprocesses'   : 0,
+                'inter_op_threads': 0,
+                'intra_op_threads': 0,
             }
         }
 
@@ -238,7 +238,7 @@ def check_inputs(inputs, logfile):
     logfile.write('\nInput for parameters\n')
     params = inputs['params']
     assert set(atom_types) == set(params.keys()), \
-        f"atom_types are not consistent with params : \
+        f"Atom_types are not consistent with params : \
         {set(atom_types).symmetric_difference(params.keys())} "
     for atype in atom_types:
         if not os.path.exists(params[atype]):
@@ -250,45 +250,45 @@ def check_inputs(inputs, logfile):
         logfile.write("\nInput for descriptor\n")
         descriptor = inputs['descriptor']
         logfile.write(f"Descriptor type             : {descriptor['type']}\n")
-        logfile.write(f"reference data format       : {descriptor['refdata_format']}\n")
+        logfile.write(f"Reference data format       : {descriptor['refdata_format']}\n")
         if descriptor['refdata_format'] == 'vasp-out':
-            logfile.write(f"compress outcar             : {descriptor['compress_outcar']}\n")
+            logfile.write(f"Compress outcar             : {descriptor['compress_outcar']}\n")
         assert os.path.exists(descriptor['struct_list']) ,f"structure list to generate : {descriptor['struct_list']} not exists." 
-        logfile.write(f"structure list              : {descriptor['struct_list']}\n")
-        logfile.write(f"save directory              : {descriptor['save_directory']}\n")
-        logfile.write(f"save output list            : {descriptor['save_list']}\n")
-        logfile.write(f"save file absolute path     : {descriptor['absolute_path']}\n")
-        logfile.write(f"read force from data        : {descriptor['read_force']}\n")
-        logfile.write(f"read stress from data       : {descriptor['read_stress']}\n")
-        logfile.write(f"save dx as sparse tensor    : {descriptor['dx_save_sparse']}\n")
+        logfile.write(f"Structure list              : {descriptor['struct_list']}\n")
+        logfile.write(f"Save directory              : {descriptor['save_directory']}\n")
+        logfile.write(f"Save output list            : {descriptor['save_list']}\n")
+        logfile.write(f"Save file absolute path     : {descriptor['absolute_path']}\n")
+        logfile.write(f"Read force from data        : {descriptor['read_force']}\n")
+        logfile.write(f"Read stress from data       : {descriptor['read_stress']}\n")
+        logfile.write(f"Save dx as sparse tensor    : {descriptor['dx_save_sparse']}\n")
         logfile.flush()
     if inputs['preprocess']:
         preprocessing = inputs['preprocessing']
         logfile.write('\nInput for preprocessing\n')
-        logfile.write(f"total data list             : {preprocessing['data_list']}\n")
+        logfile.write(f"Total data list             : {preprocessing['data_list']}\n")
         assert os.path.exists(preprocessing['data_list']), f"data list : {preprocessing['data_list']} not exists."
-        logfile.write(f"train data list             : {preprocessing['train_list']}\n")
-        logfile.write(f"valid data list             : {preprocessing['train_list']}\n")
-        logfile.write(f"valid rate                  : {preprocessing['valid_rate']}\n")
-        logfile.write(f"shuffle train/valid list    : {preprocessing['shuffle']}\n")
-        logfile.write(f"calculate scale factor      : {preprocessing['calc_scale']}\n")
+        logfile.write(f"Train data list             : {preprocessing['train_list']}\n")
+        logfile.write(f"Valid data list             : {preprocessing['train_list']}\n")
+        logfile.write(f"Valid rate                  : {preprocessing['valid_rate']}\n")
+        logfile.write(f"Shuffle train/valid list    : {preprocessing['shuffle']}\n")
+        logfile.write(f"Calculate scale factor      : {preprocessing['calc_scale']}\n")
         if preprocessing['calc_scale']:
-            logfile.write(f"scale type                  : {preprocessing['scale_type']}\n")
-            logfile.write(f"scale width                 : {preprocessing['scale_width']}\n")
+            logfile.write(f"Scale type                  : {preprocessing['scale_type']}\n")
+            logfile.write(f"Scale width                 : {preprocessing['scale_width']}\n")
             if preprocessing['scale_type'] == 'uniform_gas':
                 for key, value in preprocessing['scale_rho'].items():
-                    logfile.write(f"scale rho for {key:2}            : {value}\n")
-        logfile.write(f"calculate pca matrix        : {preprocessing['calc_pca']}\n")
+                    logfile.write(f"Scale rho for {key:2}            : {value}\n")
+        logfile.write(f"Calculate PCA matrix        : {preprocessing['calc_pca']}\n")
         if preprocessing['calc_pca']:
             assert preprocessing['calc_scale'] is not False,\
-             f"calculating PCA matrix must need scale factor. use calc_factor : true or filename to load"
-            logfile.write(f"use pca whitening           : {preprocessing['pca_whiten']}\n")
+             f"Calculating PCA matrix must need scale factor. use calc_factor : true or filename to load"
+            logfile.write(f"Use PCA whitening           : {preprocessing['pca_whiten']}\n")
             if preprocessing['pca_whiten']:
-                logfile.write(f"pca min whitening level     : {preprocessing['min_whiten_level']}\n")
+                logfile.write(f"PCA min whitening level     : {preprocessing['min_whiten_level']}\n")
         if preprocessing['calc_atomic_weights']:
-            logfile.write(f"calc_atomic_weights         : True\n")
+            logfile.write(f"Calculate atomic_weights    : True\n")
             if preprocessing['calc_atomic_weights']['type'] in ['gdf', 'user']:
-                logfile.write(f"atomic_weights type         : {preprocessing['calc_atomic_weights']['type']}\n")
+                logfile.write(f"Atomic_weights type         : {preprocessing['calc_atomic_weights']['type']}\n")
                 if preprocessing['calc_atomic_weights']['params']:
                     if isinstance(preprocessing['calc_atomic_weights']['params'], dict):
                         for key, value in preprocessing['calc_atomic_weights']['params'].items():
@@ -298,62 +298,61 @@ def check_inputs(inputs, logfile):
             else:
                 logfile.write("Warning : set atomic weight types appropriately. preprocessing.atomic_weights.type : gdf/user\n")
         else:
-            logfile.write(f"calc_atomic_weights         : {preprocessing['calc_atomic_weights']}\n")
+            logfile.write(f"Calculate atomic_weights    : False\n")
         logfile.flush()
     if inputs['train_model']:
         neural_network = inputs['neural_network']
         logfile.write('\nInput for neural_network\n')
         logfile.write('\nINPUT DATA\n')
-        logfile.write(f"train                           : {neural_network['train']}\n")
+        logfile.write(f"Train                       : {neural_network['train']}\n")
         if inputs['preprocess'] is False and neural_network['train']:
-            logfile.write(f"train list                      : {neural_network['train_list']}\n")
+            logfile.write(f"Train list                  : {neural_network['train_list']}\n")
             assert os.path.exists(neural_network['train_list']), f"No train_list file for training set :{neural_network['train_list']}"
             if os.path.exists(neural_network['valid_list']):
-                logfile.write(f"valid list                      : {neural_network['valid_list']}\n")
-        logfile.write(f"test                            : {neural_network['test']}\n")
+                logfile.write(f"Valid list                  : {neural_network['valid_list']}\n")
+        logfile.write(f"Test                        : {neural_network['test']}\n")
         if neural_network['test']:
-            logfile.write(f"test_list                       : {neural_network['test_list']}\n")
+            logfile.write(f"Test_list                   : {neural_network['test_list']}\n")
         assert neural_network['train'] is True or neural_network['test'] is True, f"In valid mode train : false, test : false. Check your input"
-        logfile.write(f"use force in traning            : {neural_network['use_force']}\n")
-        logfile.write(f"use stress in training          : {neural_network['use_stress']}\n")
-        logfile.write(f"add NNP reference to files      : {neural_network['add_NNP_ref']}\n")
+        logfile.write(f"Use force in traning        : {neural_network['use_force']}\n")
+        logfile.write(f"Use stress in training      : {neural_network['use_stress']}\n")
+        logfile.write(f"Add NNP reference to files  : {neural_network['add_NNP_ref']}\n")
         if inputs['neural_network']['add_NNP_ref'] is True:
-            logfile.write(f"reference list                  : {neural_network['ref_list']}\n")
+            logfile.write(f"Reference list              : {neural_network['ref_list']}\n")
 
-        logfile.write(f"train atomic energy             : {neural_network['train_atomic_E']}\n")
-        logfile.write(f"shuffle dataloader              : {neural_network['shuffle_dataloader']}\n")
+        logfile.write(f"Train atomic energy         : {neural_network['train_atomic_E']}\n")
+        logfile.write(f"Shuffle dataloader          : {neural_network['shuffle_dataloader']}\n")
         logfile.write("\nNETWORK\n")
-        logfile.write(f"nodes                           : {neural_network['nodes']}\n")
+        logfile.write(f"Nodes                       : {neural_network['nodes']}\n")
         for node in neural_network['nodes'].split('-'):
             assert node.isdigit(), f"In valid node information nodes : {neural_network['nodes']}"
-        logfile.write(f"activation function type        : {neural_network['acti_func']}\n")
-        logfile.write(f"double precision                : {neural_network['double_precision']}\n")
-        logfile.write(f"use dropout network             : {neural_network['dropout']}\n")
-        logfile.write(f"weight initializer              : {neural_network['weight_initializer']['type']}\n")
+        logfile.write(f"Activation function type    : {neural_network['acti_func']}\n")
+        logfile.write(f"Double precision            : {neural_network['double_precision']}\n")
+        logfile.write(f"Use dropout network         : {neural_network['dropout']}\n")
+        logfile.write(f"Weight initializer          : {neural_network['weight_initializer']['type']}\n")
         use_param = False
         for keys in neural_network['weight_initializer']['params'].keys():
             if neural_network['weight_initializer']['params'][keys]:
-                logfile.write(f"params.{keys}               : {neural_network['weight_initializer']['params'][keys]}\n")
+                logfile.write(f"params.{keys}           : {neural_network['weight_initializer']['params'][keys]}\n")
                 use_param = True
-        logfile.write(f"use pca in traning              : {neural_network['pca']}\n")
-
-        if neural_network['pca'] and not neural_network['continue']:
-            if type(neural_network['pca']) is not bool:
-                assert os.path.exists(neural_network['pca']), f"{neural_network['pca']} file not exist.. set pca = False or make pca file\n"
-            else:
-                assert os.path.exists('./pca'), f"./pca file not exist.. set pca = False or make pca file\n"
-        logfile.write(f"use scale in traning            : {neural_network['scale']}\n")
+        logfile.write(f"Use scale                   : {neural_network['scale']}\n")
         if neural_network['scale'] and not neural_network['continue']:
             if type(neural_network['scale']) is not bool:
                 assert os.path.exists(neural_network['scale']), f"{neural_network['scale']} file not exist.. set pca = False or make pca file\n"
             else:
                 assert os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale_factor file\n"
-        logfile.write(f"use atomic_weights in traning   : {neural_network['atomic_weights']}\n")
+        logfile.write(f"Use pca                     : {neural_network['pca']}\n")
+        if neural_network['pca'] and not neural_network['continue']:
+            if type(neural_network['pca']) is not bool:
+                assert os.path.exists(neural_network['pca']), f"{neural_network['pca']} file not exist.. set pca = False or make pca file\n"
+            else:
+                assert os.path.exists('./pca'), f"./pca file not exist.. set pca = False or make pca file\n"
+        logfile.write(f"Use atomic_weights          : {neural_network['atomic_weights']}\n")
         if neural_network['atomic_weights']:
             if neural_network['weight_modifier']['type'] == 'modified sigmoid':
-                logfile.write(f"Weight modifier type            : {neural_network['weight_modifier']['type']}\n")
+                logfile.write(f"Weight modifier type        : {neural_network['weight_modifier']['type']}\n")
                 if neural_network['weight_modifier']['params']:
-                    logfile.write(f" ---parameters for weight modifier--- \n")
+                    logfile.write(f" ---Parameters for weight modifier--- \n")
                     for atype in neural_network['weight_modifier']['params'].keys():
                         logfile.write(f"{atype:2}  params  : ")
                         for key, val in neural_network['weight_modifier']['params'][atype].items():
@@ -361,73 +360,78 @@ def check_inputs(inputs, logfile):
                         logfile.write("\n")
             elif neural_network['weight_modifier']['type']:
                 logfile.write("Warning: We only support 'modified sigmoid'\n")
-                logfile.write(f"Weight modifier type            : None\n")
+                logfile.write(f"Weight modifier type        : None\n")
             else:
-                logfile.write(f"Weight modifier type            : None\n")
+                logfile.write(f"Weight modifier type        : None\n")
  
         logfile.write("\nOPTIMIZATION\n")
-        logfile.write(f"optimization method             : {neural_network['optimizer']['method']}\n")
+        logfile.write(f"Optimization method         : {neural_network['optimizer']['method']}\n")
         if neural_network['optimizer']['params']:
-            logfile.write(f"  ---optimizer parameters--- \n")
+            logfile.write(f"  ---Optimizer parameters--- \n")
             for key, val in neural_network['optimizer']['params'].items():
                 logfile.write(f"{key} : {val} \n")
             logfile.write('\n')
         if not neural_network['full_batch']:
-            logfile.write(f"batch size                      : {neural_network['batch_size']}\n")
-        logfile.write(f"use full batch for input        : {neural_network['full_batch']}\n")
-        logfile.write(f"total traning epoch             : {neural_network['total_epoch']}\n")
-        logfile.write(f"learning rate                   : {neural_network['learning_rate']}\n")
+            logfile.write(f"Batch size                  : {neural_network['batch_size']}\n")
+        logfile.write(f"Use full batch              : {neural_network['full_batch']}\n")
+        logfile.write(f"Total traning epoch         : {neural_network['total_epoch']}\n")
+        logfile.write(f"Learning rate               : {neural_network['learning_rate']}\n")
         if neural_network['decay_rate']:
-            logfile.write(f"learning rate decay (exp)       : {neural_network['decay_rate']}\n")
+            logfile.write(f"Learning rate decay (exp)   : {neural_network['decay_rate']}\n")
         if neural_network['l2_regularization']:
-            logfile.write(f"L2_regularization               : {neural_network['l2_regularization']}\n")
+            logfile.write(f"L2_regularization           : {neural_network['l2_regularization']}\n")
         logfile.write("\nLOSS FUNCTION\n")
-        logfile.write(f"scale for loss function         : {neural_network['loss_scale']}\n")
-        logfile.write(f"energy loss function type       : {neural_network['E_loss_type']}\n")
-        logfile.write(f"force loss function type        : {neural_network['F_loss_type']}\n")
-        logfile.write(f"energy coefficient              : {neural_network['energy_coeff']}\n")
+        logfile.write(f"Scale for loss function     : {neural_network['loss_scale']}\n")
+        logfile.write(f"Energy loss function type   : {neural_network['E_loss_type']}\n")
+        logfile.write(f"Force loss function type    : {neural_network['F_loss_type']}\n")
+        logfile.write(f"Energy coefficient          : {neural_network['energy_coeff']}\n")
         if neural_network['use_force']:
-            logfile.write(f"force coefficient               : {neural_network['force_coeff']}\n")
+            logfile.write(f"Force coefficient           : {neural_network['force_coeff']}\n")
         if neural_network['use_stress']:
-            logfile.write(f"stress coefficient              : {neural_network['stress_coeff']}\n")
+            logfile.write(f"Stress coefficient          : {neural_network['stress_coeff']}\n")
         logfile.write("\nLOGGING & SAVING\n")
-        logfile.write(f"interval (epoch) for show       : {neural_network['show_interval']}\n")
-        if neural_network['checkpoint_interval'] > 0:
-            logfile.write(f"interval (epoch) for checkpoint : {neural_network['checkpoint_interval']}\n")
+        logfile.write(f"Show interval               : {neural_network['show_interval']}\n")
+        if neural_network['save_interval'] > 0:
+            logfile.write(f"Save interval               : {neural_network['save_interval']}\n")
         if neural_network['energy_criteria'] is not None:
             assert float(neural_network['energy_criteria']) > 0, f"Invalid value for energy_criteria : {neural_netowkr['energy_criteria']}"
-            logfile.write(f"stop criteria for energy (RMSE) : {neural_network['energy_criteria']}\n")
+            logfile.write(f"Stop criteria for energy    : {neural_network['energy_criteria']}\n")
         if neural_network['use_force'] and neural_network['force_criteria'] is not None:
             assert float(neural_network['force_criteria']) > 0, f"Invalid value for force_criteria : {neural_netowkr['force_criteria']}"
-            logfile.write(f"stop criteria for force (RMSE)  : {neural_network['force_criteria']}\n")
+            logfile.write(f"Stop criteria for force     : {neural_network['force_criteria']}\n")
         if neural_network['use_stress'] and neural_network['stress_criteria'] is not None:
-            assert float(neural_network['stress_criteria']) > 0, f"Invalid value for stress_criteria : {neural_netowkr['stress_criteria']}"
-            logfile.write(f"stop criteria for stress (RMSE) : {neural_network['stress_criteria']}\n")
-        logfile.write(f"print structure RMSE            : {neural_network['print_structure_rmse']}\n")
+            assert float(neural_network['Stress_criteria']) > 0, f"Invalid value for stress_criteria : {neural_netowkr['stress_criteria']}"
+            logfile.write(f"Stop criteria for stress    : {neural_network['stress_criteria']}\n")
+        logfile.write(f"Print structure RMSE        : {neural_network['print_structure_rmse']}\n")
         #logfile.write(f"stop traning criterion if T < V : {neural_network['break_man']}\n")
         if neural_network['continue']:
-            logfile.write("\nRESTART\n")
-            logfile.write(f"continue from checkpoint        : {neural_network['continue']}\n")
+            logfile.write("\nCONTINUE\n")
+            logfile.write(f"Continue from checkpoint    : {neural_network['continue']}\n")
             if neural_network['continue'] == 'weights':
-                assert os.path.exists('./potential_saved'), "neural_network.continue : weights must need LAMMPS potential. Set potential ./potential_saved" 
-                logfile.write(f"read neural network model parameters from ./potential_saved\n")
+                assert os.path.exists('./potential_saved'), "Neural_network.continue : weights must need LAMMPS potential. Set potential ./potential_saved" 
+                logfile.write(f"Read neural network model parameters from ./potential_saved\n")
             else:
                 assert os.path.exists(neural_network['continue']), "Cannot find checkpoint file : {neural_network['continue']}. Please set file right or neural_network.contiue : false " 
-            logfile.write(f"clear previous status (epoch)   : {neural_network['clear_prev_status']}\n")
-            logfile.write(f"clear previous optimizer        : {neural_network['clear_prev_optimizer']}\n")
+            logfile.write(f"Clear previous epoch        : {neural_network['clear_prev_status']}\n")
+            logfile.write(f"Clear previous optimizer    : {neural_network['clear_prev_optimizer']}\n")
             if not neural_network["clear_prev_status"]:
-                logfile.write(f"start epoch                     : {neural_network['start_epoch']}\n")
+                logfile.write(f"Start epoch                 : {neural_network['start_epoch']}\n")
         logfile.write("\nPARALLELISM\n")
-        logfile.write(f"load data directly to gpu       : {neural_network['load_data_to_gpu']}\n")
-        logfile.write(f"number of workers in dataloader : {neural_network['workers']}\n")
-        if neural_network['load_data_to_gpu']:
-            assert neural_network['workers'] == 0, f"If load data to gpu directly, use workers = 0"
-        logfile.write(f"CPU core number in PyTorch      : {neural_network['intra_op_parallelism_threads']}\n")
-        logfile.write(f"Thread number in PyTorch        : {neural_network['inter_op_parallelism_threads']}\n")
+        logfile.write(f"GPU training                : {neural_network['use_gpu']}\n")
+        if inputs['neural_network']['intra_op_threads'] != 0:
+            torch.set_num_threads(inputs['neural_network']['intra_op_threads'])
+        if inputs['neural_network']['inter_op_threads'] != 0:
+            torch.set_num_interop_threads(inputs['neural_network']['inter_op_threads'])
+        logfile.write(f"Intra op parallelism thread : {torch.get_num_threads()}\n")
+        logfile.write(f"Inter op parallelism thread : {torch.get_num_interop_threads()}\n")
         if neural_network['GPU_number'] is not None and torch.cuda.is_available():
-            logfile.write(f"Use GPU device number           : {neural_network['GPU_number']}\n")
+            logfile.write(f"Use GPU device number       : {neural_network['GPU_number']}\n")
             assert neural_network['GPU_number'] <= torch.cuda.device_count()-1,\
              f"Invalid GPU device number available GPU # {torch.cuda.device_count()-1} , set number {neural_network['GPU_number']} "
+        logfile.write(f"Direct data loading to gpu  : {neural_network['load_data_to_gpu']}\n")
+        if neural_network['load_data_to_gpu']:
+            assert neural_network['subprocesses'] == 0, f"If load data to gpu directly, use subprocesses = 0"
+        logfile.write(f"# of subprocesses in loading: {neural_network['subprocesses']}\n")
         logfile.flush()
     logfile.write("\n{}\n".format('-'*88))
     logfile.flush()
@@ -439,7 +443,7 @@ def _to_boolean(inputs):
     preprocessing_list = ['shuffle', 'calc_pca', 'pca_whiten', 'calc_scale']
 
     neural_network_list = ['train', 'test', 'add_NNP_ref', 'train_atomic_E', 'shuffle_dataloader', 'double_precision', 'use_force', 'use_stress',\
-                        'dropout','full_batch', 'checkpoint_interval', 'print_structure_rmse', 'accurate_train_rmse', 'pca', 'scale', 'atomic_weights',\
+                        'dropout','full_batch', 'save_interval', 'print_structure_rmse', 'accurate_train_rmse', 'pca', 'scale', 'atomic_weights',\
                         'clear_prev_status', 'clear_prev_optimizer', 'load_data_to_gpu']
 
     #True TRUE T tatrue TrUe .T. ... 

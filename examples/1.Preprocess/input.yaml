@@ -9,8 +9,6 @@ params:
 
 descriptor:
     type: symmetry_function
-    read_force: False
-    read_stress: False
     absolute_path: False
 
 preprocessing:

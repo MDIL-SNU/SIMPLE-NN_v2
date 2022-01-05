@@ -9,7 +9,7 @@ params:
 
 neural_network:
     nodes: 30-30
-    batch_size: 16
+    batch_size: 8
     optimizer: 
         method: Adam
     total_epoch: 1000
