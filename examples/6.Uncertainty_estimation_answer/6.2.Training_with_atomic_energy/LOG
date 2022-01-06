@@ -1,0 +1,109 @@
+SIMPLE_NN v2.0.0 (e2e2824)                                              SEED:        123
+----------------------------------------------------------------------------------------
+                _____ _ _      _ _ ___  _     _____       __    _ __    _               
+               / ____| | \    / | '__ \| |   |  ___|     |  \  | |  \  | |              
+              | |___ | |  \  /  | |__) | |   | |___  ___ |   \ | |   \ | |              
+               \___ \| |   \/   |  ___/| |   |  ___||___|| |\ \| | |\ \| |              
+               ____| | | |\  /| | |    | |___| |___      | | \   | | \   |              
+              |_____/|_|_| \/ |_|_|    |_____|_____|     |_|  \__|_|  \__|              
+
+----------------------------------------------------------------------------------------
+
+Input for parameters
+Si parameters directory     : params_Si
+O  parameters directory     : params_O
+
+Input for neural_network
+
+INPUT DATA
+Train                       : False
+Test                        : False
+Add NNP reference to files  : False
+Train atomic energy         : True
+Use force in traning        : False
+Use stress in training      : False
+Shuffle dataloader          : True
+
+NETWORK
+Nodes                       : 30-30
+Activation function type    : sigmoid
+Double precision            : True
+Use dropout network         : False
+Weight initializer          : xavier normal
+params.gain                 : 2.0
+Use scale                   : True
+Use PCA                     : True
+Use atomic_weights          : False
+
+OPTIMIZATION
+Optimization method         : Adam
+Batch size                  : 8
+Use full batch              : False
+Total traning epoch         : 100
+Learning rate               : 0.001
+L2_regularization           : 1e-06
+
+LOSS FUNCTION
+Scale for loss function     : 1.0
+Energy loss function type   : 1
+Force loss function type    : 1
+Energy coefficient          : 1.0
+
+LOGGING & SAVING
+Show interval               : 10
+Print structure RMSE        : False
+
+PARALLELISM
+GPU training                : True
+Intra op parallelism thread : 1
+Inter op parallelism thread : 16
+Direct data loading to gpu  : True
+# of subprocesses in loading: 0
+
+----------------------------------------------------------------------------------------
+cuda is used in model.
+Total iteration: 5700 , epoch: 100, batch number: 57, batch size: 8, subprocesses : 0
+----------------------------------------------------------------------------------------
+Epoch      10 E RMSE(T V) 1.3049e-01 1.2928e-01 learning_rate: 1.0000e-03
+Data load(T V): 5.8066e+00 3.1251e-01 s/epoch Total time(T V): 7.2288e+00 3.8304e-01 s/epoch Elapsed: 4.8142e+01 s
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+Epoch      20 E RMSE(T V) 1.0807e-01 1.0822e-01 learning_rate: 1.0000e-03
+Data load(T V): 5.7987e+00 3.1903e-01 s/epoch Total time(T V): 7.2204e+00 3.9042e-01 s/epoch Elapsed: 9.2958e+01 s
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+Epoch      30 E RMSE(T V) 9.9447e-02 1.0049e-01 learning_rate: 1.0000e-03
+Data load(T V): 5.7980e+00 3.1876e-01 s/epoch Total time(T V): 7.2204e+00 3.9013e-01 s/epoch Elapsed: 1.3778e+02 s
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+Epoch      40 E RMSE(T V) 9.0242e-02 9.2078e-02 learning_rate: 1.0000e-03
+Data load(T V): 5.7278e+00 3.1548e-01 s/epoch Total time(T V): 7.1434e+00 3.8659e-01 s/epoch Elapsed: 1.8223e+02 s
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+Epoch      50 E RMSE(T V) 8.0622e-02 8.3228e-02 learning_rate: 1.0000e-03
+Data load(T V): 5.9045e+00 3.2495e-01 s/epoch Total time(T V): 7.3384e+00 3.9697e-01 s/epoch Elapsed: 2.2733e+02 s
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+Epoch      60 E RMSE(T V) 7.0976e-02 7.4176e-02 learning_rate: 1.0000e-03
+Data load(T V): 5.9339e+00 3.2677e-01 s/epoch Total time(T V): 7.3643e+00 3.9872e-01 s/epoch Elapsed: 2.7297e+02 s
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+Epoch      70 E RMSE(T V) 6.1644e-02 6.5181e-02 learning_rate: 1.0000e-03
+Data load(T V): 5.8273e+00 3.2031e-01 s/epoch Total time(T V): 7.2564e+00 3.9212e-01 s/epoch Elapsed: 3.1826e+02 s
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+Epoch      80 E RMSE(T V) 5.2796e-02 5.6793e-02 learning_rate: 1.0000e-03
+Data load(T V): 5.8510e+00 3.2199e-01 s/epoch Total time(T V): 7.2783e+00 3.9375e-01 s/epoch Elapsed: 3.6501e+02 s
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+Epoch      90 E RMSE(T V) 4.4736e-02 4.8804e-02 learning_rate: 1.0000e-03
+Data load(T V): 5.8533e+00 3.2322e-01 s/epoch Total time(T V): 7.2837e+00 3.9486e-01 s/epoch Elapsed: 4.1021e+02 s
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+Epoch     100 E RMSE(T V) 3.7580e-02 4.1604e-02 learning_rate: 1.0000e-03
+Data load(T V): 5.8764e+00 3.2323e-01 s/epoch Total time(T V): 7.3083e+00 3.9503e-01 s/epoch Elapsed: 4.5566e+02 s
+----------------------------------------------------------------------------------------
+Best loss lammps potential written at 100 epoch
+Elapsed time in training: 463.8274962902069 s.
+----------------------------------------------------------------------------------------
+Total wall time: 463.8585433959961 s.
