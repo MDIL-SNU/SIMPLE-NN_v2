@@ -164,6 +164,7 @@ We also provide the python code (:code:`correlation.py`) that makes parity plots
 To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
 
 .. code-block:: bash
+
     # lammps.in
 
     units metal
