@@ -1,0 +1,25 @@
+units metal
+atom_style  charge
+
+read_data SiO2.dat
+
+pair_style nn/r 3
+pair_coeff * * potential_saved Si O &
+               potential_saved_30 &
+               potential_saved_60 &
+               potential_saved_90
+
+compute std all property/atom q
+
+dump mylammps all custom 10 dump.lammps id type x y z c_std
+dump_modify mylammps sort id
+
+fix int all nvt temp 300.0 300.0 $(100.0*dt) 
+
+thermo 10
+thermo_style custom step temp pe
+
+velocity all create 300.0 123 dist gaussian
+timestep 0.002
+
+run 100
