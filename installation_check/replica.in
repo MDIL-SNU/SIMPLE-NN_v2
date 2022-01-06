@@ -1,0 +1,19 @@
+units           metal
+atom_style      charge
+read_data       test2.dat
+
+pair_style      nn/r 4
+pair_coeff      * * potential_saved_epoch_5 Si O &
+                potential_saved_epoch_1 &
+                potential_saved_epoch_2 &
+                potential_saved_epoch_3 &
+                potential_saved_epoch_4
+
+mass            1  28.0855
+mass            2  15.999
+
+compute         std all property/atom q
+dump            1 all custom 1 replica.dump id type x y z c_std
+dump_modify     1 sort id
+
+run             1

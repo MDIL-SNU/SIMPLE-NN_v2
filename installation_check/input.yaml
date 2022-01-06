@@ -1,6 +1,6 @@
-generate_features: true
-preprocess: true
-train_model: true
+generate_features: True
+preprocess: True
+train_model: True
 random_seed: 100
 
 params:
@@ -21,14 +21,13 @@ preprocessing:
 neural_network:
     train:              True
     shuffle_dataloader: False
-    workers:            0 
     weight_initializer:
         type:           'xavier normal'
     batch_size:         2
-    total_epoch:        4
+    total_epoch:        5
     learning_rate:      0.01
-    decay_rate:           0.9
+    decay_rate:         0.9
     show_interval:      1
     save_interval:      1
-    pca:    True
-    scale:  True
+    scale:              True
+    pca:                True

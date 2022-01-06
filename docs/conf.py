@@ -22,7 +22,7 @@
 exec(open('../simple_nn/_version.py').read())
 project = 'SIMPLE-NN'
 copyright = '2019, Nanco-L'
-author = 'Kyuhyun Lee, Dongsun Yoo, Wonseok Jeong, and Seungwu Han'
+author = 'Kyuhyun Lee, Dongsun Yoo, Wonseok Jeong, Jisu Jung, Seungwu Hwang, Sangmin Oh and Seungwu Han'
 
 # The short X.Y version
 version = __version__
