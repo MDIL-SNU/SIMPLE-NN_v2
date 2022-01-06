@@ -85,9 +85,9 @@ model_default_inputs = \
                     },
                 },
                 'dropout'   : False,
-                'pca'   : True,
-                'scale' : True,
-                'atomic_weights'   : False,
+                'use_pca'   : True,
+                'use_scale' : True,
+                'use_atomic_weights'   : False,
                 'weight_modifier': {
                     'type'  : None,
                     'params': dict(),
@@ -330,10 +330,10 @@ def check_inputs(inputs, logfile):
             if neural_network['weight_initializer']['params'][keys]:
                 logfile.write(f"params.{keys:4}                 : {neural_network['weight_initializer']['params'][keys]}\n")
                 use_param = True
-        logfile.write(f"Use scale                   : {neural_network['scale']}\n")
-        logfile.write(f"Use PCA                     : {neural_network['pca']}\n")
-        logfile.write(f"Use atomic_weights          : {neural_network['atomic_weights']}\n")
-        if neural_network['atomic_weights']:
+        logfile.write(f"Use scale                   : {neural_network['use_scale']}\n")
+        logfile.write(f"Use PCA                     : {neural_network['use_pca']}\n")
+        logfile.write(f"Use atomic_weights          : {neural_network['use_atomic_weights']}\n")
+        if neural_network['use_atomic_weights']:
             if neural_network['weight_modifier']['type'] == 'modified sigmoid':
                 logfile.write(f"Weight modifier type        : {neural_network['weight_modifier']['type']}\n")
                 if neural_network['weight_modifier']['params']:
@@ -424,10 +424,9 @@ def _to_boolean(inputs):
     check_list =  ['generate_features', 'preprocess',  'train_model']
     descriptor_list = ['compress_outcar','read_force','read_stress', 'dx_save_sparse', 'absolute_path']
     preprocessing_list = ['shuffle', 'calc_pca', 'pca_whiten', 'calc_scale']
-
     neural_network_list = ['train', 'test', 'add_NNP_ref', 'train_atomic_E', 'shuffle_dataloader', 'double_precision', 'use_force', 'use_stress',\
-                        'dropout','full_batch', 'save_interval', 'print_structure_rmse', 'accurate_train_rmse', 'pca', 'scale', 'atomic_weights',\
-                        'clear_prev_status', 'clear_prev_optimizer', 'load_data_to_gpu']
+                        'dropout','full_batch', 'print_structure_rmse', 'accurate_train_rmse', 'use_pca', 'use_scale', 'use_atomic_weights',\
+                        'clear_prev_status', 'clear_prev_optimizer', 'use_gpu', 'load_data_to_gpu']
 
     #True TRUE T tatrue TrUe .T. ... 
     #False FALSE F f false FaLse .F. ... 

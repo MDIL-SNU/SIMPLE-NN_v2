@@ -14,5 +14,5 @@ neural_network:
         method: Adam
     total_epoch: 100
     learning_rate: 0.001
-    scale: True
-    pca: True
+    use_scale: True
+    use_pca: True

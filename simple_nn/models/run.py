@@ -21,7 +21,7 @@ def train(inputs, logfile, comm):
     loss = _set_initial_loss(inputs, logfile, checkpoint)
 
     if inputs['neural_network']['train']:
-        train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='train', gdf=inputs['neural_network']['atomic_weights'])
+        train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='train', gdf=inputs['neural_network']['use_atomic_weights'])
         if os.path.exists(inputs['neural_network']['valid_list']):
             valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='valid', gdf=False)
         else:
@@ -86,21 +86,21 @@ def _load_scale_factor_and_pca(inputs, logfile, checkpoint):
     pca = None
 
     if checkpoint:  # load from checkpoint file
-        if inputs['neural_network']['scale']:
+        if inputs['neural_network']['use_scale']:
             scale_factor = checkpoint['scale_factor']
             logfile.write("Load scale factor from '{}'\n".format(inputs['neural_network']['continue']))
-        if inputs['neural_network']['pca']:
+        if inputs['neural_network']['use_pca']:
             pca = checkpoint['pca']
             logfile.write("Load pca from '{}'\n".format(inputs['neural_network']['continue']))
     else:  # load from 'scale_factor', 'pca' file
-        if inputs['neural_network']['scale']:
-            if type(inputs['neural_network']['scale']) is not bool:
+        if inputs['neural_network']['use_scale']:
+            if type(inputs['neural_network']['use_scale']) is not bool:
                 scale_factor = torch.load(inputs['scale']['scale'])
             else:
                 scale_factor = torch.load('./scale_factor')
-        if inputs['neural_network']['pca']:
-            if type(inputs['neural_network']['pca']) is not bool:
-                pca = torch.load(inputs['neural_network']['pca'])
+        if inputs['neural_network']['use_pca']:
+            if type(inputs['neural_network']['use_pca']) is not bool:
+                pca = torch.load(inputs['neural_network']['use_pca'])
             else:
                 pca = torch.load('./pca')
         _convert_to_tensor(inputs, logfile, scale_factor, pca)

@@ -235,12 +235,12 @@ def _make_dataloader(inputs, dataset_list, scale_factor, pca, device, use_force,
 
         if gdf == None:
             partial_collate = partial(my_collate, atom_types=inputs['atom_types'], device=device,\
-            scale_factor=scale_factor, pca=pca,  pca_min_whiten_level=pca['pca_whiten'] if inputs['neural_network']['pca'] else None,\
+            scale_factor=scale_factor, pca=pca,  pca_min_whiten_level=pca['pca_whiten'] if inputs['neural_network']['use_pca'] else None,\
             use_force=use_force, use_stress=use_stress, load_data_to_gpu=inputs['neural_network']['load_data_to_gpu'])
         else: #gdf case !!
             #Unpacking gdf parameters
             partial_collate = partial(my_collate, atom_types=inputs['atom_types'], device=device,\
-            scale_factor=scale_factor, pca=pca,  pca_min_whiten_level=pca['pca_whiten'] if inputs['neural_network']['pca'] else None,\
+            scale_factor=scale_factor, pca=pca,  pca_min_whiten_level=pca['pca_whiten'] if inputs['neural_network']['use_pca'] else None,\
             use_force=use_force, use_stress=use_stress, load_data_to_gpu=inputs['neural_network']['load_data_to_gpu'], gdf_scaler=gdf)
       
         data_loader = torch.utils.data.DataLoader(\
