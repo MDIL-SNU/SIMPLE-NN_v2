@@ -20,11 +20,11 @@ Train                       : True
 Train list                  : ./train_list
 Valid list                  : ./valid_list
 Test                        : False
+Add NNP reference to files  : False
+Train atomic energy         : False
 Use force in traning        : True
 Use stress in training      : True
 Shuffle dataloader          : True
-Add NNP reference to files  : False
-Train atomic energy         : False
 
 NETWORK
 Nodes                       : 30-30
@@ -33,7 +33,7 @@ Double precision            : True
 Use dropout network         : False
 Weight initializer          : xavier normal
 Use scale                   : True
-Use pca                     : True
+Use PCA                     : True
 Use atomic_weights          : False
 
 OPTIMIZATION
@@ -108,4 +108,5 @@ Data load(T V): 7.1274e+00 3.9028e-01 s/epoch Total time(T V): 8.6176e+00 4.5381
 ----------------------------------------------------------------------------------------
 Best loss lammps potential written at 99 epoch
 Elapsed time in training: 544.8022453784943 s.
+----------------------------------------------------------------------------------------
 Total wall time: 544.8154385089874 s.

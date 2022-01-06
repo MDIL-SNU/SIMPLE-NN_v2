@@ -57,7 +57,7 @@ def run(input_file_name):
         preprocess(inputs, logfile, comm)
 
     if inputs['train_model'] is True:
-        train(inputs, logfile)
+        train(inputs, logfile, comm)
 
     if comm.rank == 0:
         logfile.write(f"Total wall time: {time.time()-start_time} s.\n")

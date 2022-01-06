@@ -39,17 +39,17 @@ preprocessing:
 # Input for traning
 neural_network:
     # Data
+    train:              True
     train_list:         'train_list'
     valid_list:         'valid_list' 
-    test_list:          'test_list'
-    ref_list:           'ref_list'
-    train:              True
     test:               False
+    test_list:          'test_list'
+    add_NNP_ref:        False
+    ref_list:           'ref_list'
+    train_atomic_E:     False
     use_force:          True
     use_stress:         True
     shuffle_dataloader: True
-    add_NNP_ref:        False
-    train_atomic_E:     False
     # Network
     nodes:              '30-30'
     acti_func:          'sigmoid'
@@ -57,8 +57,8 @@ neural_network:
     weight_initializer:
         type:           'xavier normal'
     dropout:            False
-    pca:                True
     scale:              True
+    pca:                True
     atomic_weights:     False
     weight_modifier: 
         type:           null

@@ -61,6 +61,7 @@ def preprocess(inputs, logfile, comm):
 
     if comm.rank == 0:
         logfile.write(f"Elapsed time in preprocessing: {time.time()-start_time:10} s.\n")
+        logfile.write("{}\n".format('-'*88))
 
 # Split train/valid data names that saved in data_list
 def _split_train_list_and_valid_list(inputs, data_list='./total_list', append=False):

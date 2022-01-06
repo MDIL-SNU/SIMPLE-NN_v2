@@ -19,11 +19,11 @@ INPUT DATA
 Train                       : False
 Test                        : True
 Test_list                   : ./test_list
+Add NNP reference to files  : False
+Train atomic energy         : False
 Use force in traning        : True
 Use stress in training      : True
 Shuffle dataloader          : True
-Add NNP reference to files  : False
-Train atomic energy         : False
 
 NETWORK
 Nodes                       : 30-30
@@ -32,7 +32,7 @@ Double precision            : True
 Use dropout network         : False
 Weight initializer          : xavier normal
 Use scale                   : True
-Use pca                     : True
+Use PCA                     : True
 Use atomic_weights          : False
 
 OPTIMIZATION
@@ -77,4 +77,5 @@ Evaluation results are saved as 'test_result'
 ----------------------------------------------------------------------------------------
 E RMSE: 8.2823e-04 F RMSE: 1.6089e-01 S RMSE: 5.9172e+00 
 Elapsed time in training: 13.558452367782593 s.
+----------------------------------------------------------------------------------------
 Total wall time: 13.605945348739624 s.

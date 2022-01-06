@@ -28,7 +28,7 @@ Save dx as sparse tensor    : True
 Input for preprocessing
 Total data list             : ./total_list
 Train data list             : ./train_list
-Valid data list             : ./train_list
+Valid data list             : ./valid_list
 Valid rate                  : 0.1
 Shuffle train/valid list    : True
 Calculate scale factor      : True
@@ -191,4 +191,5 @@ Index            Mean            Scale        Min(after)      Max(after)      St
 69            3.6895e-01      6.2580e+00     -1.0000e+00      1.0000e+00      3.5899e-01
 ----------------------------------------------------------------------------------------
 Elapsed time in preprocessing: 238.629545211792 s.
+----------------------------------------------------------------------------------------
 Total wall time: 785.6523544788361 s.

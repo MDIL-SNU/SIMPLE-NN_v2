@@ -1,0 +1,40 @@
+generate_features: True
+preprocess: True
+train_model: True
+random_seed: 123
+
+params:
+    Si: params_Si
+    O:  params_O
+
+descriptor:
+    type: symmetry_function
+    absolute_path: False
+
+preprocessing:
+    valid_rate: 0.1
+    calc_scale: True
+    calc_pca: True
+    calc_atomic_weights:
+        type: gdf
+        params: Auto
+ 
+neural_network:
+    nodes: 30-30
+    batch_size: 8
+    optimizer:
+        method: Adam
+    total_epoch: 100
+    learning_rate: 0.001
+    scale: True
+    pca: True
+    atomic_weights: true
+    weight_modifier:
+        type: modified sigmoid
+        params:
+            Si:
+                b: 1.
+                c: 35.
+            O:
+                b: 1.
+                c: 74.
