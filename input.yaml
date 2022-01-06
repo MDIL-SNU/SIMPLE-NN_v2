@@ -65,7 +65,7 @@ neural_network:
     # Optimization
     optimizer:
         method:         'Adam'
-    batch_size:         16
+    batch_size:         8
     full_batch:         False
     total_epoch:        1000
     learning_rate:      0.0001

@@ -7,7 +7,7 @@ Reading data file ...
   1 by 1 by 1 MPI processor grid
   reading atoms ...
   72 atoms
-  read_data CPU = 0.000 seconds
+  read_data CPU = 0.002 seconds
 
 pair_style nn
 pair_coeff * * potential_saved_bestmodel Si O
@@ -36,31 +36,31 @@ Neighbor list info ...
       bin: standard
 Per MPI rank memory allocation (min/avg/max) = 3.111 | 3.111 | 3.111 Mbytes
 Step Temp PotEng 
-       0          300   -556.24657 
-      10    317.69685   -556.40051 
-      20    324.70403   -556.47221 
-      30    280.37664    -556.1006 
-      40    322.97009   -556.51888 
-      50    301.98074   -556.36124 
-      60     317.2869   -556.58191 
-      70    299.76349   -556.52244 
-      80    292.98555    -556.5766 
-      90     281.1805   -556.59969 
-     100    266.38538    -556.6014 
-Loop time of 9.15543 on 1 procs for 100 steps with 72 atoms
+       0          300   -556.28709 
+      10    314.74386   -556.41281 
+      20    320.27206   -556.46731 
+      30    284.02038    -556.1646 
+      40    314.79296   -556.46549 
+      50    302.81184   -556.38131 
+      60    324.32433   -556.64033 
+      70    289.74964   -556.40244 
+      80     297.5334   -556.57034 
+      90    281.97545   -556.54278 
+     100    278.84695   -556.64962 
+Loop time of 9.22267 on 1 procs for 100 steps with 72 atoms
 
-Performance: 1.887 ns/day, 12.716 hours/ns, 10.922 timesteps/s
-99.8% CPU use with 1 MPI tasks x no OpenMP threads
+Performance: 1.874 ns/day, 12.809 hours/ns, 10.843 timesteps/s
+100.0% CPU use with 1 MPI tasks x no OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Pair    | 9.1544     | 9.1544     | 9.1544     |   0.0 | 99.99
+Pair    | 9.2216     | 9.2216     | 9.2216     |   0.0 | 99.99
 Neigh   | 0          | 0          | 0          |   0.0 |  0.00
-Comm    | 0.00046349 | 0.00046349 | 0.00046349 |   0.0 |  0.01
-Output  | 0.00020599 | 0.00020599 | 0.00020599 |   0.0 |  0.00
-Modify  | 0.00023794 | 0.00023794 | 0.00023794 |   0.0 |  0.00
-Other   |            | 0.0001566  |            |       |  0.00
+Comm    | 0.0004828  | 0.0004828  | 0.0004828  |   0.0 |  0.01
+Output  | 0.00019789 | 0.00019789 | 0.00019789 |   0.0 |  0.00
+Modify  | 0.00022745 | 0.00022745 | 0.00022745 |   0.0 |  0.00
+Other   |            | 0.0001543  |            |       |  0.00
 
 Nlocal:        72.0000 ave          72 max          72 min
 Histogram: 1 0 0 0 0 0 0 0 0 0

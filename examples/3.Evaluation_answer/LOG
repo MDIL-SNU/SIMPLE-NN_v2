@@ -1,4 +1,4 @@
-SIMPLE_NN v2.0.0 (6f01a63)                                              SEED:        123
+SIMPLE_NN v2.0.0 (7a83d2a)                                              SEED:        123
 ----------------------------------------------------------------------------------------
                 _____ _ _      _ _ ___  _     _____       __    _ __    _               
                / ____| | \    / | '__ \| |   |  ___|     |  \  | |  \  | |              
@@ -21,9 +21,9 @@ Test                        : True
 Test_list                   : ./test_list
 Use force in traning        : True
 Use stress in training      : True
+Shuffle dataloader          : True
 Add NNP reference to files  : False
 Train atomic energy         : False
-Shuffle dataloader          : True
 
 NETWORK
 Nodes                       : 30-30
@@ -75,6 +75,6 @@ Load scale factor from 'checkpoint_bestmodel.pth.tar'
 Load pca from 'checkpoint_bestmodel.pth.tar'
 Evaluation results are saved as 'test_result'
 ----------------------------------------------------------------------------------------
-E RMSE: 7.6432e-04 F RMSE: 1.4311e-01 S RMSE: 5.8788e+00 
-Elapsed time in training: 5.806792259216309 s.
-Total wall time: 5.839373588562012 s.
+E RMSE: 8.2823e-04 F RMSE: 1.6089e-01 S RMSE: 5.9172e+00 
+Elapsed time in training: 13.558452367782593 s.
+Total wall time: 13.605945348739624 s.
