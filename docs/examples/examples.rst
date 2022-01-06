@@ -10,17 +10,19 @@ Example files are in :code:`SIMPLE-NN/examples/`.
 In this example, snapshots from 500K MD trajectory of 
 amorphous SiO\ :sub:`2`\  (72 atoms) are used as training set.  
 
-To run the following examples, prepare the required inputs and run SIMPLE-NN like: 
+To run SIMPLE-NN, type the following command on terminal. 
 
 .. code-block:: bash
 
     python run.py
 
-If you install :code:`mpi4py`, additional speed gain can be obtained in :ref:`preprocess` through MPI parallelization.
+If you install :code:`mpi4py`, MPI parallelization provides an additional speed gain in :ref:`preprocess` (``generate_features`` and ``preprocess`` in ``input.yaml``).
 
 .. code-block:: bash
 
     mpirun -np numproc python run.py
+
+, where ``numproc`` stands for the number of CPU processors.
 
 .. _preprocess:
 
@@ -55,22 +57,32 @@ Input files introduced in this section can be found in
 .. code-block:: bash
 
     # str_list
-    ../ab_initio_output/OUTCAR_comp ::100
+    ../ab_initio_output/OUTCAR_comp ::10
 
 With this input file, SIMPLE-NN calculates feature vectors and its derivatives (:code:`generate_features`) and 
 generates training/validation dataset (:code:`preprocess`). 
 Sample VASP OUTCAR file (the file is compressed to reduce the file size) is in :code:`SIMPLE-NN/examples/ab_initio_output`.
 
-In MD trajectory, snapshots are sampled only in the interval of 100 MD steps for simplicity.
+In MD trajectory, snapshots are sampled only in the interval of 10 MD steps (20 fs).
 
-Output files can be found in :code:`SIMPLE-NN/examples/1.Preprocess_answer`.
+Output files are provided in :code:`SIMPLE-NN/examples/1.Preprocess_answer` except for ``data`` directory due to the large capacity.
+``data`` directory contains the preprocessed *ab initio* calculation results as binary format named ``data1.pt``, ``data2.pt``, and so on.
+
+If you want to see which data are saved in ``.pt`` file, use the following command. 
+
+.. code-block:: python
+
+    import torch
+    result = torch.load('data1.pt')
+
+``result`` provides the information of input features as dictionary format.
 
 .. _training:
 
 2. Training
 ===========
 
-To train the NNP with the preprocessed dataset, you need to prepare the :code:`input.yaml`, :code:`train_list`, :code:`valid_list`, :code:`scale_factor`, and :code:`pca`. The last two files improves the loss convergence and training quality.
+To train the NNP with the preprocessed dataset, you need to prepare the :code:`input.yaml`, :code:`train_list`, :code:`valid_list`, :code:`scale_factor`, and :code:`pca`. The last two files highly improves the loss convergence and training quality.
 
 .. code-block:: yaml
 
@@ -88,15 +100,16 @@ To train the NNP with the preprocessed dataset, you need to prepare the :code:`i
         batch_size: 8
         optimizer: 
             method: Adam
-        total_epoch: 1000
+        total_epoch: 100
         learning_rate: 0.001
-
         scale: True
         pca: True
+
+.. note::
+    You should check the path in ``train_list`` and ``valid_list``. For this example, copy the ``data`` directory from ``1.Preprocess`` to here or change the paths in ``train_list`` and ``valid_list`` from ``./data/data*.pt`` to ``../1.Preprocess/data/data*.pt``
      
 With this input file, SIMPLE-NN optimizes the neural network (:code:`train_model`).
 The paths of training/validation dataset should be written in :code:`train_list` and :code:`valid_list`, respectively. 
-In this example, we use the dataset calculated in :code:`SIMPLE-NN/examples/1.Preprocess_answer`.
 The 70-30-30-1 network is optimized by Adam optimizer with the 0.001 of learning rate and batch size of 8 during 1000 epochs. 
 The input feature vectors whose size is 70 are converted by :code:`scale_factor`, following PCA matrix transformation by :code:`pca`
 The execution log and energy, force, and stress root-mean-squared-error (RMSE) are stored in :code:`LOG`. 
@@ -109,8 +122,8 @@ To evaluate the quality of training by correlation between reference dataset and
 :code:`test_list` contains the path of testset preprocessed as '.pt' format. 
 In this example, :code:`test_list` is made by concatenating :code:`train_list` and :code:`valid_list` in :ref:`training` for simplicity. 
 Testset in :code:`test_list` also can be generated separately as described in :code:`1. Preprocess`. 
-In this case, we recommende you to just change the filename of :code:`train_list` into :code:`test_list` after :ref:`preprocess` with :code:`valid_rate` of 0.0. 
-The potential to be tested is written after :code:`continue`. The any results of :ref:`training` such as :code:`checkpoint.tar` and :code:`potential_saved`, can be used.
+In this case, we recommend you to run :ref:`preprocess` with ``valid_rate`` of 0.0 and then change the filename of :code:`train_list` into :code:`test_list`. 
+The potential to be tested is written in ``continue``. Both :code:`checkpoint.tar` and :code:`potential_saved` can be used when evaluation.
 
 .. code-block:: yaml
 
@@ -131,11 +144,11 @@ The potential to be tested is written after :code:`continue`. The any results of
 Input files introduced in this section can be found in 
 :code:`SIMPLE-NN/examples/3.Evaluation`.
 
-.. Note::
-  You need to copy :code:`pca` and :code:`scale_factor` files if you write down the name of LAMMPS potential in :code:`continue` in :code:`input.yaml`. 
+.. note::
+  You need to copy :code:`pca` and :code:`scale_factor` files if you use LAMMPS potential (``potential_saved``). 
 
 After running SIMPLE-NN with the setting above, 
-new output file named :code:`test_result` is generated. 
+output file named :code:`test_result` is generated. 
 The file is pickle format and you can open this file with python code of below
 
 .. code-block:: python
@@ -151,6 +164,7 @@ We also provide the python code (:code:`correlation.py`) that makes parity plots
 To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
 
 .. code-block:: bash
+    # lammps.in
 
     units metal
 
@@ -158,13 +172,13 @@ To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
     pair_coeff * * /path/to/potential_saved_bestmodel Si O
 
 Input script for example of NVT MD simulation at 300 K are provided in :code:`SIMPLE-NN/example/4.Molecular dynamics`.
-Run LAMMPS via the following command.  
+Run LAMMPS via the following command. You also can run LAMMPS with ``mpirun`` command if multi-core CPU is supported.
 
 .. code-block:: bash
 
     /path/to/lammps/src/lmp_mpi < lammps.in
 
-Output files can be found in :code:`SIMPLE-NN/examples/4.Molecular_dynamics`.
+Output files can be found in :code:`SIMPLE-NN/examples/4.Molecular_dynamics_answer`.
 
 5. Parameter tuning (GDF)
 =========================
@@ -194,7 +208,7 @@ Input files introduced in this section can be found in
 After calculating :math:`\rho(\mathbf{G})`, histograms of :math:`\rho(\mathbf{G})^{-1}` 
 are also saved as in the file of :code:`GDFinv_hist_XX.pdf`.
 
-.. Note::
+.. note::
   If there is a peak in high :math:`\rho(\mathbf{G})^{-1}` region in the histogram, 
   increasing the Gaussian weight(:math:`\sigma`) is recommended until the peak is removed.
   On the contrary, if multiple peaks are shown in low :math:`\rho(\mathbf{G})^{-1}` region in the histogram,
@@ -255,7 +269,7 @@ In the script below, :code:`test_result_noscale` is the test result file from th
 6. Uncertainty estimation
 =========================
 
-.. Note::
+.. note::
   Before this step, you have to compile your LAMMPS with :code:`pair_nn_replica.cpp` and :code:`pair_nn_replica.h`.
 
 LAMMPS can calculate the atomic uncertainty through standard deviation of atomic energies.

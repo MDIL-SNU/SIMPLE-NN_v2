@@ -36,23 +36,23 @@ To check if your GPU driver and CUDA are enabled by PyTorch, run the following c
 =============================
 .. code-block:: bash
 
-    git clone https://github.com/MDIL-SNU/SIMPLE-NN_v2.git
+    git clone https://github.com/MDIL-SNU/SIMPLE-NN_v2.git SIMPLE-NN
 
-2-2. Download from source file
-==============================
+2-2. Download as a zip file
+===========================
 You can download a current SIMPLE-NN source package from link below. 
 Once you have a zip file, unzip it. This will create SIMPLE-NN directory.
-After unzipping the file, run the command below to install SIMPLE-NN.
 
 Download SIMPLE-NN: https://github.com/MDIL-SNU/SIMPLE-NN_v2
 
 ----
 
 We encourage you to use `virtualenv` or `conda` for convenient module managenement when you install SIMPLE-NN.
+After downloading the directories, run the command below to install SIMPLE-NN.
 
 .. code-block:: bash
 
-    cd SIMPLE-NN_v2
+    cd SIMPLE-NN
     python setup.py install
 
 If you run into permission issues, add a `--user` tag after the last command.

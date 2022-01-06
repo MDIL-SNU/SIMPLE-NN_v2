@@ -153,7 +153,7 @@ def _calculate_pca_matrix(inputs, feature_list, scale):
 
 def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_dir_list, scale, comm):
 
-    #Set atomic_weights 
+    # Set atomic_weights 
     if inputs['preprocessing']['calc_atomic_weights']['type'] == 'gdf':
         get_atomic_weights = _generate_gdf_file
     elif inputs['preprocessing']['calc_atomic_weights']['type'] == 'user':
@@ -163,7 +163,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
 
     atomic_weights_train = atomic_weights_valid = None
 
-    #Calculate atomic_weights
+    # Calculate atomic_weights
     if callable(get_atomic_weights):
         local_target_list = dict()
         local_idx_list = dict()
@@ -180,7 +180,7 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
             local_target_list[item] = feature_list_train[item][begin:end]
             local_idx_list[item] = idx_list_train[item][begin:end]
 
-        #Extract parameters for GDF
+        # Extract parameters for GDF
         if inputs['preprocessing']['calc_atomic_weights']['params']:
             if isinstance(inputs['preprocessing']['calc_atomic_weights']['params'], dict):
                 sigma = inputs['preprocessing']['calc_atomic_weights']['params']
@@ -190,20 +190,20 @@ def _calculate_gdf(inputs, logfile, feature_list_train, idx_list_train, train_di
             elif inputs['preprocessing']['calc_atomic_weights']['params'] == 'Auto':
                 sigma = 'Auto'
             else:
-                sigma = 0.02 #Default value for sigma
+                sigma = 0.02 # Default value for sigma
 
         atomic_weights_train, dict_sigma, dict_c = get_atomic_weights(feature_list_train, scale, inputs['atom_types'], local_idx_list,\
-         target_list=local_target_list, comm=comm, sigma=sigma)
+                                                                        target_list=local_target_list, comm=comm, sigma=sigma)
 
         comm.barrier()
-        #Save gdf value part
+        # Save gdf value part
         if comm.rank == 0:
             _save_atomic_weights_to_pt(inputs['atom_types'], train_dir_list, atomic_weights_train)
             logfile.write("Selected(or generated) sigma and c\n")
             for item in inputs['atom_types']:
                 logfile.write("{:3}: sigma = {:4.3f}, c = {:4.3f}\n".format(item, dict_sigma[item], dict_c[item]))
 
-    #grp.plot_gdfinv_density(atomic_weights_train, self.parent.inputs['atom_types'])
+    # grp.plot_gdfinv_density(atomic_weights_train, self.parent.inputs['atom_types'])
     # Plot histogram only if atomic weights just have been calculated.
     if comm.rank == 0 and callable(get_atomic_weights):
         grp.plot_gdfinv_density(atomic_weights_train, inputs['atom_types'], auto_c=dict_c)

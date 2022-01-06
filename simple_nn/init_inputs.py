@@ -98,7 +98,7 @@ model_default_inputs = \
                     'params':
                         None
                 },
-                'batch_size'    : 16,
+                'batch_size'    : 8,
                 'full_batch'    : False,
                 'total_epoch'   : 1000,
                 'learning_rate' : 0.0001,
@@ -257,7 +257,7 @@ def check_inputs(inputs, logfile):
         logfile.write(f"Structure list              : {descriptor['struct_list']}\n")
         logfile.write(f"Save directory              : {descriptor['save_directory']}\n")
         logfile.write(f"Save output list            : {descriptor['save_list']}\n")
-        logfile.write(f"Save file absolute path     : {descriptor['absolute_path']}\n")
+        logfile.write(f"Use absolute path           : {descriptor['absolute_path']}\n")
         logfile.write(f"Read force from data        : {descriptor['read_force']}\n")
         logfile.write(f"Read stress from data       : {descriptor['read_stress']}\n")
         logfile.write(f"Save dx as sparse tensor    : {descriptor['dx_save_sparse']}\n")

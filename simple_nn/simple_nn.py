@@ -40,6 +40,7 @@ def run(input_file_name):
         if inputs['train_model'] is True:
             if comm.rank == 0:
                 print("MPI4PY does not support in train model. Set train_model: False")
+            comm.barrier()
             raise Exception
 
     errno = 0
