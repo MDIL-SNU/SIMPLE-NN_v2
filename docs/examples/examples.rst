@@ -115,6 +115,8 @@ The input feature vectors whose size is 70 are converted by :code:`scale_factor`
 The execution log and energy, force, and stress root-mean-squared-error (RMSE) are stored in :code:`LOG`. 
 Input files introduced in this section can be found in :code:`SIMPLE-NN/examples/2.Training`.
 
+.. _evaluation:
+
 3. Evaluation
 =============
 
@@ -161,6 +163,7 @@ We also provide the python code (:code:`correlation.py`) that makes parity plots
 
 4. Molecular dynamics
 =====================
+
 To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
 
 .. code-block:: bash
@@ -181,29 +184,29 @@ Run LAMMPS via the following command. You also can run LAMMPS with ``mpirun`` co
 
 Output files can be found in :code:`SIMPLE-NN/examples/4.Molecular_dynamics_answer`.
 
-5. Parameter tuning (GDF)
-=========================
+5. GDF weighting
+================
 
-GDF [#f1]_ is used to reduce the force errors of the sparsely sampled atoms. 
+Tuning the weight of atomic force in loss function can be used to reduce the force errors of the sprasely sampled atoms.
+Gaussian densigy function (GDF) weighting [#f1]_ is one of the methods, which suggests the gaussian type of weighting scheme. 
 To use GDF, you need to calculate the :math:`\rho(\mathbf{G})` 
 by adding the following lines to the :code:`symmetry_function` section in :code:`input.yaml`.
 SIMPLE-NN supports automatic parameter generation scheme for :math:`\sigma` and :math:`c`.
 Use the setting :code:`sigma: Auto` to get a robust :math:`\sigma` and :math:`c` (values are stored in LOG file).
 Input files introduced in this section can be found in 
-:code:`SIMPLE-NN/examples/SiO2/parameter_tuning_GDF`.
+:code:`SIMPLE-NN/examples/GDF_weighting`.
 
-::
+.. code-block:: yaml
 
-    #symmetry_function:
-      #continue: true # if individual pickle file is not deleted
-      atomic_weights:
-        type: gdf
-        params:
-          sigma: Auto
-          # for manual setting
-          #  Si: 0.02 
-          #  O: 0.02
+    # input.yaml:
 
+    preprocessing:
+        valid_rate: 0.1
+        calc_scale: True
+        calc_pca: True
+        calc_atomic_weights:
+            type: gdf
+            params: Auto
 
 :math:`\rho(\mathbf{G})` indicates the density of each training point.
 After calculating :math:`\rho(\mathbf{G})`, histograms of :math:`\rho(\mathbf{G})^{-1}` 
@@ -219,11 +222,9 @@ In the default setting, the group of :math:`\rho(\mathbf{G})^{-1}` is scaled to 
 The interval-averaged force error with respect to the :math:`\rho(\mathbf{G})^{-1}` 
 can be visualized with the following script.
 
-
-::
+.. code-block:: python
 
     from simple_nn.utils import graph as grp
-
     grp.plot_error_vs_gdfinv(['Si','O'], 'test_result')
 
 The graph of interval-averaged force errors with respect to the 
@@ -235,33 +236,32 @@ One can use scale function to increase the effect of GDF. In scale function,
 :math:`c` separates highly concentrated and sparsely sampled training points.
 To use the scale function, add following lines to the :code:`symmetry_function` section in :code:`input.yaml`.
 
-::
+.. code-block:: yaml
 
-    #symmetry_function:
-      weight_modifier:
-        type: modified sigmoid
-        params:
-          Si:
-            b: 0.02
-            c: 3500.
-          O:
-            b: 0.02
-            c: 10000.
+    # input.yaml:
+    
+    neural_network:
+        weight_modifier:
+            type: modified sigmoid
+            params:
+                Si:
+                    b: 1
+                    c: 35.
+                O:
+                    b: 1
+                    c: 74.
 
 For our experience, :math:`b=1.0` and automatically selected :math:`c` shows reasonable results. 
 To check the effect of scale function, use the following script for visualizing the 
 force error distribution according to :math:`\rho(\mathbf{G})^{-1}`. 
 In the script below, :code:`test_result_noscale` is the test result file from the training without scale function and 
 :code:`test_result_wscale` is the test result file from the training with scale function.
+These ``test_result`` are made as described in :ref:`evaluation`.
 
-::
+.. code-block:: python
 
     from simple_nn.utils import graph as grp
-
     grp.plot_error_vs_gdfinv(['Si','O'], 'test_result_noscale', 'test_result_wscale')
-
-
-
 
 .. [#f1] `W. Jeong, K. Lee, D. Yoo, D. Lee and S. Han, J. Phys. Chem. C 122 (2018) 22790`_
 
@@ -269,6 +269,18 @@ In the script below, :code:`test_result_noscale` is the test result file from th
 
 6. Uncertainty estimation
 =========================
+
+
+6.1. Atomic energy extraction
+-----------------------------
+
+
+6.2. Training with atomic energy
+-------------------------------- 
+
+
+6.3. Uncertainty estimation in molecular dynamics simulation
+------------------------------------------------------------
 
 .. note::
   Before this step, you have to compile your LAMMPS with :code:`pair_nn_replica.cpp` and :code:`pair_nn_replica.h`.

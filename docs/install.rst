@@ -69,7 +69,7 @@ Copy the source code to LAMMPS src directory.
 
 .. code-block:: bash
 
-    cp SIMPLE-NN_v2/simple-nn/features/symmetry_function/pair_nn.* /path/to/lammps/src/
+    cp SIMPLE-NN_v2/simple-nn/features/symmetry_function/{pair_nn.*,pair_nn_replica.*} /path/to/lammps/src/
     cp SIMPLE-NN_v2/simple-nn/features/symmetry_function/symmetry_function.h /path/to/lammps/src/
 
 Compile LAMMPS code.

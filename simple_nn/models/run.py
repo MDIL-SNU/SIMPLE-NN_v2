@@ -5,7 +5,7 @@ from tqdm import tqdm
 from simple_nn.models import neural_network, loss, data_handler, optimizers, logger
 
 #Main function that train neural network
-def train(inputs, logfile):
+def train(inputs, logfile, comm):
     start_time = time.time()
 
     if inputs['neural_network']['double_precision']:
@@ -35,7 +35,7 @@ def train(inputs, logfile):
     if inputs['neural_network']['add_NNP_ref']:
         ref_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='add_NNP_ref')
         save_atomic_E(inputs, logfile, model, ref_loader, device)
-        logfile.write("Adding NNP Energy to pt files Done\n")
+        logfile.write("Adding NNP energy to pt files is done.\n")
 
     elif inputs['neural_network']['train_atomic_E']:
         train_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_train')
@@ -43,7 +43,10 @@ def train(inputs, logfile):
             valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_valid')
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, float('inf'),\
             train_loader, valid_loader, atomic_e=True)
-    logfile.write(f"Elapsed time in training: {time.time()-start_time:10} s.\n")
+
+    if comm.rank == 0:
+        logfile.write(f"Elapsed time in training: {time.time()-start_time:10} s.\n")
+        logfile.write("{}\n".format('-'*88))
 
 def _get_torch_device(inputs):
     if inputs['neural_network']['use_gpu'] and torch.cuda.is_available():
