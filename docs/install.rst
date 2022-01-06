@@ -89,9 +89,9 @@ Install mpi4py:
 
     pip install mpi4py
 
-------------------
-Installation check
-------------------
+-----
+Check
+-----
 To check whether SIMPLE-NN and LAMMPS are ready to run or not,
 we provide the shell script in ``installation_check`` directory.
 

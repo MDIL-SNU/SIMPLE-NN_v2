@@ -20,7 +20,7 @@ def calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoc
             F_ = calculate_F(inputs['atom_types'], x, dEdG, item, device, non_block)
             F = item['F'].type(dtype).to(device=device, non_blocking=non_block)
             if model.training:
-                f_loss = get_f_loss(inputs['neural_network']['F_loss_type'], F_, F, criterion, epoch_result, n_batch, item, weight, gdf=inputs['neural_network']['atomic_weights'])
+                f_loss = get_f_loss(inputs['neural_network']['F_loss_type'], F_, F, criterion, epoch_result, n_batch, item, weight, gdf=inputs['neural_network']['use_atomic_weights'])
             else:
                 f_loss = get_f_loss(inputs['neural_network']['F_loss_type'], F_, F, criterion, epoch_result, n_batch, item, weight, gdf=False)
             batch_loss += inputs['neural_network']['force_coeff'] * f_loss

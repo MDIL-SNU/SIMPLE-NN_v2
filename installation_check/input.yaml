@@ -29,5 +29,5 @@ neural_network:
     decay_rate:         0.9
     show_interval:      1
     save_interval:      1
-    scale:              True
-    pca:                True
+    use_scale:          True
+    use_pca:            True

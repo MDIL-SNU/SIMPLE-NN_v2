@@ -26,9 +26,9 @@ neural_network:
         method: Adam
     total_epoch: 100
     learning_rate: 0.001
-    scale: True
-    pca: True
-    atomic_weights: true
+    use_scale: True
+    use_pca: True
+    use_atomic_weights: true
     weight_modifier:
         type: modified sigmoid
         params:

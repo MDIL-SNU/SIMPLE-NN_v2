@@ -41,7 +41,7 @@ preprocessing:
 
 # Input for traning
 neural_network:
-    # Data
+    # Running mode
     train:              True
     train_list:         'train_list'
     valid_list:         'valid_list' 
@@ -60,9 +60,9 @@ neural_network:
     weight_initializer:
         type:           'xavier normal'
     dropout:            False
-    scale:              True
-    pca:                True
-    atomic_weights:     False
+    use_scale:          True
+    use_pca:            True
+    use_atomic_weights: False
     weight_modifier: 
         type:           null
     # Optimization
@@ -88,7 +88,7 @@ neural_network:
     force_criteria:         null
     stress_criteria:        null
     print_structure_rmse:   False
-    # Restart
+    # Continue
     continue:               null
     clear_prev_status:      False
     clear_prev_optimizer:   False

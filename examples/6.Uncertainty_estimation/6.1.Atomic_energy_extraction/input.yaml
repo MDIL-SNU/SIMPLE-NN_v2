@@ -14,6 +14,4 @@ neural_network:
     ref_list: 'ref_list'
     train_atomic_E: False
     nodes: 30-30
-    scale: True
-    pca: True
     continue: checkpoint_bestmodel.pth.tar
