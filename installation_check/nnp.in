@@ -1,0 +1,10 @@
+units           metal
+atom_style 	atomic
+read_data test_coo1
+
+pair_style nn 
+pair_coeff * * ./potential_saved_latest Si O
+mass 1  28.0855
+mass 2  15.999
+
+run 0
