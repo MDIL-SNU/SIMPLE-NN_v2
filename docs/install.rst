@@ -47,7 +47,7 @@ Download SIMPLE-NN: https://github.com/MDIL-SNU/SIMPLE-NN_v2
 
 ----
 
-We encourage you to use `virtualenv` or `conda` for convenient module managenement when you install SIMPLE-NN.
+We encourage you to use ``virtualenv`` or ``conda`` for convenient module managenement when you install SIMPLE-NN.
 After downloading the directories, run the command below to install SIMPLE-NN.
 
 .. code-block:: bash
@@ -55,7 +55,7 @@ After downloading the directories, run the command below to install SIMPLE-NN.
     cd SIMPLE-NN
     python setup.py install
 
-If you run into permission issues, add a `--user` tag after the last command.
+If you run into permission issues, add a ``--user`` tag after the last command.
 
 3. LAMMPS
 ---------
@@ -63,7 +63,7 @@ Currently, we support the module for symmetry_function - Neural_network model.
 
 Download LAMMPS: https://github.com/lammps/lammps
 
-Only LAMMPS whose version is `29Oct2020` or later is supported.
+Only LAMMPS whose version is ``29Oct2020`` or later is supported.
 
 Copy the source code to LAMMPS src directory.
 
@@ -88,3 +88,27 @@ Install mpi4py:
 .. code-block:: bash
 
     pip install mpi4py
+
+------------------
+Installation check
+------------------
+To check whether SIMPLE-NN and LAMMPS are ready to run or not,
+we provide the shell script in ``installation_check`` directory.
+
+.. note::
+    If you use the ``virtualenv`` or ``conda`` for SIMPLE-NN, activate the virtual environment before check.
+
+Run ``run.sh`` with the path of lammps binary.
+
+.. code-block:: bash
+
+    sh run.sh /path/to/lammps/src/lmp_mpi
+
+While ``run.sh`` tests SIMPLE-NN, LAMMPS with neural network potential, and LAMMPS with replica ensemble,
+pass or fail messages will be printed like:
+
+.. code-block:: bash
+    
+    SIMPLE-NN test is passed (or failed).
+    LAMMPS with neural network test is passed (or failed).
+    LAMMPS with replica ensemble test is passed (or failed).

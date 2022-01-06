@@ -2,24 +2,24 @@
 
 # Running SIMPLE-NN
 python run.py
-if [ "$?" == 0 ];then
-    echo SIMPLE-NN test passed
+if [ "$?" == 0 ]; then
+    echo SIMPLE-NN test is passed.
 else
-    echo SIMPLE-NN test failed
+    echo SIMPLE-NN test is failed.
 fi
 
-# Running LAMMPS
-/path/to/lammps/src/lmp_mpi < nnp.in > lammps.out
-if [ "$?" == 0 ];then
-    echo LAMMPS test passed
+# Running LAMMPS with neural network
+$1 -in nnp.in -screen none
+if [ "$?" == 0 ]; then
+    echo LAMMPS with neural network test is passed.
 else
-    echo LAMMPS test failed
+    echo LAMMPS with neural network test is failed.
 fi
 
 # Running LAMMPS with replica ensemble
-/path/to/lammps/src/lmp_mpi < uncertainty.in > lammps.out
-if [ "$?" == 0 ];then
-    echo LAMMPS with replica ensemble test passed
+$1 -in replica.in -screen none
+if [ "$?" == 0 ]; then
+    echo LAMMPS with replica ensemble test is passed.
 else
-    echo LAMMPS with replica ensemble test failed
+    echo LAMMPS with replica ensemble test is failed.
 fi

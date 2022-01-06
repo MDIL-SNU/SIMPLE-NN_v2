@@ -253,7 +253,6 @@ def check_inputs(inputs, logfile):
         logfile.write(f"Reference data format       : {descriptor['refdata_format']}\n")
         if descriptor['refdata_format'] == 'vasp-out':
             logfile.write(f"Compress outcar             : {descriptor['compress_outcar']}\n")
-        assert os.path.exists(descriptor['struct_list']) ,f"structure list to generate : {descriptor['struct_list']} not exists." 
         logfile.write(f"Structure list              : {descriptor['struct_list']}\n")
         logfile.write(f"Save directory              : {descriptor['save_directory']}\n")
         logfile.write(f"Save output list            : {descriptor['save_list']}\n")
@@ -266,7 +265,6 @@ def check_inputs(inputs, logfile):
         preprocessing = inputs['preprocessing']
         logfile.write('\nInput for preprocessing\n')
         logfile.write(f"Total data list             : {preprocessing['data_list']}\n")
-        assert os.path.exists(preprocessing['data_list']), f"data list : {preprocessing['data_list']} not exists."
         logfile.write(f"Train data list             : {preprocessing['train_list']}\n")
         logfile.write(f"Valid data list             : {preprocessing['valid_list']}\n")
         logfile.write(f"Valid rate                  : {preprocessing['valid_rate']}\n")
@@ -308,17 +306,13 @@ def check_inputs(inputs, logfile):
         logfile.write(f"Train                       : {neural_network['train']}\n")
         if neural_network['train']:
             logfile.write(f"Train list                  : {neural_network['train_list']}\n")
-            assert os.path.exists(neural_network['train_list']), f"No train_list file for training set: {neural_network['train_list']}"
             logfile.write(f"Valid list                  : {neural_network['valid_list']}\n")
-            assert os.path.exists(neural_network['valid_list']), f"No valid_list file for training set: {neural_network['valid_list']}"
         logfile.write(f"Test                        : {neural_network['test']}\n")
         if neural_network['test']:
             logfile.write(f"Test_list                   : {neural_network['test_list']}\n")
-            assert os.path.exists(neural_network['test_list']), f"No test_list file: {neural_network['test_list']}"
         logfile.write(f"Add NNP reference to files  : {neural_network['add_NNP_ref']}\n")
         if inputs['neural_network']['add_NNP_ref'] is True:
             logfile.write(f"Reference list              : {neural_network['ref_list']}\n")
-            assert os.path.exists(neural_network['ref_list']), f"No ref_list file: {neural_network['test_list']}"
         logfile.write(f"Train atomic energy         : {neural_network['train_atomic_E']}\n")
         logfile.write(f"Use force in traning        : {neural_network['use_force']}\n")
         logfile.write(f"Use stress in training      : {neural_network['use_stress']}\n")
@@ -337,17 +331,7 @@ def check_inputs(inputs, logfile):
                 logfile.write(f"params.{keys:4}                 : {neural_network['weight_initializer']['params'][keys]}\n")
                 use_param = True
         logfile.write(f"Use scale                   : {neural_network['scale']}\n")
-        if neural_network['scale'] and not neural_network['continue']:
-            if type(neural_network['scale']) is not bool:
-                assert os.path.exists(neural_network['scale']), f"{neural_network['scale']} file not exist.. set pca = False or make pca file\n"
-            else:
-                assert os.path.exists('./scale_factor'), f"./scale_factor file not exist.. set scale = False or make scale_factor file\n"
         logfile.write(f"Use PCA                     : {neural_network['pca']}\n")
-        if neural_network['pca'] and not neural_network['continue']:
-            if type(neural_network['pca']) is not bool:
-                assert os.path.exists(neural_network['pca']), f"{neural_network['pca']} file not exist.. set pca = False or make pca file\n"
-            else:
-                assert os.path.exists('./pca'), f"./pca file not exist.. set pca = False or make pca file\n"
         logfile.write(f"Use atomic_weights          : {neural_network['atomic_weights']}\n")
         if neural_network['atomic_weights']:
             if neural_network['weight_modifier']['type'] == 'modified sigmoid':
@@ -407,12 +391,10 @@ def check_inputs(inputs, logfile):
         #logfile.write(f"stop traning criterion if T < V : {neural_network['break_man']}\n")
         if neural_network['continue']:
             logfile.write("\nCONTINUE\n")
-            logfile.write(f"Continue from checkpoint    : {neural_network['continue']}\n")
             if neural_network['continue'] == 'weights':
-                assert os.path.exists('./potential_saved'), "Neural_network.continue : weights must need LAMMPS potential. Set potential ./potential_saved" 
                 logfile.write(f"Read neural network model parameters from ./potential_saved\n")
             else:
-                assert os.path.exists(neural_network['continue']), "Cannot find checkpoint file : {neural_network['continue']}. Please set file right or neural_network.contiue : false " 
+                logfile.write(f"Continue from checkpoint    : {neural_network['continue']}\n")
             logfile.write(f"Clear previous epoch        : {neural_network['clear_prev_status']}\n")
             logfile.write(f"Clear previous optimizer    : {neural_network['clear_prev_optimizer']}\n")
             if not neural_network["clear_prev_status"]:
