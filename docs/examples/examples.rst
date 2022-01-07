@@ -24,19 +24,19 @@ If you install ``mpi4py``, MPI parallelization provides an additional speed gain
 
 , where ``numproc`` stands for the number of CPU processors.
 
-.. _preprocess:
-
 .. note::
     In this example, all paths in ``*_list such as ``train_list`` and ``valid_list`` are written as relative path.
     Therefore, you should copy ``data`` directory to each example or change the paths properly after the first example :ref:`preprocess`.
      
+.. _preprocess:
+
 1. Preprocess
 =============
 
 To preprocess the *ab initio* calculation result for training dataset of NNP, 
 you need three types of input file (``input.yaml``, ``structure_list``, and ``params_XX``).
 The example files except params_Si and params_O are introduced below.
-Detail of params_Si and params_O can be found in :doc:`/descriptor/type` section.
+Detail of params_Si and params_O can be found in :doc:`/inputs/input.yaml/descriptor/type` section.
 In this example, 70 symmetry functions consist of 8 radial symmetry functions per 2-body combination 
 and 18 angular symmetry functions per 3-body combination.
 Input files introduced in this section can be found in 

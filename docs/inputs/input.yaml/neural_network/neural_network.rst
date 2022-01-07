@@ -33,9 +33,9 @@ Network
     double_precision
     weight_initializer
     dropout
-    scale
-    pca
-    atomic_weights
+    use_scale
+    use_pca
+    use_atomic_weights
     weight_modifier
 
 Optimization
