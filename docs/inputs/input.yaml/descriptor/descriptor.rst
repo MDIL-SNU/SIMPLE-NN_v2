@@ -2,7 +2,7 @@
 Descriptor
 ==========
 
-In this section, you can find the information of descriptor that are used in SIMPLE-NN and input format.
+In this section, you can find the information of descriptor that are used in SIMPLE-NN.
 
 Input feature
 =============

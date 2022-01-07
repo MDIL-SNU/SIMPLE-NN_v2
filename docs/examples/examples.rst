@@ -43,7 +43,6 @@ Input files introduced in this section can be found in
 ``SIMPLE-NN/examples/1.Preprocess``.
 
 .. code-block:: yaml
-    :emphasize-lines: 2,3,4 
 
     # input.yaml
     generate_features: True
@@ -90,7 +89,6 @@ If you want to see which data are saved in ``.pt`` file, use the following comma
 To train the NNP with the preprocessed dataset, you need to prepare the ``input.yaml``, ``train_list``, ``valid_list``, ``scale_factor``, and ``pca``. The last two files highly improves the loss convergence and training quality.
 
 .. code-block:: yaml
-    :emphasize-lines: 2,3,4 
 
     # input.yaml
     generate_features: False
@@ -131,7 +129,6 @@ In this case, we recommend you to run :ref:`preprocess` with ``valid_rate`` of 0
 The potential to be tested is written in ``continue``. Both ``checkpoint.tar`` and ``potential_saved`` can be used when evaluation.
 
 .. code-block:: yaml
-    :emphasize-lines: 11,12,13
 
     # input.yaml
     generate_features: False
@@ -204,7 +201,6 @@ Input files introduced in this section can be found in
 ``SIMPLE-NN/examples/5.GDF_weighting``.
 
 .. code-block:: yaml
-    :emphasize-lines: 7,8,9 
 
     # input.yaml:
 
@@ -291,7 +287,6 @@ To estimate the uncertainty of atomic configuration, following three steps are n
 To estimatet the uncertainty of atomic configuration, the atomic energies extracted from reference NNP should be added into reference dataset (``.pt``).
 
 .. code-block:: yaml
-    :emphasize-lines: 12,13,14,15,16 
 
     # input.yaml
 
@@ -324,7 +319,6 @@ To prevent the convergence among replicas,
 diversity the network structure by increasing the standard deviation of initial weight distribution (``gain`` (default: 1.0)) and change the number of hidden nodes such as 60-60 or 90-90.
 
 .. code-block:: yaml
-    :emphasize-lines: 15,16,17,18,19,20
 
     # input.yaml
 

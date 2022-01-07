@@ -7,8 +7,9 @@ Installation
 ------------
 Requirements
 ------------
-- Python :code:`3.6-3.9`
-- LAMMPS :code:`29Oct2020` or later
+- Python ``3.6-3.9``
+- PyTorch ``1.5.0-1.10.1``
+- LAMMPS ``29Oct2020`` or later
 
 ----
 
@@ -20,7 +21,7 @@ Procedures
 ----------
 Install PyTorch: https://pytorch.org/get-started/locally
 
-Choose the PyTorch of stable release for `Python`. If you have CUDA-capable system, please download PyTorch with CUDA that makes training much faster.
+Choose the PyTorch of stable release for ``Python``. If you have CUDA-capable system, please download PyTorch with CUDA that makes training much faster.
 
 To check if your GPU driver and CUDA are enabled by PyTorch, run the following commands in python to return whether or not the CUDA driver is enabled: 
 
@@ -34,6 +35,8 @@ To check if your GPU driver and CUDA are enabled by PyTorch, run the following c
 
 2-1. Download from github url
 =============================
+If you have git, you can download a SIMPLE-NN through cloning from repository. This will create SIMPLE-NN directory.
+
 .. code-block:: bash
 
     git clone https://github.com/MDIL-SNU/SIMPLE-NN_v2.git SIMPLE-NN
@@ -41,7 +44,7 @@ To check if your GPU driver and CUDA are enabled by PyTorch, run the following c
 2-2. Download as a zip file
 ===========================
 You can download a current SIMPLE-NN source package from link below. 
-Once you have a zip file, unzip it. This will create SIMPLE-NN directory.
+Click the green ``Code`` button on upper right side and download as a zip file. Once you have the zip file, unzip it. 
 
 Download SIMPLE-NN: https://github.com/MDIL-SNU/SIMPLE-NN_v2
 
@@ -112,3 +115,9 @@ pass or fail messages will be printed like:
     SIMPLE-NN test is passed (or failed).
     LAMMPS with neural network test is passed (or failed).
     LAMMPS with replica ensemble test is passed (or failed).
+
+-----
+
+If you have a problem in installation, post a issues in here_. 
+
+.. _here: https://github.com/MDIL-SNU/SIMPLE-NN_v2/issues
