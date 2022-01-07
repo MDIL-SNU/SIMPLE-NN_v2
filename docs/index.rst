@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to SIMPLE-NN documentation!
-=====================================
+===================================
 
 SIMPLE-NN (SNU Interatomic Machine-learning PotentiaL packagE – version Neural Network)
 SIMPLE-NN is Python code to construct the neural network interatomic potential (NNP) from ab initio calculation results.
@@ -15,7 +15,6 @@ NNP can be supported by Large-scale Atomic/Molecular Massively Parallel Simulato
 
     install
     examples/examples
-    descriptor/descriptor
-    preprocessing/preprocessing
-    neural_network/neural_network
+    inputs/inputs
     Release_note
+    FAQ
