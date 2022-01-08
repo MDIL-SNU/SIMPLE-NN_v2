@@ -8,8 +8,12 @@ Installation
 Requirements
 ------------
 - Python ``3.6-3.9``
-- PyTorch ``1.5.0-1.10.1``
-- LAMMPS ``29Oct2020`` or later
+- PyTorch ``1.5.0-1.10.1`` (package for machine learning)
+- LAMMPS ``29Oct2020`` or newer (simulator for molecular dynamics)
+
+
+Optional:
+- mpi4py (library for parallel CPU computation in preprocessing)
 
 ----
 
@@ -25,7 +29,7 @@ Choose the PyTorch of stable release for ``Python``. If you have CUDA-capable sy
 
 To check if your GPU driver and CUDA are enabled by PyTorch, run the following commands in python to return whether or not the CUDA driver is enabled: 
 
-.. code-block:: python3
+.. code-block:: python
 
     import torch.cuda
     torch.cuda.is_available()
@@ -33,9 +37,9 @@ To check if your GPU driver and CUDA are enabled by PyTorch, run the following c
 2. SIMPLE-NN
 ------------
 
-2-1. Download from github url
-=============================
-If you have git, you can download a SIMPLE-NN through cloning from repository. This will create SIMPLE-NN directory.
+2-1. Download via git clone
+===========================
+You can download a SIMPLE-NN source code through cloning from repository like this:
 
 .. code-block:: bash
 
@@ -43,14 +47,15 @@ If you have git, you can download a SIMPLE-NN through cloning from repository. T
 
 2-2. Download as a zip file
 ===========================
-You can download a current SIMPLE-NN source package from link below. 
-Click the green ``Code`` button on upper right side and download as a zip file. Once you have the zip file, unzip it. 
+Alternatively, you can download a current SIMPLE-NN source code as zip file from link below. 
 
 Download SIMPLE-NN: https://github.com/MDIL-SNU/SIMPLE-NN_v2
 
 ----
 
-We encourage you to use ``virtualenv`` or ``conda`` for convenient module managenement when you install SIMPLE-NN.
+.. note::
+    We encourage you to use ``virtualenv`` or ``conda`` for convenient module managenement when you install SIMPLE-NN.
+
 After downloading the directories, run the command below to install SIMPLE-NN.
 
 .. code-block:: bash
@@ -82,6 +87,8 @@ Compile LAMMPS code.
     cd /path/to/lammps/src/
     make mpi
 
+Until this step, you can :ref:`test installation`. 
+
 4. mpi4py (optional)
 --------------------
 SIMPLE-NN supports the parallel CPU computation in dataset generation and preprocessing for an additional speed gain.
@@ -92,9 +99,11 @@ Install mpi4py:
 
     pip install mpi4py
 
------
-Check
------
+.. _test installation:
+
+----------------------
+Test your installation
+----------------------
 To check whether SIMPLE-NN and LAMMPS are ready to run or not,
 we provide the shell script in ``installation_check`` directory.
 
@@ -112,6 +121,7 @@ pass or fail messages will be printed like:
 
 .. code-block:: bash
     
+    Test is going on...
     SIMPLE-NN test is passed (or failed).
     LAMMPS with neural network test is passed (or failed).
     LAMMPS with replica ensemble test is passed (or failed).

@@ -379,13 +379,13 @@ def check_inputs(inputs, logfile):
         if neural_network['save_interval'] > 0:
             logfile.write(f"Save interval               : {neural_network['save_interval']}\n")
         if neural_network['energy_criteria'] is not None:
-            assert float(neural_network['energy_criteria']) > 0, f"Invalid value for energy_criteria : {neural_netowkr['energy_criteria']}"
+            assert float(neural_network['energy_criteria']) > 0, f"Invalid value for energy_criteria : {neural_network['energy_criteria']}"
             logfile.write(f"Stop criteria for energy    : {neural_network['energy_criteria']}\n")
         if neural_network['use_force'] and neural_network['force_criteria'] is not None:
-            assert float(neural_network['force_criteria']) > 0, f"Invalid value for force_criteria : {neural_netowkr['force_criteria']}"
+            assert float(neural_network['force_criteria']) > 0, f"Invalid value for force_criteria : {neural_network['force_criteria']}"
             logfile.write(f"Stop criteria for force     : {neural_network['force_criteria']}\n")
         if neural_network['use_stress'] and neural_network['stress_criteria'] is not None:
-            assert float(neural_network['Stress_criteria']) > 0, f"Invalid value for stress_criteria : {neural_netowkr['stress_criteria']}"
+            assert float(neural_network['Stress_criteria']) > 0, f"Invalid value for stress_criteria : {neural_network['stress_criteria']}"
             logfile.write(f"Stop criteria for stress    : {neural_network['stress_criteria']}\n")
         logfile.write(f"Print structure RMSE        : {neural_network['print_structure_rmse']}\n")
         #logfile.write(f"stop traning criterion if T < V : {neural_network['break_man']}\n")

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo Test is going on...
+
 # Running SIMPLE-NN
 python run.py
 if [ "$?" == 0 ]; then
