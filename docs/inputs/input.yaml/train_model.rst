@@ -2,4 +2,10 @@
 Train_model
 ===========
 
-Under construction
+- Type: ``bool``
+- Default: True
+
+----
+
+**train_model** determines the whether SIMPLE-NN optimizes (or evaluate) the neural network based on the ``train_list`` and ``valid_list``.
+Detailed seting for ``train_model`` can be found in :doc:`/inputs/input.yaml/neural_network/neural_network`
