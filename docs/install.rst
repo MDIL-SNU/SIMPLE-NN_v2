@@ -13,6 +13,7 @@ Requirements
 
 
 Optional:
+
 - mpi4py (library for parallel CPU computation in preprocessing)
 
 ----
@@ -56,7 +57,7 @@ Download SIMPLE-NN: https://github.com/MDIL-SNU/SIMPLE-NN_v2
 .. note::
     We recommend using ``venv`` or ``conda`` for convenient module managenement.
 
-After downloading the directories, run the command below to install SIMPLE-NN.
+After downloading the SIMPLE-NN, install SIMPLE-NN with following the command.
 
 .. code-block:: bash
 
@@ -71,7 +72,7 @@ Currently, we support the module for symmetry_function - Neural_network model.
 
 Download LAMMPS: https://github.com/lammps/lammps
 
-Only LAMMPS whose version is ``29Oct2020`` or later is supported.
+Only LAMMPS whose version is ``29Oct2020`` or newer is supported.
 
 Copy the source code to LAMMPS src directory.
 
