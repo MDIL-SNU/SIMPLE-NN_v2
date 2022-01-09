@@ -54,7 +54,7 @@ Download SIMPLE-NN: https://github.com/MDIL-SNU/SIMPLE-NN_v2
 ----
 
 .. note::
-    We encourage you to use ``virtualenv`` or ``conda`` for convenient module managenement when you install SIMPLE-NN.
+    We recommend using ``venv`` or ``conda`` for convenient module managenement.
 
 After downloading the directories, run the command below to install SIMPLE-NN.
 
@@ -108,7 +108,7 @@ To check whether SIMPLE-NN and LAMMPS are ready to run or not,
 we provide the shell script in ``installation_check`` directory.
 
 .. note::
-    If you use the ``virtualenv`` or ``conda`` for SIMPLE-NN, activate the virtual environment before check.
+    If you use the ``venv`` or ``conda`` for SIMPLE-NN, activate the virtual environment before check.
 
 Run ``run.sh`` with the path of lammps binary.
 

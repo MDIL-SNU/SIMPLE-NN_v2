@@ -2,7 +2,9 @@
 struct_list
 ===========
 
-Introduction
-============
+- Type: ``str``
+- Default: structure_list
 
-Under construction
+----
+
+**struct_list** stands for the path of the file that contains the reference dataset. Detailed format of ``structure_list`` is found in :doc:`/inputs/structure_list`.
