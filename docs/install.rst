@@ -88,7 +88,7 @@ Compile LAMMPS code.
     cd /path/to/lammps/src/
     make mpi
 
-Until this step, you can :ref:`test installation`. 
+After this step, you can :ref:`test your installation<test_installation>`. 
 
 4. mpi4py (optional)
 --------------------
@@ -100,7 +100,7 @@ Install mpi4py:
 
     pip install mpi4py
 
-.. _test installation:
+.. _test_installation:
 
 ----------------------
 Test your installation

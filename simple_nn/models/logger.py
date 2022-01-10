@@ -122,8 +122,7 @@ def _show_structure_rmse(logfile, train_epoch_result, valid_epoch_result):
     logfile.write(log+'\n')
 
     for label in train_epoch_result['struct_labels']:
-        log = ""
-        log += "  {0:l4}".format(label)
+        log = "  {: <14}".format(label)
         log += _formatting_structure_rmse('e_err', label, train_epoch_result, valid_epoch_result)
 
         if 'f_err' in train_epoch_result.keys():
