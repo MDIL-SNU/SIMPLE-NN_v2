@@ -28,7 +28,6 @@ with open('simple_nn/_version.py', 'w') as fp:
 # required module
 # TODO: version check
 install_requires = [
-    'scipy',
     'scikit-learn',
     'pyyaml>=3.10',
     'cffi>=1.0.0',
@@ -43,6 +42,13 @@ install_requires = [
 setup_requires = [
     'cffi>=1.0.0',
 ]
+
+if sys.version_info.minor == 6:
+    install_requires.append('scipy==1.5.4')
+elif sys.version_info.minor == 7:
+    install_requires.append('scipy==1.7.3')
+else:
+    install_requires.append('scipy')
 
 def is_installed(pkg):
     try:

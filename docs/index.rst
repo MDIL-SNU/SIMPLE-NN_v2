@@ -14,7 +14,8 @@ NNP can be supported by Large-scale Atomic/Molecular Massively Parallel Simulato
     :maxdepth: 2
 
     install
-    examples/examples
+    getting_started/getting_started
+    advanced_features/advanced_features
     inputs/inputs
     Release_note
     FAQ
