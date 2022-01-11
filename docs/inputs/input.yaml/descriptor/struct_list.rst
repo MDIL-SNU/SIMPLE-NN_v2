@@ -2,8 +2,7 @@
 struct_list
 ===========
 
-- Type: ``str``
-- Default: structure_list
+- ``structure_list`` (default)
 
 ----
 

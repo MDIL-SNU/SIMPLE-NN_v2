@@ -2,8 +2,7 @@
 Train_model
 ===========
 
-- Type: ``bool``
-- Default: True
+- ``True`` (default) / ``False``
 
 ----
 

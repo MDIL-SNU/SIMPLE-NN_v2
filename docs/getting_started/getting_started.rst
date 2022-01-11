@@ -5,8 +5,8 @@ Getting started
 Introduction
 ============
 
-This section demonstrate SIMPLE-NN with examples. 
-Example files are in ``SIMPLE-NN/examples/``.
+This section demonstrate SIMPLE-NN with tutorials. 
+Example files are in ``SIMPLE-NN/tutorials/``.
 In this example, snapshots from 500K MD trajectory of 
 amorphous SiO\ :sub:`2`\  (72 atoms) are used as training set.  
 
@@ -16,7 +16,7 @@ To run SIMPLE-NN, type the following command on terminal.
 
     python run.py
 
-If you install ``mpi4py``, MPI parallelization provides an additional speed gain in :ref:`preprocess` (``generate_features`` and ``preprocess`` in ``input.yaml``).
+If you install ``mpi4py``, MPI parallelization provides an additional speed gain in :ref:`preprocess<preprocess>` (``generate_features`` and ``preprocess`` in ``input.yaml``).
 
 .. code-block:: bash
 
@@ -30,8 +30,8 @@ If you install ``mpi4py``, MPI parallelization provides an additional speed gain
      
 .. _preprocess:
 
-1. Preprocess
-=============
+Preprocess
+==========
 
 To preprocess the *ab initio* calculation result for training dataset of NNP, 
 you need three types of input file (``input.yaml``, ``structure_list``, and ``params_XX``).
@@ -40,7 +40,7 @@ Detail of params_Si and params_O can be found in :doc:`/inputs/params_XX` sectio
 In this example, 70 symmetry functions consist of 8 radial symmetry functions per 2-body combination 
 and 18 angular symmetry functions per 3-body combination.
 Input files introduced in this section can be found in 
-``SIMPLE-NN/examples/1.Preprocess``.
+``SIMPLE-NN/tutorials/Preprocess``.
 
 .. code-block:: yaml
 
@@ -65,11 +65,11 @@ Input files introduced in this section can be found in
 
 With this input file, SIMPLE-NN calculates feature vectors and its derivatives (``generate_features``) and 
 generates training/validation dataset (``preprocess``). 
-Sample VASP OUTCAR file (the file is compressed to reduce the file size) is in ``SIMPLE-NN/examples/ab_initio_output``.
+Sample VASP OUTCAR file (the file is compressed to reduce the file size) is in ``SIMPLE-NN/tutorials/ab_initio_output``.
 
 In MD trajectory, snapshots are sampled only in the interval of 10 MD steps (20 fs).
 
-Output files are provided in ``SIMPLE-NN/examples/1.Preprocess_answer`` except for ``data`` directory due to the large capacity.
+Output files are provided in ``SIMPLE-NN/tutorials/Preprocess_answer`` except for ``data`` directory due to the large capacity.
 ``data`` directory contains the preprocessed *ab initio* calculation results as binary format named ``data1.pt``, ``data2.pt``, and so on.
 
 If you want to see which data are saved in ``.pt`` file, use the following command. 
@@ -83,8 +83,8 @@ If you want to see which data are saved in ``.pt`` file, use the following comma
 
 .. _training:
 
-2. Training
-===========
+Training
+========
 
 To train the NNP with the preprocessed dataset, you need to prepare the ``input.yaml``, ``train_list``, ``valid_list``, ``scale_factor``, and ``pca``. The last two files highly improves the loss convergence and training quality.
 
@@ -114,18 +114,18 @@ The paths of training/validation dataset should be written in ``train_list`` and
 The 70-30-30-1 network is optimized by Adam optimizer with the 0.001 of learning rate and batch size of 8 during 1000 epochs. 
 The input feature vectors whose size is 70 are converted by ``scale_factor``, following PCA matrix transformation by ``pca``
 The execution log and energy, force, and stress root-mean-squared-error (RMSE) are stored in ``LOG``. 
-Input files introduced in this section can be found in ``SIMPLE-NN/examples/2.Training``.
+Input files introduced in this section can be found in ``SIMPLE-NN/tutorials/Training``.
 
 .. _evaluation:
 
-3. Evaluation
-=============
+Evaluation
+==========
 
 To evaluate the quality of training by correlation between reference dataset and NNP as well as RMSE, ``test_list`` should be prepared. 
 ``test_list`` contains the path of testset preprocessed as '.pt' format. 
-In this example, ``test_list`` is made by concatenating ``train_list`` and ``valid_list`` in :ref:`training` for simplicity. 
-Testset in ``test_list`` also can be generated separately as described in :ref:`preprocess`. 
-In this case, we recommend you to run :ref:`preprocess` with ``valid_rate`` of 0.0 and then change the filename of ``train_list`` into ``test_list``. 
+In this example, ``test_list`` is made by concatenating ``train_list`` and ``valid_list`` in :ref:`training<training>` for simplicity. 
+Testset in ``test_list`` also can be generated separately as described in :ref:`preprocess<preprocess>`. 
+In this case, we recommend you to run :ref:`preprocess<preprocess>` with ``valid_rate`` of 0.0 and then change the filename of ``train_list`` into ``test_list``. 
 The potential to be tested is written in ``continue``. Both ``checkpoint.tar`` and ``potential_saved`` can be used when evaluation.
 
 .. code-block:: yaml
@@ -145,7 +145,7 @@ The potential to be tested is written in ``continue``. Both ``checkpoint.tar`` a
         continue: checkpoint_bestmodel.pth.tar
 
 Input files introduced in this section can be found in 
-``SIMPLE-NN/examples/3.Evaluation``.
+``SIMPLE-NN/tutorials/Evaluation``.
 
 .. note::
   You need to copy ``pca`` and ``scale_factor`` files if you use LAMMPS potential (``potential_saved``). 
@@ -162,8 +162,8 @@ The file is pickle format and you can open this file with python code of below
 In the file, DFT energies/forces, NNP energies/forces are included.
 We also provide the python code (``correlation.py``) that makes parity plots from ``test_result``. 
 
-4. Molecular dynamics
-=====================
+Molecular dynamics
+==================
 
 .. note::
   You have to compile your LAMMPS with ``pair_nn.cpp``, ``pair_nn.h``, and ``symmetry_function.h`` to run molecular dynamics simulation.
@@ -179,11 +179,11 @@ To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
     pair_style nn
     pair_coeff * * /path/to/potential_saved_bestmodel Si O
 
-Input script for example of NVT MD simulation at 300 K are provided in ``SIMPLE-NN/example/4.Molecular dynamics``.
+Input script for example of NVT MD simulation at 300 K are provided in ``SIMPLE-NN/example/Molecular dynamics``.
 Run LAMMPS via the following command. You also can run LAMMPS with ``mpirun`` command if multi-core CPU is supported.
 
 .. code-block:: bash
 
     /path/to/lammps/src/lmp_mpi < lammps.in
 
-Output files can be found in ``SIMPLE-NN/examples/4.Molecular_dynamics_answer``.
+Output files can be found in ``SIMPLE-NN/tutorials/Molecular_dynamics_answer``.

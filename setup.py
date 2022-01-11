@@ -28,27 +28,21 @@ with open('simple_nn/_version.py', 'w') as fp:
 # required module
 # TODO: version check
 install_requires = [
-    'scikit-learn',
-    'pyyaml>=3.10',
-    'cffi>=1.0.0',
-    'numpy<=1.20.2',
+    'matplotlib<3.4.0',
+    'scikit-learn<1.0',
+    'numpy<1.20.0',
+    'scipy<1.6.0',
+    'ase==3.22.0',
+    'pyyaml',
+    'cffi',
     'psutil',
     'tqdm',
     'braceexpand',
-    'matplotlib>=3.1.0,<3.4.0',
-    'ase>=3.22.0',
 ]
 
 setup_requires = [
-    'cffi>=1.0.0',
+    'cffi',
 ]
-
-if sys.version_info > (3,8):
-    install_requires.append('scipy')
-elif sys.version_info > (3,7):
-    install_requires.append('scipy==1.7.3')
-else:
-    install_requires.append('scipy==1.5.4')
 
 def is_installed(pkg):
     try:

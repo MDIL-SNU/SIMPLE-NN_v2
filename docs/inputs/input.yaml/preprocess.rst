@@ -2,8 +2,7 @@
 Preprocess
 ==========
 
-- Type: ``bool``
-- Default: True
+- ``True`` (default) / ``False``
 
 ----
 
