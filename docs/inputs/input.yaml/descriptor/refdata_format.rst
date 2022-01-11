@@ -2,8 +2,7 @@
 refdata_format
 ==============
 
-- Type: ``str``
-- Default: vasp-out
+- ``vasp-out`` (default) / ``espresso-out`` / etc...
 
 ----
 

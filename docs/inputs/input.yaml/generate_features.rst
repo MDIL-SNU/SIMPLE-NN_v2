@@ -2,8 +2,7 @@
 Generate_features
 =================
 
-- Type: ``bool``
-- Default: True
+- ``True`` (default) / ``False``
 
 ----
 

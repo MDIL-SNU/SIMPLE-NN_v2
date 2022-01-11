@@ -5,13 +5,13 @@ Advanced features
 Introduction
 ============
 
-This section demonstrate SIMPLE-NN with examples. 
-Example files are in ``SIMPLE-NN/examples/``.
+This section demonstrate SIMPLE-NN with tutorials. 
+Example files are in ``SIMPLE-NN/tutorials/``.
 In this example, snapshots from 500K MD trajectory of 
 amorphous SiO\ :sub:`2`\  (72 atoms) are used as training set.  
 
-5. GDF weighting
-================
+GDF weighting
+=============
 
 Tuning the weight of atomic force in loss function can be used to reduce the force errors of the sprasely sampled atoms.
 Gaussian densigy function (GDF) weighting [#f1]_ is one of the methods, which suggests the gaussian type of weighting scheme. 
@@ -20,7 +20,7 @@ by adding the following lines to the ``symmetry_function`` section in ``input.ya
 SIMPLE-NN supports automatic parameter generation scheme for :math:`\sigma` and :math:`c`.
 Use the setting ``sigma: Auto`` to get a robust :math:`\sigma` and :math:`c` (values are stored in LOG file).
 Input files introduced in this section can be found in 
-``SIMPLE-NN/examples/5.GDF_weighting``.
+``SIMPLE-NN/tutorials/GDF_weighting``.
 
 .. code-block:: yaml
 
@@ -83,7 +83,7 @@ force error distribution according to :math:`\rho(\mathbf{G})^{-1}`.
 
 In the script below, ``test_result_woscale`` is the test result file from the training without scale function and 
 ``test_result_wscale`` is the test result file from the training with scale function.
-These ``test_result`` are made as described in :ref:`evaluation`. We do not provide ``test_result_wscale``.
+These ``test_result`` are made as described in :ref:`evaluation<evaluation>`. We do not provide ``test_result_wscale``.
 
 .. code-block:: python
 
@@ -94,8 +94,8 @@ These ``test_result`` are made as described in :ref:`evaluation`. We do not prov
 
 .. _W. Jeong, K. Lee, D. Yoo, D. Lee and S. Han, J. Phys. Chem. C 122 (2018) 22790: https://pubs.acs.org/doi/abs/10.1021/acs.jpcc.8b08063
 
-6. Uncertainty estimation
-=========================
+Uncertainty estimation
+======================
 
 The local configuration shown in the simulation driven by NNP should be included the training set because NNP only guarantees the reliability within the trained domain.
 Therefore, we suggest to check whether the local environment is trained or not through the standard deviation of atomic energies from replica ensemble [#f2]_.
@@ -103,8 +103,8 @@ To estimate the uncertainty of atomic configuration, following three steps are n
 
 .. _atomic_energy_extraction:
 
-6.1. Atomic energy extraction
------------------------------
+1. Atomic energy extraction
+---------------------------
 
 To estimatet the uncertainty of atomic configuration, the atomic energies extracted from reference NNP should be added into reference dataset (``.pt``).
 
@@ -133,8 +133,8 @@ To estimatet the uncertainty of atomic configuration, the atomic energies extrac
 ``ref_list`` contains the dataset list to be evaluated to atomic energy. Reference NNP is written in ``continue``.
 After that, the reference dataset (``.pt``) are overwritten with atomic energies.
 
-6.2. Training with atomic energy
--------------------------------- 
+2. Training with atomic energy
+------------------------------ 
 
 Next, train the replica NNP only with atomic energy.
 To prevent the convergence among replicas,
@@ -169,10 +169,10 @@ diversity the network structure by increasing the standard deviation of initial 
         scale: True
         pca: True
 
-Because the atomic energies are needed in training, ``data`` directory made from :ref:`atomic_energy_extraction` is needed.
+Because the atomic energies are needed in training, ``data`` directory made from :ref:`atomic_energy_extraction<atomic_energy_extraction>` is needed.
 
-6.3. Uncertainty estimation in molecular dynamics
--------------------------------------------------
+3. Uncertainty estimation in molecular dynamics
+-----------------------------------------------
 
 .. note::
   You have to compile your LAMMPS with ``pair_nn_replica.cpp``, ``pair_nn_replica.h``, and ``symmetry_function.h`` to evaluate the uncertainty in molecular dynamics simulation.
@@ -203,7 +203,7 @@ prepare LAMMPS data file as charge format and modify your LAMMPS input as below 
 
 We provide the LAMMPS potentials whose network size are 60-60 and 90-90, respectively.
 Atomic uncertainties are written in a dump file for each atoms.
-Outputs files are found in ``SIMPLE-NN/examples/6.Uncertainty_estimation_answer/6.3.Uncertainty_estimation_in_molecular_dynamics``.
+Outputs files are found in ``SIMPLE-NN/tutorials/Uncertainty_estimation_answer/3.Uncertainty_estimation_in_molecular_dynamics``.
 
 .. [#f2] `W. Jeong, D. Yoo, K. Lee, J. Jung and S. Han, J. Phys. Chem. Lett. 2020, 11, 6090-6096`_
 

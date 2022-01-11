@@ -2,7 +2,7 @@ from __future__ import print_function
 import six
 import numpy as np
 import torch
-import os, sys, psutil, shutil
+import os, sys, shutil
 import types, re, collections
 
 import ase
@@ -89,10 +89,3 @@ def modified_sigmoid(gdf, b=150.0, c=1.0, module_type=None):
     gdf = gdf / (1.0 + module_type.exp(-b * (gdf - c)))
     #gdf[:,0] = gdf[:,0] / (1.0 + np.exp(-b * gdf[:,0] + c))
     return gdf
-
-
-def memory():
-    pid = os.getpid()
-    py = psutil.Process(pid)
-    memory_use = py.memory_info()[0]
-    print('memory_use:', memory_use)

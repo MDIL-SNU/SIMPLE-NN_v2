@@ -2,8 +2,7 @@
 compress_outcar
 ===============
 
-- Type: ``bool``
-- Default: True
+- ``True`` (default) / ``False``
 
 ----
 

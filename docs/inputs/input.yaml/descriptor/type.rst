@@ -2,8 +2,7 @@
 type
 ====
 
-- Type: ``str``
-- Default: symmetry_function
+- ``symmetry_function`` (default)
 
 ----
 
