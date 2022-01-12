@@ -106,7 +106,7 @@ Install mpi4py:
 Test your installation
 ----------------------
 To check whether SIMPLE-NN and LAMMPS are ready to run or not,
-we provide the shell script in ``test_installation`` directory.
+we provide the shell script in ``installation_check`` directory.
 
 .. note::
     If you use the ``venv`` or ``conda`` for SIMPLE-NN, activate the virtual environment before check.

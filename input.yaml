@@ -98,6 +98,6 @@ neural_network:
     GPU_number:         null
     inter_op_threads:   0
     intra_op_threads:   0
-    load_data_to_gpu:   True
+    load_data_to_gpu:   False
     subprocesses:       0 
 
