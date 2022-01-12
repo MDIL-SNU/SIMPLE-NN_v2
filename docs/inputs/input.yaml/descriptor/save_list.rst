@@ -2,7 +2,8 @@
 save_list
 =========
 
-Introduction
-============
+- ``total_list`` (default)
 
-Under construction
+----
+
+**save_list** contains the whole ``data*.pt`` generated. It will be splited into train/validation set.

@@ -2,7 +2,8 @@
 read_stress
 ===========
 
-Introduction
-============
+- ``True`` (default) / ``False``
 
-Under construction
+----
+
+**read_stress** should be ``True`` if you want to extract stress information from *ab initio* calculation result.

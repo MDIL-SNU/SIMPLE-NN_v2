@@ -2,7 +2,8 @@
 absolute_path
 =============
 
-Introduction
-============
+- ``True`` (default) / ``False``
 
-Under construction
+----
+
+**absolute_path** determines whether all data path are written as absolute or relative path. User can choose the useful format.
