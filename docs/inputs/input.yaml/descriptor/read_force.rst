@@ -2,7 +2,8 @@
 read_force
 ==========
 
-Introduction
-============
+- ``True`` (default) / ``False``
 
-Under construction
+----
+
+**read_force** should be ``True`` if you want to extract force information from *ab initio* calculation result.

@@ -2,7 +2,8 @@
 save_directory
 ==============
 
-Introduction
-============
+- ``data`` (default)
 
-Under construction
+----
+
+**save_directory** defines the path, where ``data*.pt`` files are located.
