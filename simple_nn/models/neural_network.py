@@ -113,8 +113,6 @@ class FCN(torch.nn.Module):
 
         dim_in = dim_input
         for i, hn in enumerate(dim_hidden):
-            if dropout:
-                self.lin.add_module(f'drop_{i}', torch.nn.Dropout(p=dropout))
             self.lin.add_module(f'lin_{i}', torch.nn.Linear(dim_in, hn))
             #if batch_norm:
             #    seq.add_module(torch.nn.BatchNorm1d(hn))
@@ -131,6 +129,9 @@ class FCN(torch.nn.Module):
                 self.lin.add_module(f'swish_{i}', swish())
             else:
                 assert False
+
+            if dropout:
+                self.lin.add_module(f'drop_{i}', torch.nn.Dropout(p=dropout))
 
         self.lin.add_module(f'lin_{i+1}', torch.nn.Linear(hn, 1))
 

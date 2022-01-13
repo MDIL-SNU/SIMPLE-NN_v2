@@ -146,7 +146,7 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
         scheduler = ExponentialLR(optimizer=optimizer, gamma=inputs['neural_network']['decay_rate'])
 
     start_time = time.time()
-    for epoch in tqdm(range(inputs['neural_network']['start_epoch'], total_epoch+1)):
+    for epoch in tqdm(range(inputs['neural_network']['start_epoch'], total_epoch+1), unit='epoch'):
         # Main loop for one epoch
         train_epoch_result = progress_epoch(inputs, train_loader, struct_labels, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=atomic_e)
         train_loss = train_epoch_result['losses'].avg
@@ -190,7 +190,7 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
                 if criteria_dict[err_type][0] > criteria_dict[err_type][1]:
                     breaksignal = False
             if breaksignal:
-                logfile.write("Break point reached. Terminating traning model\n")
+                logfile.write("Break point reached. Terminating training model\n")
                 save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint_criterion.pth.tar')
                 model.write_lammps_potential(filename='./potential_saved_criterion', inputs=inputs, scale_factor=scale_factor, pca=pca)
                 logfile.write("checkpoint_criterion.pth.tar & potential_saved_criterion written\n")
