@@ -56,7 +56,7 @@ def my_collate(batch, atom_types, device, scale_factor=None, pca=None, pca_min_w
     da = _make_empty_dict(atom_types)
     sparse_index = _make_empty_dict(atom_types)
 
-    for i, item in enumerate(batch):
+    for item in batch:
         struct_type.append(item['struct_type'])
         struct_weight.append(item['struct_weight'])
         tot_num.append(item['tot_num'])
@@ -203,7 +203,7 @@ def _preprocess_scaling_pca_to_dx_da(tmp_dx, atype, scale_factor, pca, pca_min_w
 def gen_sparse_index(nlist):
     res = torch.zeros(2, sum(nlist))
     idx = 0
-    for i,item in enumerate(nlist):
+    for i, item in enumerate(nlist):
         for jtem in range(item):
             res[0, idx] = i
             res[1, idx] = idx
