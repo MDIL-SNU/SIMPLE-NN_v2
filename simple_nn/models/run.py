@@ -157,12 +157,6 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
             valid_epoch_result = None
             loss = train_loss
 
-        if loss < best_loss:
-            best_loss = loss
-            best_epoch = epoch
-            save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint_bestmodel.pth.tar')
-            model.write_lammps_potential(filename='./potential_saved_bestmodel', inputs=inputs, scale_factor=scale_factor, pca=pca)
-
         if (epoch % inputs['neural_network']['show_interval'] == 0):
             if inputs['neural_network']['accurate_train_rmse']:
                 recalc_epoch_result = progress_epoch(inputs, train_loader, struct_labels, model, optimizer, criterion, epoch, dtype, device, non_block, valid=True, atomic_e=atomic_e)
@@ -172,6 +166,13 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
             logger._show_avg_rmse(logfile, epoch, optimizer.param_groups[0]['lr'], total_time, train_epoch_result, valid_epoch_result)
             if inputs['neural_network']['print_structure_rmse']:
                 logger._show_structure_rmse(logfile, train_epoch_result, valid_epoch_result)
+
+        if loss < best_loss:
+            best_loss = loss
+            best_epoch = epoch
+            save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint_bestmodel.pth.tar')
+            model.write_lammps_potential(filename='./potential_saved_bestmodel', inputs=inputs, scale_factor=scale_factor, pca=pca)
+            logfile.write("Best model updated\n")
 
         # save checkpoint for each save_interval
         if inputs['neural_network']['save_interval'] and (epoch % inputs['neural_network']['save_interval'] == 0):
@@ -200,12 +201,12 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
             scheduler.step()
         # soft termination 
         if os.path.exists('./stoptrain'):
-                os.remove('./stoptrain')
-                logfile.write("Stop traning by ./stoptrain file.\n")
-                save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint_stoptrain.pth.tar')
-                model.write_lammps_potential(filename='./potential_saved_stoptrain', inputs=inputs, scale_factor=scale_factor, pca=pca)
-                logfile.write("checkpoint_stoptrain.pth.tar & potential_saved_stoptrain written\n")
-                break
+            os.remove('./stoptrain')
+            logfile.write("Stop traning by ./stoptrain file.\n")
+            save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint_stoptrain.pth.tar')
+            model.write_lammps_potential(filename='./potential_saved_stoptrain', inputs=inputs, scale_factor=scale_factor, pca=pca)
+            logfile.write("checkpoint_stoptrain.pth.tar & potential_saved_stoptrain written\n")
+            break
 
         logfile.flush()
 
@@ -256,7 +257,7 @@ def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader
     if inputs['neural_network']['print_structure_rmse'] is True:
         logfile.write("Structure breakdown:\n")
         logfile.write("  {0:<14}".format('label'))
-        log += "      E_RMSE"
+        log = "      E_RMSE"
         if 'f_err' in epoch_result.keys():
             log += "      F_RMSE"
         if 's_err' in epoch_result.keys():
