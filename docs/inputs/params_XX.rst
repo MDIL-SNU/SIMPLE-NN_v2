@@ -2,8 +2,8 @@
 params_XX
 =========
 
-**params_XX** contains the coefficients for symmetry functions (SFs). XX is an atom type which 
-included in the target system. The detailed format of 'param_XX' is described in below
+**params_XX** contains the coefficients for symmetry functions (SFs). XX is the element name  
+in the target system. 'param_XX' is written in the following style:
 
 .. code-block:: bash
 
