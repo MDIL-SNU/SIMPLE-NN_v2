@@ -10,7 +10,7 @@ Example files are in ``SIMPLE-NN/tutorials/``.
 In this example, snapshots from 500K MD trajectory of 
 amorphous SiO\ :sub:`2`\  (72 atoms) are used as training set.  
 
-To run SIMPLE-NN, type the following command on terminal. 
+To run SIMPLE-NN, type the following command: 
 
 .. code-block:: bash
 
