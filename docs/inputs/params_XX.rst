@@ -29,7 +29,7 @@ The radial part (G2) requires only one neighbor type so the second parameter is 
 For the angular parts (G4 and G5), two neighboring types are needed. 
 The order of the two parameters does not matter.
 
-[Cutoff radius] The cutoff radius for cutoff function.
+[Cutoff radius] The cutoff radius for cutoff functions in the given SF.
 
 [Coefficients for SF] The parameters defining each symmetry function.
 For G2, the first two values indicate :math:`\eta` and :math:`\mathrm{R_s}` and the third one is neglected.
