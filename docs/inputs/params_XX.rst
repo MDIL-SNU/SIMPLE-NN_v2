@@ -19,7 +19,7 @@ Each parameter indicates (SF means symmetry function)
 
     [type of SF(1)] [atom type index(2)] [cutoff distance(1)] [coefficients for SF(3)]
 
-The number inside the indicates the number of parameters.
+The number inside (·) indicates the number of parameters.
 
 First column indicates the type of symmetry function. Currently, G2 (2), G4 (4), and G5 (5) are available.
 
