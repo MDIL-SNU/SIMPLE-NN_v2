@@ -143,7 +143,7 @@ To evaluate the training quality of neural network, ``test_list`` and result of 
         calc_atomic_weights: False
 
 In this example, ``test_list`` is made by concatenating ``train_list`` and ``valid_list`` in :ref:`training<training>` for simplicity. 
-Put the name of result of training (``checkpoint_*.tar`` or ``potential_saved_*``) in ``continue`` in ``input.yaml``. Note that ``potential_saved`` requires ``scale_factor`` and ``pca`` files explicitly.
+Put the name of result of training (``checkpoint_*.tar`` or ``potential_saved_*``) in ``continue`` in ``input.yaml``. 
 
 .. code-block:: yaml
 
