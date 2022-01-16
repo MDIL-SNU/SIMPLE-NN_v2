@@ -27,7 +27,7 @@ The number inside (·) is the dimension of parameters.
 The order of type index follows that of the ``params`` tag written in ``input.yaml``) 
 The radial part (G2) requires only one neighbor type so the second parameter is neglected. 
 For the angular parts (G4 and G5), two neighboring types are needed. 
-The order of the two parameters does not affect the results.
+The order of the two parameters does not matter.
 
 [Cutoff radius] The cutoff radius for cutoff function.
 
