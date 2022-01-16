@@ -16,7 +16,7 @@ To run SIMPLE-NN, type the following command:
 
     python run.py
 
-If you install ``mpi4py``, MPI parallelization provides an additional speed gain in :ref:`preprocess<preprocess>` (``generate_features`` and ``preprocess`` in ``input.yaml``).
+If you have installed ``mpi4py``, MPI parallelization provides an additional speed gain in :ref:`preprocess<preprocess>` (``generate_features`` and ``preprocess`` in ``input.yaml``).
 
 .. code-block:: bash
 
