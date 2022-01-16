@@ -4,20 +4,13 @@ Descriptor
 
 In this section, you can find the information of descriptor that are used in SIMPLE-NN.
 
-Input feature
-=============
+Data
+====
 
 .. toctree::
     :maxdepth: 1
 
     type
-
-Reference data
-==============
-
-.. toctree::
-    :maxdepth: 1
-
     struct_list
     refdata_format
     compress_outcar

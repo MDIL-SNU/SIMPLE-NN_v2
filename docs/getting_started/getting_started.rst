@@ -58,7 +58,7 @@ Input files introduced in this section can be found in
         calc_scale: True
         calc_pca: True
 
-.. code-block:: bash
+.. code-block:: text
 
     # str_list
     ../ab_initio_output/OUTCAR_comp ::10
@@ -121,12 +121,29 @@ Input files introduced in this section can be found in ``SIMPLE-NN/tutorials/Tra
 Evaluation
 ==========
 
-To evaluate the quality of training by correlation between reference dataset and NNP as well as RMSE, ``test_list`` should be prepared. 
-``test_list`` contains the path of testset preprocessed as '.pt' format. 
+To evaluate the training quality of neural network, ``test_list`` and result of training (``checkpoint.tar`` or ``potential-saved``) should be prepared. 
+``test_list`` contains the path of testset preprocessed as ``.pt`` format. ``.pt`` format data can be generated as described in :ref:`preprocess<preprocess>`. Note that you should set ``train_list`` to ``test_list`` with ``valid_rate`` of 0.0. Then, SIMPLE-NN will write all paths of preprocessed data in ``test_list``.
+
+.. code-block:: yaml
+
+    # input.yaml
+    generate_features: True
+    preprocess: True
+    train_model: False
+
+    params:
+        Si: params_Si
+        O: params_O
+
+    preprocessing:
+        train_list: 'test_list'
+        valid_rate: 0.0
+        calc_scale: False
+        calc_pca: False
+        calc_atomic_weights: False
+
 In this example, ``test_list`` is made by concatenating ``train_list`` and ``valid_list`` in :ref:`training<training>` for simplicity. 
-Testset in ``test_list`` also can be generated separately as described in :ref:`preprocess<preprocess>`. 
-In this case, we recommend you to run :ref:`preprocess<preprocess>` with ``valid_rate`` of 0.0 and then change the filename of ``train_list`` into ``test_list``. 
-The potential to be tested is written in ``continue``. Both ``checkpoint.tar`` and ``potential_saved`` can be used when evaluation.
+Put the name of result of training (``checkpoint_*.tar`` or ``potential_saved_*``) in ``continue`` in ``input.yaml``. Note that ``potential_saved`` requires ``scale_factor`` and ``pca`` files explicitly.
 
 .. code-block:: yaml
 
@@ -170,7 +187,7 @@ Molecular dynamics
 
 To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
 
-.. code-block:: bash
+.. code-block:: text
 
     # lammps.in
 
