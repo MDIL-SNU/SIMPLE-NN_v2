@@ -21,7 +21,7 @@ Each line means:
 
 The number inside (·) is the dimension of parameters.
 
-[Type of SF] Currently, G2 (2), G4 (4), and G5 (5) are supported.
+[Type of SF] Currently, G2, G4, and G5 are supported, indicated by 2, 4, and 5, respectively.
 
 [Atom-type index] Type indices of neighbor atoms which starts from 1.
 The order of type index follows that of the ``params`` tag written in ``input.yaml``) 
