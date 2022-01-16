@@ -10,7 +10,8 @@ SIMPLE-NN (SNU Interatomic Machine-learning PotentiaL packagE – version Neural
 SIMPLE-NN is Python code to construct the neural network interatomic potential (NNP) from ab initio calculation results.
 NNP can be supported by Large-scale Atomic/Molecular Massively Parallel Simulator (LAMMPS) for atomic simulation.
 
-Note: Please be understood that we are rewriting the documentation. We will finish it as soon as possible. 
+.. note::
+    Please be understood that we are rewriting the documentation. We will finish it as soon as possible. 
 
 .. toctree::
     :maxdepth: 2
