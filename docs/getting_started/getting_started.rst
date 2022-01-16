@@ -179,7 +179,7 @@ To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
     pair_style nn
     pair_coeff * * /path/to/potential_saved_bestmodel Si O
 
-Input script for example of NVT MD simulation at 300 K are provided in ``SIMPLE-NN/example/Molecular dynamics``.
+Input script for example of NVT MD simulation at 300 K are provided in ``SIMPLE-NN/tutorials/Molecular dynamics``.
 Run LAMMPS via the following command. You also can run LAMMPS with ``mpirun`` command if multi-core CPU is supported.
 
 .. code-block:: bash
