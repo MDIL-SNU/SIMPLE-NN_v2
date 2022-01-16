@@ -22,7 +22,7 @@ If you have installed ``mpi4py``, MPI parallelization provides an additional spe
 
     mpirun -np numproc python run.py
 
-, where ``numproc`` stands for the number of CPU processors.
+where ``numproc`` stands for the number of CPU processors.
 
 .. note::
     In this example, all paths in ``*_list`` such as ``train_list`` and ``valid_list`` are written as relative path.
