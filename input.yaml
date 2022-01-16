@@ -2,14 +2,13 @@ generate_features:  True
 preprocess:         True
 train_model:        True
 params:
-    species1:   'your/dir/to/parameter/species1'
-    species2:   'your/dir/to/parameter/species2'
+    species1:   '/path/to/params_species1'
+    species2:   '/path/to/params_species2'
 
-# Input for generate fearues
+# Inputs for generate_features
 descriptor: 
-    # Input feature
+    # Data
     type:               'symmetry_function'
-    # Reference data
     struct_list:        'structure_list'
     refdata_format:     'vasp-out'
     compress_outcar:    True
@@ -20,7 +19,7 @@ descriptor:
     read_stress:        True 
     dx_save_sparse:     True
 
-# Input for preprocess
+# Inputs for preprocess
 preprocessing: 
     # Train/validation
     data_list:              'total_list'
@@ -39,7 +38,7 @@ preprocessing:
     # Atomic weights
     calc_atomic_weights:    False
 
-# Input for traning
+# Inputs for train_model
 neural_network:
     # Running mode
     train:              True
@@ -98,6 +97,4 @@ neural_network:
     GPU_number:         null
     inter_op_threads:   0
     intra_op_threads:   0
-    load_data_to_gpu:   True
     subprocesses:       0 
-

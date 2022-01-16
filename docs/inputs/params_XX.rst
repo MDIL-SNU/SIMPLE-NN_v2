@@ -5,7 +5,7 @@ params_XX
 **params_XX** contains the coefficients for symmetry functions (SFs). XX is the element name  
 in the target system. 'param_XX' is written in the following style:
 
-.. code-block:: bash
+.. code-block:: text
 
     2 1 0 6.0 0.003214 0.0 0.0
     2 1 0 6.0 0.035711 0.0 0.0
@@ -15,7 +15,7 @@ in the target system. 'param_XX' is written in the following style:
 
 Each line means:
 
-.. code-block:: bash
+.. code-block:: text
 
     [Type of SF (1)] [Atom-type index (2)] [Cutoff radius (1)] [Coefficients for SF (3)]
 
