@@ -28,7 +28,7 @@ with open('simple_nn/_version.py', 'w') as fp:
 # required module
 # TODO: version check
 install_requires = [
-    'matplotlib<3.4.0',
+    'matplotlib<3.4.0,>=3.1.0',
     'scikit-learn<1.0',
     'numpy<1.20.0',
     'scipy<1.6.0',
