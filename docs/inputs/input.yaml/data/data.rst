@@ -4,8 +4,8 @@ Data
 
 In this section, you can find the parameters related to reference data that are used in SIMPLE-NN.
 
-Path and format of data
-=======================
+Path and format
+===============
 
 .. toctree::
     :maxdepth: 1
