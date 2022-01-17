@@ -50,7 +50,7 @@ def run(input_file_name):
     check_errno(errno, err, comm)
 
     if inputs['generate_features'] is True:
-        generate = get_generate_function(logfile, descriptor_type=inputs['descriptor']['type'])
+        generate = get_generate_function(logfile, descriptor_type=inputs['data']['type'])
         generate(inputs, logfile, comm)
 
     if inputs['preprocess'] is True:

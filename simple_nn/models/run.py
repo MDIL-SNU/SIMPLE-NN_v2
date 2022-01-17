@@ -170,9 +170,8 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
         if loss < best_loss:
             best_loss = loss
             best_epoch = epoch
-            save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint_bestmodel.pth.tar')
+            save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename=f'checkpoint_bestmodel.pth.tar')
             model.write_lammps_potential(filename='./potential_saved_bestmodel', inputs=inputs, scale_factor=scale_factor, pca=pca)
-            logfile.write("Best model updated\n")
 
         # save checkpoint for each save_interval
         if inputs['neural_network']['save_interval'] and (epoch % inputs['neural_network']['save_interval'] == 0):

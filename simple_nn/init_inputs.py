@@ -14,8 +14,8 @@ default_inputs = {
     'params': dict(),
 }
 
-symmetry_function_descriptor_default_inputs = \
-        {'descriptor':
+symmetry_function_data_default_inputs = \
+        {'data':
             {
                 'type'          :   'symmetry_function',
                 'struct_list'   :   './structure_list',
@@ -137,8 +137,8 @@ model_default_inputs = \
 def initialize_inputs(input_file_name, logfile):
     with open(input_file_name) as input_file:
         input_yaml = yaml.safe_load(input_file)
-    if 'descriptor' in input_yaml.keys():
-        descriptor_type = input_yaml['descriptor']['type']
+    if 'data' in input_yaml.keys():
+        descriptor_type = input_yaml['data']['type']
     else:
         descriptor_type = 'symmetry_function'
     params_type = input_yaml['params']
@@ -148,8 +148,8 @@ def initialize_inputs(input_file_name, logfile):
     for key in list(params_type.keys()):
         inputs['params'][key] = None
 
-    descriptor_default_inputs = get_descriptor_default_inputs(logfile, descriptor_type=descriptor_type)
-    inputs = _deep_update(inputs, descriptor_default_inputs)
+    data_default_inputs = get_data_default_inputs(logfile, descriptor_type=descriptor_type)
+    inputs = _deep_update(inputs, data_default_inputs)
     inputs = _deep_update(inputs, preprocess_default_inputs)
     inputs = _deep_update(inputs, model_default_inputs)
     # update inputs using 'input.yaml'
@@ -188,9 +188,9 @@ def initialize_inputs(input_file_name, logfile):
 
     return inputs
 
-def get_descriptor_default_inputs(logfile, descriptor_type='symmetry_function'):
+def get_data_default_inputs(logfile, descriptor_type='symmetry_function'):
     descriptor_inputs = {
-        'symmetry_function': symmetry_function_descriptor_default_inputs
+        'symmetry_function': symmetry_function_data_default_inputs
     }
 
     if descriptor_type not in descriptor_inputs.keys():
@@ -246,19 +246,19 @@ def check_inputs(inputs, logfile):
         else:
             logfile.write(f"{atype:2} parameters directory     : {params[atype]}\n")
     if inputs['generate_features']:
-        logfile.write("\nInput for descriptor\n")
-        descriptor = inputs['descriptor']
-        logfile.write(f"Descriptor type             : {descriptor['type']}\n")
-        logfile.write(f"Reference data format       : {descriptor['refdata_format']}\n")
-        if descriptor['refdata_format'] == 'vasp-out':
-            logfile.write(f"Compress outcar             : {descriptor['compress_outcar']}\n")
-        logfile.write(f"Structure list              : {descriptor['struct_list']}\n")
-        logfile.write(f"Save directory              : {descriptor['save_directory']}\n")
-        logfile.write(f"Save output list            : {descriptor['save_list']}\n")
-        logfile.write(f"Use absolute path           : {descriptor['absolute_path']}\n")
-        logfile.write(f"Read force from data        : {descriptor['read_force']}\n")
-        logfile.write(f"Read stress from data       : {descriptor['read_stress']}\n")
-        logfile.write(f"Save dx as sparse tensor    : {descriptor['dx_save_sparse']}\n")
+        logfile.write("\nInput for data\n")
+        data = inputs['data']
+        logfile.write(f"Descriptor type             : {data['type']}\n")
+        logfile.write(f"Reference data format       : {data['refdata_format']}\n")
+        if data['refdata_format'] == 'vasp-out':
+            logfile.write(f"Compress outcar             : {data['compress_outcar']}\n")
+        logfile.write(f"Structure list              : {data['struct_list']}\n")
+        logfile.write(f"Save directory              : {data['save_directory']}\n")
+        logfile.write(f"Save output list            : {data['save_list']}\n")
+        logfile.write(f"Use absolute path           : {data['absolute_path']}\n")
+        logfile.write(f"Read force from data        : {data['read_force']}\n")
+        logfile.write(f"Read stress from data       : {data['read_stress']}\n")
+        logfile.write(f"Save dx as sparse tensor    : {data['dx_save_sparse']}\n")
         logfile.flush()
     if inputs['preprocess']:
         preprocessing = inputs['preprocessing']
@@ -416,7 +416,7 @@ def check_inputs(inputs, logfile):
 
 def _to_boolean(inputs):
     check_list =  ['generate_features', 'preprocess',  'train_model']
-    descriptor_list = ['compress_outcar','read_force','read_stress', 'dx_save_sparse', 'absolute_path']
+    data_list = ['compress_outcar','read_force','read_stress', 'dx_save_sparse', 'absolute_path']
     preprocessing_list = ['shuffle', 'calc_pca', 'pca_whiten', 'calc_scale']
     neural_network_list = ['train', 'test', 'add_NNP_ref', 'train_atomic_E', 'shuffle_dataloader', 'double_precision', 'use_force', 'use_stress',\
                         'dropout','full_batch', 'print_structure_rmse', 'accurate_train_rmse', 'use_pca', 'use_scale', 'use_atomic_weights',\
@@ -445,9 +445,9 @@ def _to_boolean(inputs):
         if not isinstance(inputs[key], bool) and isinstance(inputs[key], str):
             convert(inputs, key)
 
-    for d_key in descriptor_list:
-        if not isinstance(inputs['descriptor'][d_key], bool) and isinstance(inputs['descriptor'][d_key], str):
-            convert(inputs['descriptor'], d_key)
+    for d_key in data_list:
+        if not isinstance(inputs['data'][d_key], bool) and isinstance(inputs['data'][d_key], str):
+            convert(inputs['data'], d_key)
 
     for p_key in preprocessing_list:
         if not isinstance(inputs['preprocessing'][p_key], bool) and isinstance(inputs['preprocessing'][p_key], str):

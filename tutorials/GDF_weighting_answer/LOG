@@ -13,7 +13,7 @@ Input for parameters
 Si parameters directory     : params_Si
 O  parameters directory     : params_O
 
-Input for descriptor
+Input for data
 Descriptor type             : symmetry_function
 Reference data format       : vasp-out
 Compress outcar             : True
