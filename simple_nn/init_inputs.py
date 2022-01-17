@@ -128,7 +128,6 @@ model_default_inputs = \
                 # Parallelism
                 'use_gpu': True,
                 'GPU_number'       : None,
-                'load_data_to_gpu'  : True,
                 'subprocesses'   : 0,
                 'inter_op_threads': 0,
                 'intra_op_threads': 0,
@@ -409,9 +408,6 @@ def check_inputs(inputs, logfile):
             logfile.write(f"Use GPU device number       : {neural_network['GPU_number']}\n")
             assert neural_network['GPU_number'] <= torch.cuda.device_count()-1,\
              f"Invalid GPU device number available GPU # {torch.cuda.device_count()-1} , set number {neural_network['GPU_number']} "
-        logfile.write(f"Direct data loading to gpu  : {neural_network['load_data_to_gpu']}\n")
-        if neural_network['load_data_to_gpu']:
-            assert neural_network['subprocesses'] == 0, f"If load data to gpu directly, use subprocesses = 0"
         logfile.write(f"# of subprocesses in loading: {neural_network['subprocesses']}\n")
         logfile.flush()
     logfile.write("\n{}\n".format('-'*88))
@@ -424,7 +420,7 @@ def _to_boolean(inputs):
     preprocessing_list = ['shuffle', 'calc_pca', 'pca_whiten', 'calc_scale']
     neural_network_list = ['train', 'test', 'add_NNP_ref', 'train_atomic_E', 'shuffle_dataloader', 'double_precision', 'use_force', 'use_stress',\
                         'dropout','full_batch', 'print_structure_rmse', 'accurate_train_rmse', 'use_pca', 'use_scale', 'use_atomic_weights',\
-                        'clear_prev_status', 'clear_prev_optimizer', 'use_gpu', 'load_data_to_gpu']
+                        'clear_prev_status', 'clear_prev_optimizer', 'use_gpu']
 
     #True TRUE T tatrue TrUe .T. ... 
     #False FALSE F f false FaLse .F. ... 
