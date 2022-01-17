@@ -1,7 +1,6 @@
 generate_features: True
 preprocess: True
 train_model: True
-random_seed: 123
 
 params:
     Si: params_Si
@@ -15,9 +14,6 @@ preprocessing:
     valid_rate: 0.1
     calc_scale: True
     calc_pca: True
-    calc_atomic_weights:
-        type: gdf
-        params: Auto
  
 neural_network:
     nodes: 30-30
@@ -28,7 +24,7 @@ neural_network:
     learning_rate: 0.001
     use_scale: True
     use_pca: True
-    use_atomic_weights: true
+    use_atomic_weights: True
     weight_modifier:
         type: modified sigmoid
         params:
