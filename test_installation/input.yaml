@@ -7,7 +7,7 @@ params:
     Si: ./params
     O: ./params
 
-descriptor:
+data:
     type: symmetry_function
     compress_outcar: True
 
