@@ -2,7 +2,8 @@
 data_list
 =========
 
-Introduction
-============
+- 'structure_list' (default)
 
-Under construction
+----
+
+**structure_list** contains the all paths of reference data.
