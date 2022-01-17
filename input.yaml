@@ -6,8 +6,7 @@ params:
     species2:   '/path/to/params_species2'
 
 # Inputs for generate_features
-descriptor: 
-    # Data
+data: 
     type:               'symmetry_function'
     struct_list:        'structure_list'
     refdata_format:     'vasp-out'

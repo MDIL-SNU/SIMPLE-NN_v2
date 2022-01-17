@@ -36,13 +36,13 @@ def generate(inputs, logfile, comm):
     """
     start_time = time.time()
     atom_types = inputs['atom_types']
-    structure_list = inputs['descriptor']['struct_list'] #Default ./structure_list
-    save_list = inputs['descriptor']['save_list'] #Default ./total_list
+    structure_list = inputs['data']['struct_list'] #Default ./structure_list
+    save_list = inputs['data']['save_list'] #Default ./total_list
 
     #Create pt file directory
     if comm.rank == 0:
-        if not os.path.exists(inputs['descriptor']['save_directory']):
-            os.makedirs(inputs['descriptor']['save_directory'])
+        if not os.path.exists(inputs['data']['save_directory']):
+            os.makedirs(inputs['data']['save_directory'])
         data_list_fil = open(save_list, 'w')
 
     data_idx = 1
@@ -124,9 +124,9 @@ def generate(inputs, logfile, comm):
 
             E, F, S = _extract_EFS(inputs, structure, logfile, comm)
             result['E'] = torch.tensor(E)
-            if inputs['descriptor']['read_force'] is True:
+            if inputs['data']['read_force'] is True:
                 result['F'] = torch.tensor(F)
-            if inputs['descriptor']['read_stress'] is True:
+            if inputs['data']['read_stress'] is True:
                 result['S'] = torch.tensor(S)
 
             if comm.rank == 0:
@@ -135,12 +135,12 @@ def generate(inputs, logfile, comm):
                 data_idx += 1
 
         if comm.rank == 0:
-            logfile.write(" ~ {}/data{}.pt\n".format(inputs['descriptor']['save_directory'], data_idx-1))
+            logfile.write(" ~ {}/data{}.pt\n".format(inputs['data']['save_directory'], data_idx-1))
             logfile.flush()
 
     if comm.rank == 0:
         data_list_fil.close()
-        if inputs['descriptor']['compress_outcar']:
+        if inputs['data']['compress_outcar']:
             os.remove('./tmp_comp_OUTCAR')
         logfile.write(f"Elapsed time in generating: {time.time()-start_time:10} s\n")
         logfile.write("{}\n".format('-'*88))
@@ -222,12 +222,12 @@ def _set_calculated_result(inputs, result, x, dx, da, type_num, element, symf_pa
         if comm.rank == 0:
             result['x'][element] = np.concatenate(result['x'][element], axis=0).\
                             reshape([type_num[element], symf_params_set[element]['num']])
-        if inputs['descriptor']['read_force'] is True:
+        if inputs['data']['read_force'] is True:
             result['dx'][element] = np.array(comm.gather(dx, root=0))
             if comm.rank == 0:
                 result['dx'][element] = np.concatenate(result['dx'][element], axis=0).\
                                 reshape([type_num[element], symf_params_set[element]['num'], atom_num, 3])
-        if inputs['descriptor']['read_stress'] is True:
+        if inputs['data']['read_stress'] is True:
             result['da'][element] = np.array(comm.gather(da, root=0))
             if comm.rank == 0:
                 result['da'][element] = np.concatenate(result['da'][element], axis=0).\
@@ -235,23 +235,23 @@ def _set_calculated_result(inputs, result, x, dx, da, type_num, element, symf_pa
 
     else:
         result['x'][element] = np.zeros([0, symf_params_set[element]['num']])
-        if inputs['descriptor']['read_force'] is True:
+        if inputs['data']['read_force'] is True:
             result['dx'][element] = np.zeros([0, symf_params_set[element]['num'], atom_num, 3])
-        if inputs['descriptor']['read_stress'] is True:
+        if inputs['data']['read_stress'] is True:
             result['da'][element] = np.zeros([0, symf_params_set[element]['num'], 3, 6])
 
     if comm.rank == 0:
         result['x'][element] = torch.tensor(result['x'][element])
-        if inputs['descriptor']['read_force'] is True:
+        if inputs['data']['read_force'] is True:
             #Sparse tensor mapping here
-            if inputs['descriptor']['dx_save_sparse']:
+            if inputs['data']['dx_save_sparse']:
                 tmp_tensor = torch.tensor(result['dx'][element])
                 result['dx_size'][element] = tmp_tensor.size()
                 result['dx'][element] = tmp_tensor.reshape(-1).to_sparse()
                 tmp_tensor = None
             else:
                 result['dx'][element] = torch.tensor(result['dx'][element])
-        if inputs['descriptor']['read_stress'] is True:
+        if inputs['data']['read_stress'] is True:
             result['da'][element] = torch.tensor(result['da'][element])
 
 # Check ase version, E, F, S extract from structure, Raise Error 
@@ -260,13 +260,13 @@ def _extract_EFS(inputs, structure, logfile, comm):
     F = None
     S = None
 
-    if inputs['descriptor']['refdata_format'] == 'vasp-out':
+    if inputs['data']['refdata_format'] == 'vasp-out':
         if ase.__version__ >= '3.18.0':
             E = structure.get_potential_energy(force_consistent=True)
         else:
             E = structure.get_total_energy()
 
-        if inputs['descriptor']['read_force'] is True:
+        if inputs['data']['read_force'] is True:
             try:
                 F = structure.get_forces()
             except:
@@ -275,7 +275,7 @@ def _extract_EFS(inputs, structure, logfile, comm):
                     logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)
 
-        if inputs['descriptor']['read_stress'] is True:
+        if inputs['data']['read_stress'] is True:
             try:
                 # ASE returns the stress tensor by voigt order xx yy zz yz zx xy
                 S = -1 * structure.get_stress() / units.GPa * 10
