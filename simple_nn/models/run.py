@@ -225,9 +225,9 @@ def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader
 
     def test_show_structure_rmse(logfile, key, label, epoch_result):
         if epoch_result[key][label].sum == 0:
-            logfile.write("{:>10}".format('-'))
+            logfile.write("  {:>10}".format('-'))
         else:
-            logfile.write("{:.4e}".format(epoch_result[key][label].sqrt_avg))
+            logfile.write("  {:.4e}".format(epoch_result[key][label].sqrt_avg))
 
     struct_labels = _get_structure_labels(test_loader, valid_loader=None)
     dtype = torch.get_default_dtype()
@@ -267,6 +267,8 @@ def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader
             for key in ['e_err', 'f_err', 's_err']:
                 if key in epoch_result.keys():
                     test_show_structure_rmse(logfile, key, label, epoch_result)
+            logfile.write("\n")
+    logfile.write("-" * 88 + '\n')
 
 # Main loop for calculations 
 def progress_epoch(inputs, data_loader, struct_labels, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=False):
