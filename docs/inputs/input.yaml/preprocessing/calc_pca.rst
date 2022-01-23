@@ -2,7 +2,7 @@
 calc_pca
 ========
 
-Introduction
-============
+- ``True`` (default) / ``False``
+----
 
 Under construction
