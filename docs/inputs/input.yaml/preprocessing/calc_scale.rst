@@ -5,4 +5,4 @@ calc_scale
 - ``True`` (default) / ``False``
 ----
 
-Under construction
+**calc_scale** determines whether users are going to calculate scaling parameters.
