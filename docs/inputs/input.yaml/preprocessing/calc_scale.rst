@@ -2,7 +2,7 @@
 calc_scale
 ==========
 
-- ``True``(default) / ``False``
+- ``True`` (default) / ``False``
 ----
 
 Under construction
