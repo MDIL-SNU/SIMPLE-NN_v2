@@ -2,7 +2,7 @@
 train
 =====
 
-Introduction
-============
+- ``True`` (default) / ``False``
+----
 
 Under construction
