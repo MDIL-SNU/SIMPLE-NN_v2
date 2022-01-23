@@ -2,7 +2,7 @@
 data_list
 =========
 
-- 'total_list' (default)
+- ``'total_list'`` (default)
 
 ----
 
