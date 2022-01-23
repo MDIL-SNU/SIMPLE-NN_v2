@@ -2,7 +2,7 @@
 test_list
 =========
 
-Introduction
+- ``'test_list'`` (default)
 ============
 
 Under construction
