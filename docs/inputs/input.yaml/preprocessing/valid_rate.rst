@@ -1,8 +1,9 @@
-==========
+=========
 valid_rate
-==========
+=========
 
-Introduction
-============
+- '0.1' (default)
 
-Under construction
+----
+
+**valid_rate** separates the rate of validation data and training data as the size of `valid_rate`.
