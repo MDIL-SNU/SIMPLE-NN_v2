@@ -2,7 +2,7 @@
 shuffle
 =======
 
-Introduction
+``True``(default) / False
 ============
 
-Under construction
+If the ``shuffle`` tag is set set as ``True``, the training datas are randomly shuffled.
