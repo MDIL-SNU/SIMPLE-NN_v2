@@ -2,7 +2,7 @@
 valid_list
 ==========
 
-Introduction
-============
+- ``'valid_list'`` (default)
+----
 
-Under construction
+**valid_list** reads the list of validation data that is produced from ``preprocessing`` step.
