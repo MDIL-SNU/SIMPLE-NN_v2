@@ -2,7 +2,7 @@
 use_force
 =========
 
-Introduction
-============
+- ``True`` (default) / ``False``
+----
 
 Under construction
