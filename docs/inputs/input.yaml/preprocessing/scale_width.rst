@@ -2,7 +2,7 @@
 scale_width
 ===========
 
-Introduction
-============
+- ``1.0`` (default)
+----
 
 Under construction
