@@ -2,7 +2,7 @@
 train_atomic_E
 ==============
 
-Introduction
-============
+- ``False`` (default) / ``True``
+----
 
 Under construction
