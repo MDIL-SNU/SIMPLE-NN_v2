@@ -2,7 +2,7 @@
 shuffle_dataloader
 ==================
 
-Introduction
+- ``True`` (default) / ``False``
 ============
 
 Under construction
