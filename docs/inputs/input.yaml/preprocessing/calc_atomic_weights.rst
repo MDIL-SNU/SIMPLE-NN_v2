@@ -2,7 +2,7 @@
 calc_atomic_weights
 ===================
 
-Introduction
-============
+- ``False`` (default)
+----
 
 Under construction
