@@ -2,7 +2,7 @@
 min_whiten_level
 ================
 
-Introduction
-============
+- ``1.0e-8`` (default)
+----
 
 Under construction
