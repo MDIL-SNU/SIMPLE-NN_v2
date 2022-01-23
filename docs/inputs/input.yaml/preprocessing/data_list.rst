@@ -6,4 +6,4 @@ data_list
 
 ----
 
-**structure_list** contains the all paths of reference data.
+**structure_list** contains all the paths of reference data.
