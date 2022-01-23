@@ -2,7 +2,6 @@
 scale_type
 ==========
 
-Introduction
-============
+- ``'minmax'`` (default)
+----
 
-Under construction
