@@ -2,7 +2,7 @@
 pca_whiten
 ==========
 
-Introduction
-============
+- ``True`` (default) / ``False``
+----
 
 Under construction
