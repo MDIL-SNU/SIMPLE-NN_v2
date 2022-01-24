@@ -17,8 +17,8 @@ SIMPLE-NN also provides an interfacing module to LAMMPS for executing MD.
     :maxdepth: 2
 
     install
+    inputs/inputs
     getting_started/getting_started
     advanced_features/advanced_features
-    inputs/inputs
     Release_note
     FAQ
