@@ -7,4 +7,8 @@ weight_initializer
 
 The usage of **weight_initializer** is as below.
 
+.. code-block:: yaml
 
+    # input.yaml
+    weight_initializer:
+        type: 'xavier noraml'
