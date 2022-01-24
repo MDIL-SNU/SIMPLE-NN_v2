@@ -5,4 +5,4 @@ calc_scale
 - ``True`` (default) / ``False``
 ----
 
-**calc_scale** determines whether users are going to calculate scaling parameters or not. Scaling parameter is important ~~ 설명 필요
+**calc_scale** determines whether SIMPLE-nn calculates scaling parameters or not.
