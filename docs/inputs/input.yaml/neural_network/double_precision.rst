@@ -3,6 +3,6 @@ double_precision
 ================
 
 - ``True`` (default) / False
-============
+----
 
-Under construction
+Swith the double precision(``True``) and single precision(``False``).
