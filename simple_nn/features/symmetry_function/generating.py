@@ -140,7 +140,7 @@ def generate(inputs, logfile, comm):
 
     if comm.rank == 0:
         data_list_fil.close()
-        if inputs['data']['compress_outcar']:
+        if inputs['data']['refdata_format'] == 'vasp-out' and inputs['data']['compress_outcar']:
             os.remove('./tmp_comp_OUTCAR')
         logfile.write(f"Elapsed time in generating: {time.time()-start_time:10} s\n")
         logfile.write("{}\n".format('-'*88))
@@ -261,10 +261,7 @@ def _extract_EFS(inputs, structure, logfile, comm):
     S = None
 
     if inputs['data']['refdata_format'] == 'vasp-out':
-        if ase.__version__ >= '3.18.0':
-            E = structure.get_potential_energy(force_consistent=True)
-        else:
-            E = structure.get_total_energy()
+        E = structure.get_potential_energy(force_consistent=True)
 
         if inputs['data']['read_force'] is True:
             try:
@@ -286,5 +283,27 @@ def _extract_EFS(inputs, structure, logfile, comm):
                     logfile.write("\nError: {:}\n".format(err))
                 raise NotImplementedError(err)
 
-    return E, F, S
+    # TODO: other formats
+    else:
+        E = structure.get_potential_energy(force_consistent=True)
 
+        if inputs['data']['read_force'] is True:
+            try:
+                F = structure.get_forces()
+            except:
+                err = "There is not force information! Set 'read_force': False"
+                if comm.rank == 0:
+                    logfile.write("\nError: {:}\n".format(err))
+                raise NotImplementedError(err)
+
+        if inputs['data']['read_stress'] is True:
+            try:
+                # ASE returns the stress tensor by voigt order xx yy zz yz zx xy
+                S = -1 * structure.get_stress() / units.GPa * 10
+            except:
+                err = "There is not stress information! Set 'read_stress': False"
+                if comm.rank == 0:
+                    logfile.write("\nError: {:}\n".format(err))
+                raise NotImplementedError(err)
+
+    return E, F, S
