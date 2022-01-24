@@ -2,7 +2,7 @@
 acti_func
 =========
 
-Introduction
-============
+- ``'sigmoid'`` (default) / ``'tanh'``, ``'relu'``, ``'selu'``, ``'swish'`` 
+----
 
 Under construction
