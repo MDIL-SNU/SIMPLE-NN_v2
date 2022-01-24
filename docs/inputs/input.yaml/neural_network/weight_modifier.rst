@@ -2,7 +2,7 @@
 weight_modifier
 ===============
 
-Introduction
+- type: ``null`` (default) / ``'modified sigmoid'``
 ============
 
-Under construction
+Dictionary for weight modifier.
