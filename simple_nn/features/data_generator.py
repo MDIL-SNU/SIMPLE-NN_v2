@@ -148,15 +148,7 @@ def load_structures(inputs, structure_file, structure_slicing, logfile, comm):
                 file_path = compress_outcar(structure_file)
             file_path = comm.bcast(file_path, root=0);
 
-        if ase.__version__ >= '3.18.0':
-            structures = io.read(file_path, index=index, format=inputs['data']['refdata_format'], parallel=False)
-        else:
-            structures = io.read(file_path, index=index, format=inputs['data']['refdata_format'], force_consistent=True, parallel=False)
-    else:
-        if comm.rank == 0:
-            logfile.write("Warning: Structure format is not OUTCAR(['refdata_format'] : {:}). Unexpected error can occur.\n"\
-                                                    .format(inputs['data']['refdata_format']))
-        structures = io.read(file_path, index=index, format=inputs['data']['refdata_format'], parallel=False)
+    structures = io.read(file_path, index=index, format=inputs['data']['refdata_format'], parallel=False)
 
     return structures
 
