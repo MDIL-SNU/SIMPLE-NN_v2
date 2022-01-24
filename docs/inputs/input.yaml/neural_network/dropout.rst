@@ -2,7 +2,7 @@
 dropout
 =======
 
-Introduction
-============
+- ``False`` (default) / True
+----
 
 Under construction
