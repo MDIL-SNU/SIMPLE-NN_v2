@@ -2,7 +2,7 @@
 batch_size
 ==========
 
-Introduction
+- ``8`` (default)
 ============
 
-Under construction
+**batch_size** determines the number of samples in the batch training set.
