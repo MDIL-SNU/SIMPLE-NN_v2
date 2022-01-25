@@ -58,7 +58,7 @@ neural_network:
     double_precision:   True
     weight_initializer:
         type:           'xavier normal'
-    dropout:            False
+    dropout:            0.0
     use_scale:          True
     use_pca:            True
     use_atomic_weights: False

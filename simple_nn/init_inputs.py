@@ -84,7 +84,7 @@ model_default_inputs = \
                         'nonlinearity': None,
                     },
                 },
-                'dropout'   : False,
+                'dropout'   : 0.0,
                 'use_pca'   : True,
                 'use_scale' : True,
                 'use_atomic_weights'   : False,
@@ -320,7 +320,7 @@ def check_inputs(inputs, logfile):
             assert node.isdigit(), f"In valid node information nodes : {neural_network['nodes']}"
         logfile.write(f"Activation function type    : {neural_network['acti_func']}\n")
         logfile.write(f"Double precision            : {neural_network['double_precision']}\n")
-        logfile.write(f"Use dropout network         : {neural_network['dropout']}\n")
+        logfile.write(f"Dropout ratio               : {neural_network['dropout']}\n")
         logfile.write(f"Weight initializer          : {neural_network['weight_initializer']['type']}\n")
         use_param = False
         for keys in neural_network['weight_initializer']['params'].keys():
@@ -419,7 +419,7 @@ def _to_boolean(inputs):
     data_list = ['compress_outcar','read_force','read_stress', 'dx_save_sparse', 'absolute_path']
     preprocessing_list = ['shuffle', 'calc_pca', 'pca_whiten', 'calc_scale']
     neural_network_list = ['train', 'test', 'add_NNP_ref', 'train_atomic_E', 'shuffle_dataloader', 'double_precision', 'use_force', 'use_stress',\
-                        'dropout','full_batch', 'print_structure_rmse', 'accurate_train_rmse', 'use_pca', 'use_scale', 'use_atomic_weights',\
+                        'full_batch', 'print_structure_rmse', 'accurate_train_rmse', 'use_pca', 'use_scale', 'use_atomic_weights',\
                         'clear_prev_status', 'clear_prev_optimizer', 'use_gpu']
 
     #True TRUE T tatrue TrUe .T. ... 
