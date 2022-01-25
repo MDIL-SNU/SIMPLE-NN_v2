@@ -2,7 +2,7 @@
 add_NNP_ref
 ===========
 
-Introduction
-============
+- ``False`` (default)
+----
 
 Under construction

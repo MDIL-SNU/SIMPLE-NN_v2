@@ -2,7 +2,7 @@
 full_batch
 ==========
 
-Introduction
-============
+- ``False'' (default) / ''True''
+----
 
-Under construction
+If ``True``, full batch mode is enabled.

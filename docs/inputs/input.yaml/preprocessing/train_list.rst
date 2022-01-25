@@ -2,7 +2,8 @@
 train_list
 ==========
 
-Introduction
-============
+- ``'train_list'`` (default)
 
-Under construction
+----
+
+**train_list** contains all the paths of training data which is separated as the rate of :doc:`/inputs/input.yaml/preprocessing/valid_rate`

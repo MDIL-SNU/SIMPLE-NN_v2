@@ -2,7 +2,8 @@
 data_list
 =========
 
-Introduction
-============
+- ``'total_list'`` (default)
 
-Under construction
+----
+
+**total_list** contains all the paths of reference data. Users can change the name of ``data_list`` as their favor.

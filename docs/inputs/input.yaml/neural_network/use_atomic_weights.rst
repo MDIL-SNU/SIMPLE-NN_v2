@@ -2,7 +2,7 @@
 use_atomic_weights
 ==================
 
-Introduction
-============
+- ``False`` (default) / ``True``
+----
 
-Under construction
+Under Construction

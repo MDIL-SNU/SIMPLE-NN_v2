@@ -2,7 +2,7 @@
 use_scale
 =========
 
-Introduction
-============
+- ``True`` (default) / ``False``
+----
 
-Under construction
+**use_scale** determines whether SIMPLE-NN uses scaling parameters(``True``) that is calculated from preprocessing step or not(``False``).

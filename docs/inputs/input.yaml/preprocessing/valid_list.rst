@@ -2,7 +2,8 @@
 valid_list
 ==========
 
-Introduction
-============
+- ``'valid_list'`` (default)
 
-Under construction
+----
+
+**valid_list** contains all the paths of validation data which is separated as the rate of :doc:`/inputs/input.yaml/preprocessing/valid_rate`

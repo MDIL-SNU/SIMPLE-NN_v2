@@ -2,7 +2,7 @@
 use_stress
 ==========
 
-Introduction
-============
+- ``True`` (default) / ``False``
+----
 
 Under construction

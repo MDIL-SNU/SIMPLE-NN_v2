@@ -2,7 +2,7 @@
 ref_list
 ========
 
-Introduction
+- ``'ref_list'`` (default)
 ============
 
 Under construction

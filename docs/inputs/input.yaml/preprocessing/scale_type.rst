@@ -2,7 +2,7 @@
 scale_type
 ==========
 
-Introduction
-============
+- ``'minmax'`` (default) / ``'meanstd'`` / ``'uniform gas'``
+----
 
 Under construction

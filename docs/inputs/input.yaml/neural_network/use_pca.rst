@@ -2,7 +2,7 @@
 use_pca
 =======
 
-Introduction
-============
+- ``True`` (default) / ``False``
+----
 
-Under construction
+**use_pca** determines whether SIMPLE-NN uses pca(``True``) that is calculated from preprocessing step or not(``False``).

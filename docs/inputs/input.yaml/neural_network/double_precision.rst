@@ -2,7 +2,7 @@
 double_precision
 ================
 
-Introduction
-============
+- ``True`` (default) / ``False``
+----
 
-Under construction
+Switch the double precision(``True``) and single precision(``False``).

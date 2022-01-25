@@ -2,7 +2,7 @@
 train_list
 ==========
 
-Introduction
-============
+- ``'train_list'`` (default)
+----
 
-Under construction
+**train_list** reads the list of training data that is produced from ``preprocessing`` step.

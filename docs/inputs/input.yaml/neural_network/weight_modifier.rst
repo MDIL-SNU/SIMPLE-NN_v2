@@ -2,7 +2,13 @@
 weight_modifier
 ===============
 
-Introduction
-============
+- type: ``null`` (default) / ``'modified sigmoid'``
+----
 
-Under construction
+Dictionary for weight modifier. The usage of **weight_modifier** is as below.
+
+.. code-block:: yaml
+
+    # input.yaml
+    weight_modifier:
+        type: null

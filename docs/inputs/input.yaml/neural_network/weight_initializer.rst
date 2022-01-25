@@ -2,7 +2,13 @@
 weight_initializer
 ==================
 
-Introduction
-============
+- type: ``'xavier noraml'`` (default) / ``'xavier uniform'``, ``'normal'``, ``'constant'``, ``'kaiming noraml'``, ``'kaiming uniform``', ``'he normal'``, ``'he uniform'``, ``'orthogonal'``, ``'sparse'``
+----
 
-Under construction
+The usage of **weight_initializer** is as below.
+
+.. code-block:: yaml
+
+    # input.yaml
+    weight_initializer:
+        type: 'xavier noraml'

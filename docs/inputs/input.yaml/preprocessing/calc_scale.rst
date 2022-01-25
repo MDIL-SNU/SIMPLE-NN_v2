@@ -2,7 +2,7 @@
 calc_scale
 ==========
 
-Introduction
-============
+- ``True`` (default) / ``False``
+----
 
-Under construction
+**calc_scale** determines whether SIMPLE-NN calculates scaling parameters or not.
