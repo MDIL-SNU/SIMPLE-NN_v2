@@ -7,7 +7,7 @@ params:
     Si: params_Si
     O:  params_O
 
-descriptor:
+data:
     type: symmetry_function
     absolute_path: False
 
@@ -28,7 +28,7 @@ neural_network:
     learning_rate: 0.001
     use_scale: True
     use_pca: True
-    use_atomic_weights: true
+    use_atomic_weights: True
     weight_modifier:
         type: modified sigmoid
         params:

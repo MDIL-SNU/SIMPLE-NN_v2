@@ -20,7 +20,7 @@ If you have installed ``mpi4py``, MPI parallelization provides an additional spe
 
 .. code-block:: bash
 
-    mpirun -np numproc python run.py
+    mpirun -np $numproc python run.py
 
 where ``numproc`` stands for the number of CPU processors.
 
@@ -197,10 +197,16 @@ To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
     pair_coeff * * /path/to/potential_saved_bestmodel Si O
 
 Input script for example of NVT MD simulation at 300 K are provided in ``SIMPLE-NN/tutorials/Molecular dynamics``.
-Run LAMMPS via the following command. You also can run LAMMPS with ``mpirun`` command if multi-core CPU is supported.
+Run LAMMPS via the following command. 
 
 .. code-block:: bash
 
     /path/to/lammps/src/lmp_mpi < lammps.in
+
+You also can run LAMMPS with ``mpirun`` command if multi-core CPU is supported.
+
+.. code-block:: bash
+
+    mpirun -np $numproc /path/to/lammps/src/lmp_mpi < lammps.in
 
 Output files can be found in ``SIMPLE-NN/tutorials/Molecular_dynamics_answer``.

@@ -1,13 +1,13 @@
 generate_features:  True
 preprocess:         True
 train_model:        True
+random_seed:        null
 params:
     species1:   '/path/to/params_species1'
     species2:   '/path/to/params_species2'
 
 # Inputs for generate_features
-descriptor: 
-    # Data
+data: 
     type:               'symmetry_function'
     struct_list:        'structure_list'
     refdata_format:     'vasp-out'
