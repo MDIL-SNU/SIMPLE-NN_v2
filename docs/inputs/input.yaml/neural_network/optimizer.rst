@@ -2,14 +2,18 @@
 optimizer
 =========
 
-- ``'Adam'`` (default) / ``'Adadelta'``, ``'Adagrad'``, ``'AdamW'``, ``'Adamax'``, ``'ASGD'``, ``'SGD'``, ``'RMSprop'``, ``'Rprop'``
+- method: ``Adam`` (default) / ``Adadelta``, ``Adagrad``, ``AdamW``, ``Adamax``, ``ASGD``, ``SGD``, ``RMSprop``, ``Rprop``
 
 ----
         
-**optimizer** determines the optimization method. The usage of **optimizer** is as below. SIMPLE-NN supports ``'Adam'``, ``'Adadelta'``, ``'Adagrad'``, ``'AdamW'``, ``'Adamax'``, ``'ASGD'``, ``'SGD'``, ``'RMSprop'`` and ``'Rprop'``.
+**optimizer** determines the optimization method. The usage of **optimizer** is as below. SIMPLE-NN supports ``Adam``, ``Adadelta``, ``Adagrad``, ``AdamW``, ``Adamax``, ``ASGD``, ``SGD``, ``RMSprop`` and ``Rprop``. As shown below, in general, ``Adam`` type optimizer shows the best convergence.
 
 .. code-block:: yaml
 
     # input.yaml
-    optimizer:
-        method: 'Adam'
+    neural_network:
+        optimizer:
+            method: Adam
+
+.. image:: /inputs/input.yaml/neural_network/optimizer.png
+   :width: 500

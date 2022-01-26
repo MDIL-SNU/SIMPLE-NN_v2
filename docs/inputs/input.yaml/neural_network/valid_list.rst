@@ -2,7 +2,7 @@
 valid_list
 ==========
 
-- ``'valid_list'`` (default)
+- ``valid_list`` (default)
 
 ----
 

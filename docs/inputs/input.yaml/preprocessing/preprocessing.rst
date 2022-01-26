@@ -24,6 +24,7 @@ Scaling parameters
     
     calc_scale
     scale_type
+    scale_rho
     scale_width
 
 PCA parameters

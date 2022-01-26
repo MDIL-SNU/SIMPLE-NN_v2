@@ -6,4 +6,4 @@ use_stress
 
 ----
 
-If the **use_stress** tag is set as ``'True'``, stress is used for training.
+If the **use_stress** tag is set as ``True``, stress is used for training.

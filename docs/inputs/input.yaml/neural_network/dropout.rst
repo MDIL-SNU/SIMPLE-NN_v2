@@ -2,8 +2,8 @@
 dropout
 =======
 
-- ``False`` (default) / ``0``, ``1``
+- ``False`` (default) / ``0`` ~ ``1``
 
 ----
 
-In order to activate dropout, users should type ``0`` or ``1`` for the current version. Since it is inconsistent with other input tags, it will be modified as ``True`` as soon as possible!
+Users must type a value between ``0`` and ``1`` to enable **dropout**. For example, if users type ``0.25``, 25 % of units are dropped.

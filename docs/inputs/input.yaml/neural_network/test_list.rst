@@ -2,8 +2,8 @@
 test_list
 =========
 
-- ``'test_list'`` (default)
+- ``test_list`` (default)
 
 ----
 
-Under construction
+If the :doc:`/inputs/input.yaml/neural_network/test/` tag is set as ``True``, SIMPLENN reads the ``test_list`` to perform the test step.
