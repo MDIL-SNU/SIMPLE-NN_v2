@@ -11,4 +11,6 @@ nodes
 .. image:: /inputs/input.yaml/neural_network/nodes.png
    :width: 500
 
-Note that this figure is the result of Si MD, which is too simple to show the effect of nodes.
+.. note::
+
+   Note that this figure is the result of Si MD, which is too simple to show the effect of nodes.

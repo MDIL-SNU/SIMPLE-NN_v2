@@ -14,6 +14,7 @@ optimizer
     neural_network:
         optimizer:
             method: Adam
+            params:
 
 .. image:: /inputs/input.yaml/neural_network/optimizer.png
    :width: 500

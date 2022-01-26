@@ -6,7 +6,7 @@ weight_initializer
 
 ----
 
-The usage of **weight_initializer** is as below.
+Weight initialization is used to define the initial values for the parameters in Neural Network models prior to training the models on dataset. SIMPLE-NN supports several **weight_initializer** and the usage of **weight_initializer** is as below.
 
 .. code-block:: yaml
 
@@ -14,3 +14,4 @@ The usage of **weight_initializer** is as below.
     neural_network:
         weight_initializer:
             type: xavier noraml
+            params: 

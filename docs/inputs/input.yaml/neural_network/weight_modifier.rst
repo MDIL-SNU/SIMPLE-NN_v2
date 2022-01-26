@@ -13,4 +13,5 @@ Dictionary for weight modifier. The usage of **weight_modifier** is as below.
     # input.yaml
     neural_network:
         weight_modifier:
-            type: null
+            type: modified sigmoid
+            params:

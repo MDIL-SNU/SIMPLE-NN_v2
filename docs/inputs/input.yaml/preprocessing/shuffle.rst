@@ -6,4 +6,4 @@ shuffle
 
 ----
 
-If the **shuffle** tag is set set as ``True``, the training datas are randomly shuffled.
+**shuffle** determines whether training data and validation data are randomly shuffled( ``True``) or in order(``False``) based on the :doc:`/inputs/input.yaml/preprocessing/valid_rate`.

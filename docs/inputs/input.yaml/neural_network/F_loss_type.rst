@@ -6,4 +6,4 @@ F_loss_type
 
 ----
 
-Under construction
+**F_loss_type** determines whether SIMPLE-NN uses normalized(divided by # of atoms) force loss function(``1``) or not(``2``).

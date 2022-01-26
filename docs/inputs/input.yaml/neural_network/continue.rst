@@ -6,7 +6,13 @@ continue
 
 ----
 
-If the **continue** tag is set to ``weights``, the training process restarts from the LAMMPS potential file(``potential_saved``). If the tag is set to ``checkpoint_bestmodel.pth.tar``, the training process restarts from the checkpoint file.
+If the **continue** tag is set to ``weights``, the training process restarts from the LAMMPS potential file(``potential_saved``). If the tag is set to ``checkpoint_bestmodel.pth.tar``, the training process restarts from the checkpoint file. The usage of **continue** is as below.
+
+.. code-block:: yaml
+    
+    #input.yaml
+    neural_network:
+        continue: weights / checkpoint_bestmodel.pth.tar
 
 .. note::
 
