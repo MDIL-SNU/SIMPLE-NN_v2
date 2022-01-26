@@ -142,21 +142,13 @@ def load_structures(inputs, structure_file, structure_slicing, logfile, comm):
     if comm.rank == 0:
         logfile.write(f"{file_path} {index}")
 
-    if inputs['descriptor']['refdata_format'] == 'vasp-out':
-        if inputs['descriptor']['compress_outcar']:
+    if inputs['data']['refdata_format'] == 'vasp-out':
+        if inputs['data']['compress_outcar']:
             if comm.rank == 0:
                 file_path = compress_outcar(structure_file)
             file_path = comm.bcast(file_path, root=0);
 
-        if ase.__version__ >= '3.18.0':
-            structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'], parallel=False)
-        else:
-            structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'], force_consistent=True, parallel=False)
-    else:
-        if comm.rank == 0:
-            logfile.write("Warning: Structure format is not OUTCAR(['refdata_format'] : {:}). Unexpected error can occur.\n"\
-                                                    .format(inputs['descriptor']['refdata_format']))
-        structures = io.read(file_path, index=index, format=inputs['descriptor']['refdata_format'], parallel=False)
+    structures = io.read(file_path, index=index, format=inputs['data']['refdata_format'], parallel=False)
 
     return structures
 
@@ -175,10 +167,10 @@ def save_to_datafile(inputs, data, data_idx, logfile):
     Returns:
         tmp_filename(str): saved pt file path
     """
-    data_dir = inputs['descriptor']['save_directory']
+    data_dir = inputs['data']['save_directory']
 
     try:
-        tmp_filename = os.path.join(os.getcwd() if inputs['descriptor']['absolute_path'] else '', data_dir, 'data{}.pt'.format(data_idx))
+        tmp_filename = os.path.join(os.getcwd() if inputs['data']['absolute_path'] else '', data_dir, 'data{}.pt'.format(data_idx))
         torch.save(data, tmp_filename)
     except:
         err = "Unexpected error during save data to .pt file"

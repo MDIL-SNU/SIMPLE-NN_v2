@@ -10,7 +10,8 @@ In this section, you can find the features in ``input.yaml`` that are used in SI
     generate_features
     preprocess
     train_model
+    random_seed
     params
-    descriptor/descriptor
+    data/data
     preprocessing/preprocessing
     neural_network/neural_network

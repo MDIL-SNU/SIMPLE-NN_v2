@@ -170,9 +170,8 @@ def train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca,
         if loss < best_loss:
             best_loss = loss
             best_epoch = epoch
-            save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename='checkpoint_bestmodel.pth.tar')
+            save_checkpoint(epoch, loss, model, optimizer, pca, scale_factor, filename=f'checkpoint_bestmodel.pth.tar')
             model.write_lammps_potential(filename='./potential_saved_bestmodel', inputs=inputs, scale_factor=scale_factor, pca=pca)
-            logfile.write("Best model updated\n")
 
         # save checkpoint for each save_interval
         if inputs['neural_network']['save_interval'] and (epoch % inputs['neural_network']['save_interval'] == 0):
@@ -226,9 +225,9 @@ def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader
 
     def test_show_structure_rmse(logfile, key, label, epoch_result):
         if epoch_result[key][label].sum == 0:
-            logfile.write("{:>10}".format('-'))
+            logfile.write("  {:>10}".format('-'))
         else:
-            logfile.write("{:.4e}".format(epoch_result[key][label].sqrt_avg))
+            logfile.write("  {:.4e}".format(epoch_result[key][label].sqrt_avg))
 
     struct_labels = _get_structure_labels(test_loader, valid_loader=None)
     dtype = torch.get_default_dtype()
@@ -268,6 +267,8 @@ def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader
             for key in ['e_err', 'f_err', 's_err']:
                 if key in epoch_result.keys():
                     test_show_structure_rmse(logfile, key, label, epoch_result)
+            logfile.write("\n")
+    logfile.write("-" * 88 + '\n')
 
 # Main loop for calculations 
 def progress_epoch(inputs, data_loader, struct_labels, model, optimizer, criterion, epoch, dtype, device, non_block, valid=False, atomic_e=False):
