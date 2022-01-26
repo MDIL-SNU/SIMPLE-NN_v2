@@ -2,7 +2,8 @@
 F_loss_type
 ===========
 
-Introduction
-============
+- ``1`` (default)
+
+----
 
 Under construction

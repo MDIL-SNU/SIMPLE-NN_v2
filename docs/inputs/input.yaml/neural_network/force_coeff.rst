@@ -2,7 +2,8 @@
 force_coeff
 ===========
 
-Introduction
-============
+- ``0.1`` (default)
 
-Under construction
+----
+
+**force_coff** indicates the scaling coefficient for force loss.

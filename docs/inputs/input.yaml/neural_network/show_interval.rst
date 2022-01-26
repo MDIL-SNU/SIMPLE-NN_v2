@@ -2,7 +2,8 @@
 show_interval
 =============
 
-Introduction
-============
+- ``10`` (default)
 
-Under construction
+----
+
+**show_interval** indicates the interval for printing RMSE in the LOG file.

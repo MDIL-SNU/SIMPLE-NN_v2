@@ -2,7 +2,8 @@
 GPU_number
 ==========
 
-Introduction
-============
+- ``null`` (default)
+
+----
 
 Under construction

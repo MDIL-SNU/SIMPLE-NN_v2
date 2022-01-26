@@ -6,4 +6,4 @@ valid_rate
 
 ----
 
-**valid_rate** separates the rate of validation data and training data as the size of ``valid_rate``.
+**valid_rate** separates the rate of validation data and training data as a specified value(``'0.1'``).

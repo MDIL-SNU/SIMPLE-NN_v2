@@ -2,7 +2,8 @@
 decay_rate
 ==========
 
-Introduction
-============
+- ``null`` (default)
+
+----
 
 Under construction

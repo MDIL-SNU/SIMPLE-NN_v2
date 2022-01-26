@@ -3,6 +3,7 @@ double_precision
 ================
 
 - ``True`` (default) / ``False``
+
 ----
 
-Switch the double precision(``True``) and single precision(``False``).
+**double_precision** determines whether the double-precision(``True``) or single-precision(``False``) is used.

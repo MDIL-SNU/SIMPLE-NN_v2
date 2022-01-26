@@ -2,7 +2,8 @@
 clear_prev_optimizer
 ====================
 
-Introduction
-============
+- ``False`` (default) / ``True``
+
+----
 
 Under construction

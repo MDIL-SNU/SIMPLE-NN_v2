@@ -99,5 +99,4 @@ Parallelism
     GPU_number     
     inter_op_threads
     intra_op_threads
-    load_data_to_gpue
     subprocesses

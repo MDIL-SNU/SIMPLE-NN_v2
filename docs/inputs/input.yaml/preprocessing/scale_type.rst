@@ -2,7 +2,8 @@
 scale_type
 ==========
 
-- ``'minmax'`` (default) / ``'meanstd'`` / ``'uniform gas'``
+- ``'minmax'`` (default) / ``'meanstd'``, ``'uniform gas'``
+
 ----
 
-Under construction
+SIMPLE-NN supports ``'minmax'``, ``'meanstd'``, ``'uniform gas'`` for scaling calculation.

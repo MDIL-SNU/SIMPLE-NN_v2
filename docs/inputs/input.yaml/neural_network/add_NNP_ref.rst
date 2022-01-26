@@ -2,7 +2,8 @@
 add_NNP_ref
 ===========
 
-- ``False`` (default)
+- ``False`` (default) / ``True``
+
 ----
 
-Under construction
+If the **add_NNP_ref** is set as ``True`` NNP energy is added to pt files(**data_list**).

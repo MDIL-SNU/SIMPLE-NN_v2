@@ -2,7 +2,8 @@
 full_batch
 ==========
 
-- ``False'' (default) / ''True''
+- ``False`` (default) / ``True``
+
 ----
 
-If ``True``, full batch mode is enabled.
+If the **full_batch** tag is set as ``True``, full batch mode is enabled.

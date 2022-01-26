@@ -3,6 +3,7 @@ use_stress
 ==========
 
 - ``True`` (default) / ``False``
+
 ----
 
-Under construction
+If the **use_stress** tag is set as ``'True'``, stress is used for training.
