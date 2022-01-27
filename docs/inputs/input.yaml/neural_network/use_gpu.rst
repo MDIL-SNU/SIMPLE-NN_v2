@@ -2,7 +2,8 @@
 use_gpu
 =======
 
-Introduction
-============
+- ``True`` (default) / ``False``
 
-Under construction
+----
+
+**use_gpu** indicates whether SIMPLE-NN operates with GPU (``True``) or CPU (``False``).

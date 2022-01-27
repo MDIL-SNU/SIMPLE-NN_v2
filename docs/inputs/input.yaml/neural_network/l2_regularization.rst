@@ -2,7 +2,8 @@
 l2_regularization
 =================
 
-Introduction
-============
+- ``1.0e-6`` (default)
 
-Under construction
+----
+
+**l2_regularization** indicates the value of weight decay. Weight decay is a regularization technique by adding a small penalty to the loss function, which can prevent overfitting. SIMPLE-NN supports L2 regularization.

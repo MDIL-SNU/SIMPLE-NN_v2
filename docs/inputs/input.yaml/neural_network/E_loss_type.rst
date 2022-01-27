@@ -2,7 +2,8 @@
 E_loss_type
 ===========
 
-Introduction
-============
+- ``1`` (default)
 
-Under construction
+----
+
+**E_loss_type** determines whether SIMPLE-NN uses normalized(divided by # of atoms) energy loss function(``1``) or not(``2``).

@@ -2,7 +2,8 @@
 stress_coeff
 ============
 
-Introduction
-============
+- ``1.0e-06`` (default)
 
-Under construction
+----
+
+**stress_coff** indicates the scaling coefficient for stress loss.

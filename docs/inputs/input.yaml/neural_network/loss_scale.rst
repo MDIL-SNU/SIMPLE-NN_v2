@@ -2,7 +2,8 @@
 loss_scale
 ==========
 
-Introduction
-============
+- ``1.`` (default)
 
-Under construction
+----
+
+**loss_scale** indicates the scaling coefficient for the entire loss function.

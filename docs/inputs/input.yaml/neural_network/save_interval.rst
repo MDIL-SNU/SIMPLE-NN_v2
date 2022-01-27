@@ -2,7 +2,8 @@
 save_interval
 =============
 
-Introduction
-============
+- ``0`` (default)
 
-Under construction
+----
+
+**save_interval** indicates the interval for saving the neural network potential file.

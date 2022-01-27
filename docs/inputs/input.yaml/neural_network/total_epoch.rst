@@ -2,7 +2,8 @@
 total_epoch
 ===========
 
-Introduction
-============
+- ``1000`` (default)
 
-Under construction
+----
+
+**total_epoch** indicates the number of total training epoch.

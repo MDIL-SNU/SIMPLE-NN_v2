@@ -2,7 +2,8 @@
 energy_coeff
 ============
 
-Introduction
-============
+- ``1.`` (default)
 
-Under construction
+----
+
+**energy_coff** indicates the scaling coefficient for energy loss.

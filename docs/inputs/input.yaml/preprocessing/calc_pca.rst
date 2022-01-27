@@ -3,6 +3,7 @@ calc_pca
 ========
 
 - ``True`` (default) / ``False``
+
 ----
 
-Under construction
+**calc_pca** determines whether SIMPLE-NN calculates pca(``True``) or not(``False``).

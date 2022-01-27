@@ -2,7 +2,8 @@
 clear_prev_status
 =================
 
-Introduction
-============
+- ``False`` (default) / ``True``
+
+----
 
 Under construction
