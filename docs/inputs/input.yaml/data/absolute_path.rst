@@ -6,4 +6,4 @@ absolute_path
 
 ----
 
-**absolute_path** determines whether all data path are written as absolute or relative path. User can choose the useful format.
+**absolute_path** determines whether all data paths are written as an absolute or relative path. Users can choose a useful format.

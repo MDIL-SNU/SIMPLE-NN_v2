@@ -6,7 +6,7 @@ type
 
 ----
 
-**type** chooses the kind of input feature descriptor. Currently, SIMPLE-NN supports only the Belher-Parrinello-type atom-centered symmetry function.  [#f1]_ Parameters for generating symmetry functions are provided in 'params_XX'.
+**type** chooses the kind of input feature descriptor. Currently, SIMPLE-NN supports only the Belher-Parrinello-type atom-centered symmetry function.  [#f1]_ Parameters for generating symmetry functions are provided in :doc:`/inputs/params_XX`.
 
 .. [#f1] `J. Behler, J. Chem. Phys. 134 (2011) 074106`_ 
 
