@@ -106,7 +106,7 @@ class FCNDict(torch.nn.Module):
         FIL.close()
 
 class FCN(torch.nn.Module):
-    def __init__(self, dim_input, dim_hidden, acti_func='sigmoid', dropout=None):
+    def __init__(self, dim_input, dim_hidden, acti_func='sigmoid', dropout=0.0):
         super(FCN, self).__init__()
 
         self.lin = torch.nn.Sequential()

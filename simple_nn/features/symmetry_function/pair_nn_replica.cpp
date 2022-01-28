@@ -165,7 +165,7 @@ void PairREPLICA::compute(int eflag, int vflag)
 
     for (jj = 0; jj < jnum; jj++) {
       j = jlist[jj];
-      //j &= NEIGHMASK; // What is this?
+      j &= NEIGHMASK;
 
       delij[0] = x[j][0] - xtmp;
       delij[1] = x[j][1] - ytmp;
