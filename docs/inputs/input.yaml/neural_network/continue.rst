@@ -16,6 +16,6 @@ If the **continue** tag is set to ``weights``, the training process restarts fro
 
 .. note::
 
-   You need to copy ``pca`` and ``scale_factor`` and potential files if you use LAMMPS potential(change the name of potential file into ``potential_saved``).
+   Users need to copy ``pca`` and ``scale_factor`` and potential files if you use LAMMPS potential(change the name of potential file into ``potential_saved``).
 
-   You need to copy ``checkpoint_bestmodel.pth.tar`` into your running directory if you use checkpoint file.
+   Users need to copy ``checkpoint_bestmodel.pth.tar`` into your running directory if you use checkpoint file.

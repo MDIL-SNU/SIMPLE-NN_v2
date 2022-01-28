@@ -6,4 +6,4 @@ scale_width
 
 ----
 
-Under construction
+**scale_width** determines the width of the distribution of scaled data.
