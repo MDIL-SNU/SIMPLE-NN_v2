@@ -2,8 +2,8 @@
 GPU_number
 ==========
 
-- ``null`` (default)
+- ``null`` (default) / Non-negative integer
 
 ----
 
-Under construction
+**GPU_number** determines which GPU SIMPLE-NN will use.

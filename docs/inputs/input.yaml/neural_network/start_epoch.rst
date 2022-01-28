@@ -2,8 +2,8 @@
 start_epoch
 ===========
 
-- ``1`` (default)
+- ``1`` (default) / Non-negative integer
 
 ----
 
-Under construction
+**start_epoch** determines at which epoch SIMPLE-NN will start.
