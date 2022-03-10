@@ -126,8 +126,8 @@ To estimatet the uncertainty of atomic configuration, the atomic energies extrac
         add_NNP_ref: True
         ref_list: 'ref_list'
         train_atomic_E: False
-        scale: true
-        pca: true
+        scale: True
+        pca: True
         continue: checkpoint_bestmodel.pth.tar
     
 ``ref_list`` contains the dataset list to be evaluated to atomic energy. Reference NNP is written in ``continue``.
@@ -138,7 +138,7 @@ After that, the reference dataset (``.pt``) are overwritten with atomic energies
 
 Next, train the replica NNP only with atomic energy.
 To prevent the convergence among replicas,
-diversity the network structure by increasing the standard deviation of initial weight distribution (``gain`` (default: 1.0)) and change the number of hidden nodes such as 60-60 or 90-90.
+diversity the network structure by increasing the standard deviation of initial weight distribution (``gain`` (default: 1.0)) and change the number of hidden nodes larger than reference NNP.
 
 .. code-block:: yaml
 
@@ -168,6 +168,7 @@ diversity the network structure by increasing the standard deviation of initial 
         learning_rate: 0.001
         scale: True
         pca: True
+        continue: null
 
 Because the atomic energies are needed in training, ``data`` directory made from :ref:`atomic_energy_extraction<atomic_energy_extraction>` is needed.
 
