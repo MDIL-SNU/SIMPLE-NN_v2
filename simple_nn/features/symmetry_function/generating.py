@@ -123,7 +123,8 @@ def generate(inputs, logfile, comm):
                 _set_calculated_result(inputs, result, x, dx, da, atoms_per_type, element, symf_params_set, atom_num, comm)
 
             E, F, S = _extract_EFS(inputs, structure, logfile, comm)
-            result['E'] = torch.tensor(E)
+            if E is not None:
+                result['E'] = torch.tensor(E)
             if inputs['data']['read_force'] is True:
                 result['F'] = torch.tensor(F)
             if inputs['data']['read_stress'] is True:
@@ -285,7 +286,8 @@ def _extract_EFS(inputs, structure, logfile, comm):
 
     # TODO: other formats
     else:
-        E = structure.get_potential_energy(force_consistent=True)
+        if structure.calc is not None:
+            E = structure.get_potential_energy(force_consistent=True)
 
         if inputs['data']['read_force'] is True:
             try:

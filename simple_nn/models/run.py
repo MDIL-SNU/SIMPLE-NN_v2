@@ -386,7 +386,6 @@ def save_atomic_E(inputs, logfile, model, data_loader, device):
     non_block = False if (device == torch.device('cpu')) else True
 
     for i, item in enumerate(data_loader):
-        print(item.keys())
         n_batch = item['E'].size(0)
         n_type = dict()
         for atype in inputs['atom_types']:
