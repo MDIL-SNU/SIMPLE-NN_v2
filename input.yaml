@@ -49,6 +49,7 @@ neural_network:
     add_NNP_ref:        False
     ref_list:           'ref_list'
     train_atomic_E:     False
+    test_atomic_E:      False
     use_force:          True
     use_stress:         True
     shuffle_dataloader: True

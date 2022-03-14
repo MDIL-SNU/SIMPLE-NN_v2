@@ -18,6 +18,7 @@ Running mode
     add_NNP_ref
     ref_list
     train_atomic_E
+    test_atomic_E
     use_force
     use_stress
     shuffle_dataloader
