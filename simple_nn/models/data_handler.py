@@ -245,7 +245,7 @@ def _make_dataloader(inputs, dataset_list, scale_factor, pca, device, use_force,
     return data_loader
 
 def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf=False):
-    # mode: ['train', 'valid', 'test', 'add_NNP_ref', 'atomic_E_train', 'atomic_E_valid']
+    # mode: ['train', 'valid', 'test', 'add_NNP_ref', 'atomic_E_train', 'atomic_E_valid', 'atomic_E_test']
     args = {
         'train': {'data_list': inputs['neural_network']['train_list'], 'use_force': inputs['neural_network']['use_force'],\
          'use_stress': inputs['neural_network']['use_stress'], 'valid': False, 'my_collate': my_collate},
@@ -258,6 +258,8 @@ def _load_dataset(inputs, logfile, scale_factor, pca, device, mode, gdf=False):
         'atomic_E_train': {'data_list': inputs['neural_network']['train_list'], 'use_force': False,\
          'use_stress': False, 'valid': False, 'my_collate': atomic_e_collate},
         'atomic_E_valid': {'data_list': inputs['neural_network']['valid_list'], 'use_force': False,\
+         'use_stress': False, 'valid': True, 'my_collate': atomic_e_collate},
+        'atomic_E_test': {'data_list': inputs['neural_network']['test_list'], 'use_force': False,\
          'use_stress': False, 'valid': True, 'my_collate': atomic_e_collate},
         'gdf_train': {'data_list': inputs['neural_network']['train_list'], 'use_force': inputs['neural_network']['use_force'],\
          'use_stress': inputs['neural_network']['use_stress'], 'valid': False, 'my_collate': gdf_collate},

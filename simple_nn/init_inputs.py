@@ -66,6 +66,7 @@ model_default_inputs = \
                 'use_stress': True,
                 'add_NNP_ref'   : False,
                 'train_atomic_E': False,
+                'test_atomic_E': False,
                 'shuffle_dataloader': True,
 
                 # Network related

@@ -63,8 +63,8 @@ def generate(inputs, logfile, comm):
 
         for structure in structures:
             # atom_type_idx(int list): list of type index for each atoms(start from 1)      ex) [1,1,2,2,2,2]
-            # type_num(int dic): number of atoms for each types                             ex) {'Si': 2, 'O': 4}
-            # type_atom_idx(int list dic): list of atoms index for each atom types     ex) {'Si': [0,1], 'O': [2,3,4,5]}
+            # atoms_per_type(int dic): number of atoms for each types                             ex) {'Si': 2, 'O': 4}
+            # atom_idx_per_type(int list dic): list of atoms index for each atom types     ex) {'Si': [0,1], 'O': [2,3,4,5]}
             cell, scale, cart = _get_structure_coordination_info(structure)
             atom_num, atom_type_idx, atoms_per_type, atom_idx_per_type = _get_atom_types_info(structure, atom_types)
 

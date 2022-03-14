@@ -28,11 +28,11 @@ def train(inputs, logfile, comm):
             valid_loader = None
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, loss, train_loader, valid_loader)
 
-    if inputs['neural_network']['test']:
+    elif inputs['neural_network']['test']:
         test_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='test', gdf=False)
         test_model(inputs, logfile, model, optimizer, criterion, device, test_loader)
 
-    if inputs['neural_network']['add_NNP_ref']:
+    elif inputs['neural_network']['add_NNP_ref']:
         ref_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='add_NNP_ref')
         save_atomic_E(inputs, logfile, model, ref_loader, device)
         logfile.write("Adding NNP energy to pt files is done.\n")
@@ -43,6 +43,14 @@ def train(inputs, logfile, comm):
             valid_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_valid')
         train_model(inputs, logfile, model, optimizer, criterion, scale_factor, pca, device, float('inf'),\
             train_loader, valid_loader, atomic_e=True)
+
+    elif inputs['neural_network']['test_atomic_E']:
+        test_loader = data_handler._load_dataset(inputs, logfile, scale_factor, pca, device, mode='atomic_E_test', gdf=False)
+        test_model(inputs, logfile, model, optimizer, criterion, device, test_loader)
+
+    else:
+        if comm.rank == 0:
+            logfile.write(f"Please choose one of the running modes\n")
 
     if comm.rank == 0:
         logfile.write(f"Elapsed time in training: {time.time()-start_time:10} s.\n")
@@ -235,15 +243,15 @@ def test_model(inputs, logfile, model, optimizer, criterion, device, test_loader
 
     use_force = inputs['neural_network']['use_force']
     use_stress = inputs['neural_network']['use_stress']
-    epoch_result = logger._init_meters(struct_labels, use_force, use_stress, atomic_e=False)
+    epoch_result = logger._init_meters(struct_labels, use_force, use_stress, atomic_e=inputs['neural_network']['test_atomic_E'])
     res_dict = _initialize_test_result_dict(inputs)
     model.eval()
 
     for i, item in enumerate(test_loader):
         n_batch = item['E'].size(0)
-        _, calc_results = loss.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, False, dtype, use_force, use_stress, atomic_e=False)
+        _, calc_results = loss.calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoch_result, False, dtype, use_force, use_stress, atomic_e=inputs['neural_network']['test_atomic_E'])
         #TODO: Add E, F, S to pt file as option "NNP_to_pt"
-        _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress)
+        _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress, inputs['neural_network']['test_atomic_E'])
 
     torch.save(res_dict, 'test_result')
     logfile.write(f"Evaluation results are saved as 'test_result'\n")
@@ -350,6 +358,10 @@ def _set_stop_rmse_criteria(inputs, logfile):
 
 def _initialize_test_result_dict(inputs):
     res_dict = {'DFT_E': list(), 'NN_E': list(), 'N': list()}
+    if inputs['neural_network']['test_atomic_E']:
+        res_dict['NN_atomic_E'] = dict()
+        for atype in inputs['atom_types']:
+            res_dict['NN_atomic_E'][atype] = list()
     if inputs['neural_network']['use_force']:
         res_dict['DFT_F'] = list()
         res_dict['NN_F'] = list()
@@ -359,13 +371,25 @@ def _initialize_test_result_dict(inputs):
 
     return res_dict
 
-def _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress):
+def _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, use_force, use_stress, atomic_e=False):
     for n in range(n_batch):
         res_dict['N'].append(item['tot_num'][n].item())
         res_dict['NN_E'].append(calc_results['E'][n].item())
         res_dict['DFT_E'].append(item['E'][n].item())
 
-    if use_force:
+    if atomic_e:
+        for atype in res_dict['NN_atomic_E'].keys():
+            tmp_atomic_e = torch.sum(calc_results['NN_atomic_E'][atype], axis=0)
+            batch_idx = 0
+            for n in range(n_batch):
+                tmp_idx = item['atomic_num'][atype][n].item()
+                if tmp_idx > 0:
+                    res_dict['NN_atomic_E'][atype].append(tmp_atomic_e[batch_idx:(batch_idx+tmp_idx)].cpu().detach().numpy())
+                else:
+                    res_dict['NN_atomic_E'][atype].append(torch.zeros(0).cpu().detach().numpy())
+                batch_idx += tmp_idx
+
+    if use_force and not atomic_e:
         batch_idx = 0
         for n in range(n_batch):
             tmp_idx = item['tot_num'][n].item()
@@ -373,7 +397,7 @@ def _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, 
             res_dict['DFT_F'].append(item['F'][batch_idx:(batch_idx+tmp_idx)].cpu().detach().numpy())
             batch_idx += tmp_idx
 
-    if use_stress:
+    if use_stress and not atomic_e:
         batch_idx = 0
         for n in range(n_batch):
             tmp_idx = 6

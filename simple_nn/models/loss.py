@@ -12,6 +12,8 @@ def calculate_batch_loss(inputs, item, model, criterion, device, non_block, epoc
                     epoch_result, dtype, device, non_block, n_batch, weight, atomic_e)
     batch_loss = inputs['neural_network']['energy_coeff'] * e_loss
     calc_results['E'] = E_
+    if atomic_e:
+        calc_results['NN_atomic_E'] = atomic_E
 
     if not atomic_e: # atomic_e training does not calculate F, S
         dEdG = calculate_derivative(inputs, inputs['atom_types'], x, E_)
