@@ -11,14 +11,14 @@ SIMPLE-NN is a code to construct the neural network interatomic potential (NNP) 
 SIMPLE-NN also provides an interfacing module to LAMMPS for executing MD. 
 
 .. note::
-    Please be understood that we are currently rewriting the documentation for better readibility. We will finish it as soon as possible. 
+   Please be understood that we are currently rewriting the documentation for better readibility. We will finish it as soon as possible. 
 
 .. toctree::
-    :maxdepth: 2
+   :maxdepth: 2
 
-    install
-    inputs/inputs
-    getting_started/getting_started
-    advanced_features/advanced_features
-    Release_note
-    FAQ
+   install
+   inputs/inputs
+   quick_tutorial/quick_tutorial
+   advanced_features/advanced_features
+   Release_note
+   FAQ
