@@ -383,7 +383,7 @@ def check_inputs(inputs, logfile):
             assert float(neural_network['force_criteria']) > 0, f"Invalid value for force_criteria : {neural_network['force_criteria']}"
             logfile.write(f"Stop criteria for force     : {neural_network['force_criteria']}\n")
         if neural_network['use_stress'] and neural_network['stress_criteria'] is not None:
-            assert float(neural_network['Stress_criteria']) > 0, f"Invalid value for stress_criteria : {neural_network['stress_criteria']}"
+            assert float(neural_network['stress_criteria']) > 0, f"Invalid value for stress_criteria : {neural_network['stress_criteria']}"
             logfile.write(f"Stop criteria for stress    : {neural_network['stress_criteria']}\n")
         logfile.write(f"Print structure RMSE        : {neural_network['print_structure_rmse']}\n")
         #logfile.write(f"stop traning criterion if T < V : {neural_network['break_man']}\n")
