@@ -196,6 +196,9 @@ To run MD simulation with LAMMPS, add the lines into the LAMMPS script file.
     pair_style nn
     pair_coeff * * /path/to/potential_saved_bestmodel Si O
 
+.. warning::
+  This pair_style requires the ``newton`` setting to be ``on(default)`` for pair interactions.
+
 Input script for example of NVT MD simulation at 300 K are provided in ``SIMPLE-NN/tutorials/Molecular dynamics``.
 Run LAMMPS via the following command. 
 

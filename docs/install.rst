@@ -9,7 +9,7 @@ Requirements
 ------------
 - Python ``3.6-3.9``
 - PyTorch ``1.5.0-1.10.1`` (package for machine learning)
-- LAMMPS ``29Oct2020`` or newer (simulator for molecular dynamics)
+- LAMMPS ``29Oct2020-29Sep2021`` (simulator for molecular dynamics)
 
 
 Optional:
