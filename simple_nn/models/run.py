@@ -379,6 +379,8 @@ def _update_calc_results_in_results_dict(n_batch, res_dict, item, calc_results, 
 
     if atomic_e:
         for atype in res_dict['NN_atomic_E'].keys():
+            if calc_results['NN_atomic_E'][atype] is None:
+                continue
             tmp_atomic_e = torch.sum(calc_results['NN_atomic_E'][atype], axis=0)
             batch_idx = 0
             for n in range(n_batch):
