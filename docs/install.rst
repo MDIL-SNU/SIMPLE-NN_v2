@@ -9,7 +9,7 @@ Requirements
 ------------
 - Python ``3.6-3.9``
 - PyTorch ``1.5.0-1.10.1`` (package for machine learning)
-- LAMMPS ``29Oct2020-29Sep2021`` (simulator for molecular dynamics)
+- LAMMPS ``23Jun2022`` or newer (simulator for molecular dynamics)
 
 
 Optional:
@@ -72,7 +72,7 @@ Currently, we support the module for symmetry_function - Neural_network model.
 
 Download LAMMPS: https://github.com/lammps/lammps
 
-Only LAMMPS whose version is ``29Oct2020`` or newer is supported.
+Only LAMMPS whose version is ``23Jun2022`` or newer is supported.
 
 Copy the source code to LAMMPS src directory.
 
