@@ -806,12 +806,14 @@ void PairNN::read_file(char *fname) {
    init specific to this pair style
 ------------------------------------------------------------------------- */
 
-void PairNN::init_style() {
-    int irequest;
+void PairNN::init_style()
+{
+  if (force->newton_pair == 0) {
+    error->all(FLERR, "Pair style nn requires newton pair on");    
+  }
 
-    irequest = neighbor->request(this,instance_me);
-    neighbor->requests[irequest]->half = 0;
-    neighbor->requests[irequest]->full = 1;
+  // full neighbor list
+  neighbor->add_request(this, NeighConst::REQ_FULL);
 }
 
 /* ----------------------------------------------------------------------
