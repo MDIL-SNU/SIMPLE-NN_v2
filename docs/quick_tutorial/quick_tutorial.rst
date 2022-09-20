@@ -121,7 +121,7 @@ Input files introduced in this section can be found in ``SIMPLE-NN/tutorials/Tra
 Evaluation
 ==========
 
-To evaluate the training quality of neural network, ``test_list`` and result of training (``checkpoint.tar`` or ``potential-saved``) should be prepared. 
+To evaluate the training quality of neural network, ``test_list`` and result of training (``checkpoint.pth.tar`` or ``potential_saved``) should be prepared. 
 ``test_list`` contains the path of testset preprocessed as ``.pt`` format. ``.pt`` format data can be generated as described in :ref:`preprocess<preprocess>`. Note that you should set ``train_list`` to ``test_list`` with ``valid_rate`` of 0.0. Then, SIMPLE-NN will write all paths of preprocessed data in ``test_list``.
 
 .. code-block:: yaml
@@ -143,7 +143,7 @@ To evaluate the training quality of neural network, ``test_list`` and result of 
         calc_atomic_weights: False
 
 In this example, ``test_list`` is made by concatenating ``train_list`` and ``valid_list`` in :ref:`training<training>` for simplicity. 
-Put the name of result of training (``checkpoint_*.tar`` or ``potential_saved_*``) in ``continue`` in ``input.yaml``. 
+Put the name of result of training such as ``checkpoint_*.tar`` for PyTorch checkpoint file or ``weights`` for LAMMPS potential in ``continue`` in ``input.yaml``. 
 
 .. code-block:: yaml
 
@@ -165,7 +165,7 @@ Input files introduced in this section can be found in
 ``SIMPLE-NN/tutorials/Evaluation``.
 
 .. note::
-  You need to copy ``pca`` and ``scale_factor`` files if you use LAMMPS potential (``potential_saved``). 
+  If you use LAMMPS potential (``potential_saved``), you need to copy ``pca`` and ``scale_factor`` file and change the name of potential as ``potential_saved``.
 
 After running SIMPLE-NN with the setting above, 
 output file named ``test_result`` is generated. 
