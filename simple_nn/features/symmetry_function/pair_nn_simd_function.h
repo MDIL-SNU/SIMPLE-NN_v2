@@ -181,9 +181,6 @@ namespace NN_SIMD_NS {
     SIMD_double() {}
     SIMD_double(const __m256d in) : v(in) {}
     operator __m256d() const { return v;}
-    inline double& operator[](const int idx) {
-      return v[idx];
-    }
     inline double operator[](const int idx) const {
       return v[idx];
     }
@@ -242,9 +239,6 @@ namespace NN_SIMD_NS {
     SIMD_512_double() {}
     SIMD_512_double(const __m512d in) : v(in) {}
     operator __m512d() const { return v;}
-    inline double& operator[](const int idx) {
-      return v[idx];
-    }
     inline double operator[](const int idx) const {
       return v[idx];
     }
