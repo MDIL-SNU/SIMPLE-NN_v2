@@ -132,7 +132,8 @@ Installation
     cd {lammps_source}/src
     make intel_cpu_intelmpi
 
-Please note that 'make intel_cpu_intelmpi' is an example of using Intel compiler for lammps. You may change some library path and compile flags if needed.
+Please note that 'make intel_cpu_intelmpi' is an example of using Intel compiler for lammps.
+You may need to explicitly set some library path and optimization flags (such as -xAVX) if needed.
 
 Requirements for potential file
 -------------------------------
