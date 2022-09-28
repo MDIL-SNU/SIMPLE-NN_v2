@@ -140,9 +140,9 @@ Requirements for potential file
 
 For acceleration, there are some assumptions for a potential file. A potential file should comply with following rules.
 Symmetry function group refers to a group of vector components which have the same target atom specie(s). 
-+ Vector components in the same symmetry function group should have same a cutoff radius.
-+ Vector components in the same symmetry function group should be contiguous in potential file.
-+ The value of zeta should be integer in angular symmetry functions.
+- Vector components in the same symmetry function group should have same a cutoff radius.
+- Vector components in the same symmetry function group should be contiguous in potential file.
+- The value of zeta should be integer in angular symmetry functions.
 (Not requirement) For the best speed-up, the number of symmetry functions should be a multiple of "4" since AVX instruction sets support 256bit(total 4 double value) SIMD,
 
 Usage
