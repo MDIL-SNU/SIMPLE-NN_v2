@@ -1,18 +1,19 @@
 #include <immintrin.h>
 #include <algorithm>
-#include <stdio.h>
 #include <math.h>
 #include "mkl.h"
 #include <assert.h>
 
 namespace NN_SIMD_NS {
-  // ex ) number of double value in mm256 (256bit = 32byte = 8byte(double's size) * 4)
-  #define ALIGN_NUM 64
-  #define DATASIZE 8 //double precision
+  const int IMPLEMENTED_TYPE[] = {2, 4, 5}; // compatibility for original code
 
-  #define MM256_DOUBLE_LEN 4
-  #define MM512_DOUBLE_LEN 8
-  #define MM256_FLOAT_LEN 8
+  // ex ) number of double value in mm256 (256bit = 32byte = 8byte(double's size) * 4)
+#define ALIGN_NUM 64
+#define DATASIZE 8 //double precision
+
+#define MM256_DOUBLE_LEN 4
+#define MM512_DOUBLE_LEN 8
+#define MM256_FLOAT_LEN 8
 
   //static const double* VecZero;
   static double* VecZero; //this should be const double see ReLU function
@@ -33,57 +34,57 @@ namespace NN_SIMD_NS {
     VecTwo = tmptwo;
   }
   struct AlignedMultiArr {
-      int *idx_addr=nullptr;
-      double* v=nullptr;
-      int max_idx;
-      int true_size;
-      AlignedMultiArr() {}
-      AlignedMultiArr(const int* size, const int max_idx) : max_idx(max_idx) {
-	int totalsize = 0;
-	idx_addr = new int[max_idx];
-	for (int i = 0; i<max_idx; i++) {
-	  idx_addr[i] = totalsize;
-	  totalsize += size[i];
-	}
-	true_size = totalsize;
-	v = (double*)_mm_malloc(((totalsize*DATASIZE-1)/ALIGN_NUM+1)*ALIGN_NUM, ALIGN_NUM);
+    int *idx_addr=nullptr;
+    double* v=nullptr;
+    int max_idx;
+    int true_size;
+    AlignedMultiArr() {}
+    AlignedMultiArr(const int* size, const int max_idx) : max_idx(max_idx) {
+      int totalsize = 0;
+      idx_addr = new int[max_idx];
+      for (int i = 0; i<max_idx; i++) {
+        idx_addr[i] = totalsize;
+        totalsize += size[i];
       }
-      //deep copy
-      AlignedMultiArr(const AlignedMultiArr& copy) : max_idx(copy.max_idx) {
-	idx_addr = new int[max_idx];
-	for (int i = 0; i<max_idx; i++) {
-	  idx_addr[i] = copy.idx_addr[i];
-	}
-	v = (double*)_mm_malloc(((copy.true_size*DATASIZE-1)/ALIGN_NUM+1)*ALIGN_NUM, ALIGN_NUM);
-	for (int j=0; j<copy.true_size; j++) {
-	  v[j] = copy.v[j];
-	}
+      true_size = totalsize;
+      v = (double*)_mm_malloc(((totalsize*DATASIZE-1)/ALIGN_NUM+1)*ALIGN_NUM, ALIGN_NUM);
+    }
+    //deep copy
+    AlignedMultiArr(const AlignedMultiArr& copy) : max_idx(copy.max_idx) {
+      idx_addr = new int[max_idx];
+      for (int i = 0; i<max_idx; i++) {
+        idx_addr[i] = copy.idx_addr[i];
       }
-      void init(const int* size, const int max_idx) {
-	if(idx_addr != nullptr || v != nullptr) {
-	  assert("Wrong init on AlignedMultiArr!\n");
-	}
-	this->max_idx = max_idx;
-	int totalsize = 0;
-	idx_addr = new int[max_idx];
-	for (int i = 0; i<max_idx; i++) {
-	  idx_addr[i] = totalsize;
-	  totalsize += size[i];
-	}
-	true_size = totalsize;
-	v = (double*)_mm_malloc(((totalsize*DATASIZE-1)/ALIGN_NUM+1)*ALIGN_NUM, ALIGN_NUM);
+      v = (double*)_mm_malloc(((copy.true_size*DATASIZE-1)/ALIGN_NUM+1)*ALIGN_NUM, ALIGN_NUM);
+      for (int j=0; j<copy.true_size; j++) {
+        v[j] = copy.v[j];
       }
+    }
+    void init(const int* size, const int max_idx) {
+      if(idx_addr != nullptr || v != nullptr) {
+        assert("Wrong init on AlignedMultiArr!\n");
+      }
+      this->max_idx = max_idx;
+      int totalsize = 0;
+      idx_addr = new int[max_idx];
+      for (int i = 0; i<max_idx; i++) {
+        idx_addr[i] = totalsize;
+        totalsize += size[i];
+      }
+      true_size = totalsize;
+      v = (double*)_mm_malloc(((totalsize*DATASIZE-1)/ALIGN_NUM+1)*ALIGN_NUM, ALIGN_NUM);
+    }
 
-      ~AlignedMultiArr() {
-	_mm_free(v);
-	v = nullptr;
-	delete [] idx_addr;
-	idx_addr = nullptr;
-      }
+    ~AlignedMultiArr() {
+      _mm_free(v);
+      v = nullptr;
+      delete [] idx_addr;
+      idx_addr = nullptr;
+    }
 
-      inline double* operator[](const int idx) const {
-	return v+idx_addr[idx];
-      }
+    inline double* operator[](const int idx) const {
+      return v+idx_addr[idx];
+    }
   };
 
   static inline void actifunc_linear_vectorized(double* nodes, double* deriv, const int size) {
@@ -91,7 +92,7 @@ namespace NN_SIMD_NS {
   }
   static inline void actifunc_sigmoid_vectorized(double* nodes, double* deriv, const int size) {
     double* tmp = (double*)_mm_malloc(((size*DATASIZE-1)/ALIGN_NUM+2)*ALIGN_NUM, ALIGN_NUM);
-    
+
     vdExp(size, nodes, nodes); //exp(nodes)
     vdAdd(size, nodes, VecOne, nodes); // 1+exp(nodes)
     vdInv(size, nodes, nodes); // nodes = 1/(1+exp(nodes))
@@ -136,11 +137,11 @@ namespace NN_SIMD_NS {
     static const double scale = 1.0507009873554804934193349852946;
     for (int i=0; i<size; i++) {
       if (nodes[i] > 0) {
-	  deriv[i] = scale;
-	  nodes[i]*=scale;
+        deriv[i] = scale;
+        nodes[i]*=scale;
       } else {
-	  deriv[i] = scale*alpha*exp(nodes[i]);
-	  nodes[i] = deriv[i] - scale*alpha;
+        deriv[i] = scale*alpha*exp(nodes[i]);
+        nodes[i] = deriv[i] - scale*alpha;
       }
     }
   }
@@ -149,15 +150,15 @@ namespace NN_SIMD_NS {
   static inline void actifunc_swish_vectorized(double* nodes, double* deriv, const int size) {
     /*
      * origianl swish
-    double expl = 1./(1.+exp(-x));
-    double dexpl = expl*(1-expl);
-    deriv =  expl + x*dexpl;
-    return x*expl;
-    */
+     double expl = 1./(1.+exp(-x));
+     double dexpl = expl*(1-expl);
+     deriv =  expl + x*dexpl;
+     return x*expl;
+     */
 
     double* tmp = (double*)_mm_malloc(((size*DATASIZE-1)/ALIGN_NUM+2)*ALIGN_NUM, ALIGN_NUM);
     double* tmp2 = (double*)_mm_malloc(((size*DATASIZE-1)/ALIGN_NUM+2)*ALIGN_NUM, ALIGN_NUM);
-    
+
     vdExp(size, nodes, tmp); //exp(nodes)
     vdAdd(size, tmp, VecOne, tmp); // 1+exp(nodes)
     vdInv(size, tmp, tmp); // nodes = 1/(1+exp(nodes))
@@ -181,11 +182,16 @@ namespace NN_SIMD_NS {
     SIMD_double() {}
     SIMD_double(const __m256d in) : v(in) {}
     operator __m256d() const { return v;}
+    /*
+       inline double& operator[](const int idx) {
+       return v[idx];
+       }
+       */
     inline double operator[](const int idx) const {
       return v[idx];
     }
   };
-  
+
   inline SIMD_double operator+(const SIMD_double &one, const SIMD_double &two) {
     return _mm256_add_pd(one,two);
   }
@@ -206,7 +212,7 @@ namespace NN_SIMD_NS {
   }
 
   inline SIMD_double fmadd(const SIMD_double a, const SIMD_double b, const SIMD_double c) {
-	return a*b+c;
+    return a*b+c;
     //return _mm256_fmadd_pd(a,b,c);
   }
 
@@ -222,28 +228,33 @@ namespace NN_SIMD_NS {
       int nn = abs(expo[i]);
       double tmp = base[i];
       for (; nn !=0; nn >>= 1, tmp *= tmp) {
-	if (nn & 1) {
-	  res.v[i] *= tmp;
-	}
+        if (nn & 1) {
+          res.v[i] *= tmp;
+        }
       }
     }
     return res;
   }
 
   inline SIMD_double SIMD_exp(const SIMD_double &one) {
-      return _mm256_exp_pd(one);
+    return _mm256_exp_pd(one);
   }
-//-------------------------------------------------------------------------------------------------------------//
+  //-------------------------------------------------------------------------------------------------------------//
   struct SIMD_512_double {
     __m512d v;
     SIMD_512_double() {}
     SIMD_512_double(const __m512d in) : v(in) {}
     operator __m512d() const { return v;}
+    /*
+       inline double& operator[](const int idx) {
+       return v[idx];
+       }
+       */
     inline double operator[](const int idx) const {
       return v[idx];
     }
   };
-  
+
   inline SIMD_512_double operator+(const SIMD_512_double &one, const SIMD_512_double &two) {
     return _mm512_add_pd(one,two);
   }
@@ -278,25 +289,25 @@ namespace NN_SIMD_NS {
       int nn = abs(expo[i]);
       double tmp = base[i];
       for (; nn !=0; nn >>= 1, tmp *= tmp) {
-	if (nn & 1) {
-	  res.v[i] *= tmp;
-	}
+        if (nn & 1) {
+          res.v[i] *= tmp;
+        }
       }
     }
     return res;
   }
 
   inline SIMD_512_double SIMD_exp(const SIMD_512_double &one) {
-      return _mm512_exp_pd(one);
+    return _mm512_exp_pd(one);
   }
 
   //CPU dependent macro
   // sizeof(double) = 8 bytes
 #ifdef __AVX512F__ 
-  #define SIMD_V_LEN MM512_DOUBLE_LEN
+#define SIMD_V_LEN MM512_DOUBLE_LEN
   using simd_v = SIMD_512_double;
 #else
-  #define SIMD_V_LEN MM256_DOUBLE_LEN
+#define SIMD_V_LEN MM256_DOUBLE_LEN
   using simd_v = SIMD_double;
 #endif
 
@@ -336,5 +347,12 @@ namespace NN_SIMD_NS {
     x = x * x;
     deriv = x;
     return x*x_ori;
+  }
+  static inline void cutf2_noslot(const double dist, const double cutd, double& f, double& df) {
+    double cos, sin;
+    static const double H_PI = -M_PI*0.5;
+    sincos(M_PI*dist/cutd, &sin, &cos);
+    f = 0.5 * (1 + cos);
+  df = H_PI * sin / cutd;
   }
 }

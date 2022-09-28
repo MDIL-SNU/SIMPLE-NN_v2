@@ -1,19 +1,19 @@
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
-   Steve Plimpton, sjplimp@sandia.gov
+http://lammps.sandia.gov, Sandia National Laboratories
+Steve Plimpton, sjplimp@sandia.gov
 
-   Copyright (2003) Sandia Corporation.  Under the terms of Contract
-   DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
-   certain rights in this software.  This software is distributed under
-   the GNU General Public License.
+Copyright (2003) Sandia Corporation.  Under the terms of Contract
+DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
+certain rights in this software.  This software is distributed under
+the GNU General Public License.
 
-   See the README file in the top-level LAMMPS directory.
+See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------
    Contributing author: 
-------------------------------------------------------------------------- */
+   ------------------------------------------------------------------------- */
 
 #include "pair_nn_simd.h"
 #include "atom.h"
@@ -38,14 +38,14 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 // Constructor
-PairNN::PairNN(LAMMPS *lmp) : Pair(lmp) {
+PairNNIntel::PairNNIntel(LAMMPS *lmp) : Pair(lmp) {
   map = nullptr;
   nets = nullptr;
 }
 
 /* ---------------------------------------------------------------------- */
 // Destructor
-PairNN::~PairNN()
+PairNNIntel::~PairNNIntel()
 {
   if (allocated) {
     memory->destroy(setflag);
@@ -60,7 +60,7 @@ PairNN::~PairNN()
 
 /* ---------------------------------------------------------------------- */
 
-inline void PairNN::RadialVector_simd(const int ielem, const int jelem, const int ii_idx, const int jj_idx,const int stride_nsym, const double rRij, const double* vecij, double* symvec, double* tmpf)
+inline void PairNNIntel::RadialVector_simd(const int ielem, const int jelem, const int ii_idx, const int jj_idx,const int stride_nsym, const double rRij, const double* vecij, double* symvec, double* tmpf)
 {
   VectorizedSymc* vsym = &nets[ielem].radialListsVec[jelem];
 
@@ -68,7 +68,7 @@ inline void PairNN::RadialVector_simd(const int ielem, const int jelem, const in
 
   double fc, dfdR;
   cutf2_noslot(rRij, vsym->cutoffr, fc, dfdR);
-  
+
   simd_v fc_v = SIMD_set(fc);
   simd_v dfdR_v = SIMD_set(dfdR);
 
@@ -114,7 +114,7 @@ inline void PairNN::RadialVector_simd(const int ielem, const int jelem, const in
 }
 
 
-inline void PairNN::AngularVector1_simd(const int ielem, const int jelem, const int kelem, const int ii_idx, const int jj_idx, const int kk_idx, const int stride_nsym, const double rRij, const double rRik, const double rRjk, const double* vecij, const double* vecik, const double* vecjk, const double* precal_ang, double* symvec, double* tmpf) {
+inline void PairNNIntel::AngularVector1_simd(const int ielem, const int jelem, const int kelem, const int ii_idx, const int jj_idx, const int kk_idx, const int stride_nsym, const double rRij, const double rRik, const double rRjk, const double* vecij, const double* vecik, const double* vecjk, const double* precal_ang, double* symvec, double* tmpf) {
 
   VectorizedSymc* vsym = &nets[ielem].angularLists1Vec[jelem][kelem];
   const double cutr = vsym->cutoffr;
@@ -124,7 +124,7 @@ inline void PairNN::AngularVector1_simd(const int ielem, const int jelem, const 
   if (rRij > cutr || rRjk > cutr || rRik > cutr) return;
 
   double precal_cutf[6];
-  
+
   cutf2_noslot(rRij, cutr, precal_cutf[0], precal_cutf[1]);
   cutf2_noslot(rRik, cutr, precal_cutf[2], precal_cutf[3]);
   cutf2_noslot(rRjk, cutr, precal_cutf[4], precal_cutf[5]);
@@ -136,7 +136,7 @@ inline void PairNN::AngularVector1_simd(const int ielem, const int jelem, const 
   simd_v fcij = SIMD_set(precal_cutf[0]);
   simd_v fcik = SIMD_set(precal_cutf[2]);
   simd_v fcjk = SIMD_set(precal_cutf[4]);
-  
+
   simd_v dfdRij = SIMD_set(precal_cutf[1]);
   simd_v dfdRik = SIMD_set(precal_cutf[3]);
   simd_v dfdRjk = SIMD_set(precal_cutf[5]);
@@ -185,7 +185,7 @@ inline void PairNN::AngularVector1_simd(const int ielem, const int jelem, const 
     simd_v tmpd_jk_z = deriv_jk*vecjk[2];
 
     simd_v* tmpf_simd = (simd_v*)(&tmpf[tt_offset + s]);
-    
+
     tmpf_simd[jj_idx + 0*stride_nsym] = tmpf_simd[jj_idx + 0*stride_nsym] + tmpd_ij_x - tmpd_jk_x;
     tmpf_simd[jj_idx + 1*stride_nsym] = tmpf_simd[jj_idx + 1*stride_nsym] + tmpd_ij_y - tmpd_jk_y;
     tmpf_simd[jj_idx + 2*stride_nsym] = tmpf_simd[jj_idx + 2*stride_nsym] + tmpd_ij_z - tmpd_jk_z;
@@ -200,7 +200,7 @@ inline void PairNN::AngularVector1_simd(const int ielem, const int jelem, const 
   }
 }
 
-inline void PairNN::AngularVector2_simd(const int ielem, const int jelem, const int kelem, const int ii_idx, const int jj_idx, const int kk_idx, const int stride_nsym, const double rRij, const double rRik, const double rRjk, const double* vecij, const double* vecik, const double* vecjk, const double* precal_ang, double* symvec, double* tmpf) {
+inline void PairNNIntel::AngularVector2_simd(const int ielem, const int jelem, const int kelem, const int ii_idx, const int jj_idx, const int kk_idx, const int stride_nsym, const double rRij, const double rRik, const double rRjk, const double* vecij, const double* vecik, const double* vecjk, const double* precal_ang, double* symvec, double* tmpf) {
   VectorizedSymc* vsym = &nets[ielem].angularLists2Vec[jelem][kelem];
   const double cutr = vsym->cutoffr;
   const int vector_size = vsym->vector_len;
@@ -209,7 +209,7 @@ inline void PairNN::AngularVector2_simd(const int ielem, const int jelem, const 
   if (rRij > cutr || rRik > cutr) return;
 
   double precal_cutf[4];
-  
+
   cutf2_noslot(rRij, cutr, precal_cutf[0], precal_cutf[1]);
   cutf2_noslot(rRik, cutr, precal_cutf[2], precal_cutf[3]);
 
@@ -218,7 +218,7 @@ inline void PairNN::AngularVector2_simd(const int ielem, const int jelem, const 
 
   simd_v fcij = SIMD_set(precal_cutf[0]);
   simd_v fcik = SIMD_set(precal_cutf[2]);
-  
+
   simd_v dfdRij = SIMD_set(precal_cutf[1]);
   simd_v dfdRik = SIMD_set(precal_cutf[3]);
 
@@ -267,7 +267,7 @@ inline void PairNN::AngularVector2_simd(const int ielem, const int jelem, const 
     simd_v tmpd_jk_z = deriv_jk*vecjk[2];
 
     simd_v* tmpf_simd = (simd_v*)(&tmpf[tt_offset + s]);
-    
+
     tmpf_simd[jj_idx + 0*stride_nsym] = tmpf_simd[jj_idx + 0*stride_nsym] + tmpd_ij_x - tmpd_jk_x;
     tmpf_simd[jj_idx + 1*stride_nsym] = tmpf_simd[jj_idx + 1*stride_nsym] + tmpd_ij_y - tmpd_jk_y;
     tmpf_simd[jj_idx + 2*stride_nsym] = tmpf_simd[jj_idx + 2*stride_nsym] + tmpd_ij_z - tmpd_jk_z;
@@ -284,7 +284,7 @@ inline void PairNN::AngularVector2_simd(const int ielem, const int jelem, const 
 }
 
 
-double PairNN::evalNet(double* inpv, double *outv, Net &net){
+double PairNNIntel::evalNet(double* inpv, double *outv, Net &net){
   int nl = net.nlayer;
   const int lastLayer = nl - 2;
   //for better readability!!!!
@@ -311,15 +311,15 @@ double PairNN::evalNet(double* inpv, double *outv, Net &net){
   //loop over l = 1, 2, 3 (nl = 5)
   for (int l=1; l<nl-1; l++) {
     //nodes[l-1] to nodes[l]
-      cblas_dgemv(CblasRowMajor, CblasNoTrans, nnode[l], nnode[l-1], 1.0, net.weights[l], nnode[l-1], nodes[l-1], 1, 1.0, nodes[l], 1);
-      if(l == lastLayer) {
-        //last hidden to atomic E(always linear)
-        actifunc_linear_vectorized(nodes[l], dnodes[l], nnode[l]);
-      }
-      else {
-        //acti from hidden
-        net.actifuncs[l](nodes[l], dnodes[l], nnode[l]);
-      }
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, nnode[l], nnode[l-1], 1.0, net.weights[l], nnode[l-1], nodes[l-1], 1, 1.0, nodes[l], 1);
+    if(l == lastLayer) {
+      //last hidden to atomic E(always linear)
+      actifunc_linear_vectorized(nodes[l], dnodes[l], nnode[l]);
+    }
+    else {
+      //acti from hidden
+      net.actifuncs[l](nodes[l], dnodes[l], nnode[l]);
+    }
   }
 
   //last hidden to atomic E -> must be linear -> set to 1
@@ -339,10 +339,10 @@ double PairNN::evalNet(double* inpv, double *outv, Net &net){
   return nodes[lastLayer][0]; // atomic energy
 }
 
-void PairNN::compute(int eflag, int vflag)
+void PairNNIntel::compute(int eflag, int vflag)
 {
   //mkl_verbose(1); //manually check which instruction set used in evalNet
-  
+
   if (eflag || vflag) ev_setup(eflag,vflag);
   else evflag = vflag_fdotr = 0;
   if(vflag_atom) {
@@ -374,7 +374,7 @@ void PairNN::compute(int eflag, int vflag)
     //indexer for simd_v array
     const int stride_nsym = ((nsym-1)/SIMD_V_LEN) + 1;
     const int ii_idx = stride_nsym*3*jnum;
-    
+
     // +1 for safeguard ( above simd angualr part could violate boundary of tmpf ( although those values are necessarily zero ))
     const int symvec_true_size = ((DATASIZE*stride_nsym*SIMD_V_LEN-1)/ALIGN_NUM + 2)* ALIGN_NUM;
     const int tmpf_true_size = ((DATASIZE*(stride_nsym*SIMD_V_LEN*(jnum+1)*3)-1)/ALIGN_NUM + 2)* ALIGN_NUM;
@@ -395,16 +395,16 @@ void PairNN::compute(int eflag, int vflag)
       const int jtype = type[j];
       const int jelem = map[jtype];
       const double delij[3] = {x[j][0] - xtmp, x[j][1] - ytmp, x[j][2] - ztmp};
-      
+
       const double Rij = delij[0]*delij[0] + delij[1]*delij[1] + delij[2]*delij[2];
-	  
+
       if (Rij < MINR || Rij > cutsq[itype][jtype]) { continue; }
       const double rRij = sqrt(Rij);
       const double invRij = 1/rRij;
       const double vecij[3] = {delij[0]*invRij, delij[1]*invRij, delij[2]*invRij};
 
       RadialVector_simd(ielem, jelem, ii_idx, jj_idx, stride_nsym, rRij, vecij, symvec, tmpf);
-      
+
       if (rRij > max_rc_ang) continue;
       //loop over neighbor's of neighbor (To calculate angular symmetry function)
       for (int kk = jj+1; kk < jnum; kk++) {
@@ -412,7 +412,7 @@ void PairNN::compute(int eflag, int vflag)
         const int kk_idx = stride_nsym*3*kk;
         const double delik[3] = {x[k][0] - xtmp, x[k][1] - ytmp, x[k][2] - ztmp};
         const double Rik = delik[0]*delik[0] + delik[1]*delik[1] + delik[2]*delik[2];
-		
+
         if (Rik < MINR) continue;
         const double rRik = sqrt(Rik);
         if (rRik > max_rc_ang) continue;
@@ -422,18 +422,18 @@ void PairNN::compute(int eflag, int vflag)
         const int kelem = map[ktype];
         const double deljk[3] = {x[k][0] - x[j][0], x[k][1] - x[j][1], x[k][2] - x[j][2]};
         const double Rjk = deljk[0]*deljk[0] + deljk[1]*deljk[1] + deljk[2]*deljk[2];
-		
+
         if (Rjk < MINR) continue;
         const double rRjk = sqrt(Rjk);
         const double invRjk = 1/rRjk;
-		
+
         const double vecik[3] = {delik[0] * invRik, delik[1]*invRik, delik[2]*invRik};
         const double vecjk[3] = {deljk[0] * invRjk, deljk[1]*invRjk, deljk[2]*invRjk};
-		
-		//remember 1/Rik != invRik  (here rRik = 1/invRik = sqrt(Rik))
-		const double precal_ang[6] = {Rij + Rik + Rjk, (Rij + Rik - Rjk)*(0.5*invRij*invRik), \
-		0.5*(invRik+1/Rij*(Rjk*invRik - rRik)), 0.5*(invRij + 1/Rik*(Rjk*invRij - rRij)), \
-		-rRjk*invRij*invRik, Rij + Rik};
+
+        //remember 1/Rik != invRik  (here rRik = 1/invRik = sqrt(Rik))
+        const double precal_ang[6] = {Rij + Rik + Rjk, (Rij + Rik - Rjk)*(0.5*invRij*invRik), \
+          0.5*(invRik+1/Rij*(Rjk*invRik - rRik)), 0.5*(invRij + 1/Rik*(Rjk*invRij - rRij)), \
+            -rRjk*invRij*invRik, Rij + Rik};
 
         if (isG4) {
           AngularVector1_simd(ielem, jelem, kelem, ii_idx, jj_idx, kk_idx, stride_nsym, rRij, rRik, rRjk, vecij, vecik, vecjk, precal_ang, symvec, tmpf);
@@ -443,14 +443,14 @@ void PairNN::compute(int eflag, int vflag)
         }
       } //k atom loop
     } //j atom loop
-    
+
     const double tmpE = evalNet(symvec, dsymvec, nets[ielem]); // atomic energy of i'th atom
 
     if (eflag_global) { eng_vdwl += tmpE; } // contribute to total energy
     if (eflag_atom) { eatom[i] += tmpE; }
 
     ForceAssign_simd(f, tmpf, dsymvec, jnum, stride_nsym, jlist, i);
-    
+
     _mm_free(symvec);
     _mm_free(dsymvec);
     _mm_free(tmpf);
@@ -458,7 +458,7 @@ void PairNN::compute(int eflag, int vflag)
   if (vflag_fdotr) virial_fdotr_compute();
 }
 
-void PairNN::ForceAssign_simd(double** f, const double* tmpf, double* dsym, const int jnum, const int stride_nsym, const int* jlist, const int i)
+void PairNNIntel::ForceAssign_simd(double** f, const double* tmpf, double* dsym, const int jnum, const int stride_nsym, const int* jlist, const int i)
 {
   simd_v* dsym_v = (simd_v*)dsym;
   simd_v* tmpf_v = (simd_v*)(tmpf);
@@ -484,20 +484,20 @@ void PairNN::ForceAssign_simd(double** f, const double* tmpf, double* dsym, cons
 
 /* ----------------------------------------------------------------------
    global settings
-------------------------------------------------------------------------- */
+   ------------------------------------------------------------------------- */
 
 
-void PairNN::settings(int narg, char **arg)
+void PairNNIntel::settings(int narg, char **arg)
 {
   if (narg != 0) error->all(FLERR,"Illegal pair_style command");
 }
 
 /* ----------------------------------------------------------------------
    set coeffs for one or more type pairs
-------------------------------------------------------------------------- */
+   ------------------------------------------------------------------------- */
 
-//more than setting coeff. it initialize PairNN's member variables also
-void PairNN::coeff(int narg, char **arg)
+//more than setting coeff. it initialize PairNNIntel's member variables also
+void PairNNIntel::coeff(int narg, char **arg)
 {
   int i,j,n;
 
@@ -508,8 +508,8 @@ void PairNN::coeff(int narg, char **arg)
     for (int i = 1; i <= n; i++) {
       for (int j = i; j <= n; j++) {
         setflag[i][j] = 0;
-	  }
-	}
+      }
+    }
     memory->create(cutsq,n+1,n+1,"pair:cutsq");
     map = new int[n+1];
   }
@@ -589,7 +589,7 @@ void PairNN::coeff(int narg, char **arg)
   if (count == 0) error->all(FLERR,"Incorrect args for pair coefficients");
 }
 
-void PairNN::read_file(char *fname) {
+void PairNNIntel::read_file(char *fname) {
   int i,j,k;
   FILE *fp;
   if (comm->me == 0) {
@@ -648,7 +648,7 @@ void PairNN::read_file(char *fname) {
       char *t_elem = strtok(NULL,delm); // element string (ex : Mg)
       double t_cut = std::atof(strtok(NULL,delm)); // cutoff (float string -> float)
       if (t_cut > cutmax) cutmax = t_cut;
-	  
+
       for (i=0; i<nelements; i++) {
         if (strcmp(t_elem,elements[i]) == 0) {
           nnet = i;
@@ -726,19 +726,19 @@ void PairNN::read_file(char *fname) {
 
       stats = 3;
     } else if (stats == 3) { // read symfunc parameters, isym starts from 0
-        sym_target = Symc(); //temporary
-        sym_target.inputVecNum = isym;
+      sym_target = Symc(); //temporary
+      sym_target.inputVecNum = isym;
 
-        tempStype = atoi(strtok(line,delm)); // symmetry function type(2,4,5)
+      tempStype = atoi(strtok(line,delm)); // symmetry function type(2,4,5)
 
-        for (i=0; i<4; i++) {
-          sym_target.coefs[i] = atof(strtok(NULL,delm));
-        }
-        tstr = strtok(NULL,delm);
-        for (i=0; i<nelements; i++) {
-          if (strcmp(tstr, elements[i]) == 0) {
-            tempAtype1 = i;
-            break;
+      for (i=0; i<4; i++) {
+        sym_target.coefs[i] = atof(strtok(NULL,delm));
+      }
+      tstr = strtok(NULL,delm);
+      for (i=0; i<nelements; i++) {
+        if (strcmp(tstr, elements[i]) == 0) {
+          tempAtype1 = i;
+          break;
         }
       }
       if (tempStype >= 4) {
@@ -794,7 +794,7 @@ void PairNN::read_file(char *fname) {
           error->all(FLERR, "Zeta in G4/G5 must be greater or equal to 1.0!");
         }
       }
-    
+
       //check whether forward next chunk
       isym++;
       if (isym == nsym) {
@@ -840,7 +840,7 @@ void PairNN::read_file(char *fname) {
         nets[nnet].nnode[ilayer] = atoi(tstr);
         ilayer++;
       }
-      
+
       //nets[nnet].nlayer - 1 (between two layers) is outer index of bias and weights
       int w_size[nlayer];
       int b_size[nlayer];
@@ -851,10 +851,10 @@ void PairNN::read_file(char *fname) {
       }
 
       /* Never do this again
-      nets[nnet].weights = AlignedMultiArr(w_size, nlayer);
-      nets[nnet].weights_T = AlignedMultiArr(w_size, nlayer);
-      nets[nnet].bias = AlignedMultiArr(b_size, nlayer);
-      */
+         nets[nnet].weights = AlignedMultiArr(w_size, nlayer);
+         nets[nnet].weights_T = AlignedMultiArr(w_size, nlayer);
+         nets[nnet].bias = AlignedMultiArr(b_size, nlayer);
+         */
       nets[nnet].weights.init(w_size, nlayer);
       nets[nnet].weights_T.init(w_size, nlayer);
       nets[nnet].bias.init(b_size, nlayer);
@@ -899,7 +899,7 @@ void PairNN::read_file(char *fname) {
       //for each node 1*bias + node*weights
       if (t_wb == 0) { // weights
         tstr = strtok(line,delm);
-		//for each layer
+        //for each layer
         for (i=0; i<nets[nnet].nnode[ilayer]; i++) {
           nets[nnet].weights[ilayer][inode*nets[nnet].nnode[ilayer] + i] = atof(strtok(NULL,delm));
         }
@@ -933,7 +933,7 @@ void PairNN::read_file(char *fname) {
   for (int i=0; i<nelements; i++) {
     for (int j=0; j<nelements; j++) {
       for (int l=0; l<nets[i].radialIndexer[j]; l++) {
-          //nets[i].radialCutoffHomo[j] = (nets[i].radialLists[j][l].coefs[0] == nets[i].radialLists[j][0].coefs[0]);
+        //nets[i].radialCutoffHomo[j] = (nets[i].radialLists[j][l].coefs[0] == nets[i].radialLists[j][0].coefs[0]);
       }
       for (int k=0; k<nelements; k++) {
         for (int t=0; t<nets[i].angular1Indexer[j][k]; t++) {
@@ -1000,13 +1000,13 @@ void PairNN::read_file(char *fname) {
           }
         }
       }
-      
+
       for (int k=0; k<nelements; k++) {
         //same code above (just radial to angular) (refactoring required)
         const int angular1Len = net->angular1Indexer[j][k];
         const int ang1_true_size = ((angular1Len*DATASIZE-1)/ALIGN_NUM+2)*ALIGN_NUM;
         VectorizedSymc* angular1 = &nets[i].angularLists1Vec[j][k];
-        
+
         angular1->eta = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
         angular1->Rs = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
         angular1->lammda = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
@@ -1086,21 +1086,21 @@ void PairNN::read_file(char *fname) {
 
 /* ----------------------------------------------------------------------
    init specific to this pair style
-------------------------------------------------------------------------- */
+   ------------------------------------------------------------------------- */
 
-void PairNN::init_style() {
-	if (force->newton_pair == 0) {
-		error->all(FLERR, "Pair style nn requires newton pair on");    
-	}
+void PairNNIntel::init_style() {
+  if (force->newton_pair == 0) {
+    error->all(FLERR, "Pair style nn requires newton pair on");    
+  }
 
-	neighbor->add_request(this, NeighConst::REQ_FULL);
+  neighbor->add_request(this, NeighConst::REQ_FULL);
 }
 
 /* ----------------------------------------------------------------------
    init for one type pair i,j and corresponding j,i
-------------------------------------------------------------------------- */
+   ------------------------------------------------------------------------- */
 
-double PairNN::init_one(int i, int j)
+double PairNNIntel::init_one(int i, int j)
 {
   if (setflag[i][j] == 0) error->all(FLERR,"All pair coeffs are not set");
   return cutmax;
@@ -1108,33 +1108,33 @@ double PairNN::init_one(int i, int j)
 
 /* ----------------------------------------------------------------------
    proc 0 writes to restart file
-------------------------------------------------------------------------- */
+   ------------------------------------------------------------------------- */
 
-void PairNN::write_restart(FILE *fp) {}
+void PairNNIntel::write_restart(FILE *fp) {}
 
 /* ----------------------------------------------------------------------
    proc 0 reads from restart file, bcasts
-------------------------------------------------------------------------- */
+   ------------------------------------------------------------------------- */
 
-void PairNN::read_restart(FILE *fp) {}
+void PairNNIntel::read_restart(FILE *fp) {}
 
 /* ----------------------------------------------------------------------
    proc 0 writes to restart file
-------------------------------------------------------------------------- */
+   ------------------------------------------------------------------------- */
 
-void PairNN::write_restart_settings(FILE *fp) {}
+void PairNNIntel::write_restart_settings(FILE *fp) {}
 
 /* ----------------------------------------------------------------------
    proc 0 reads from restart file, bcasts
-------------------------------------------------------------------------- */
+   ------------------------------------------------------------------------- */
 
-void PairNN::read_restart_settings(FILE *fp) {}
+void PairNNIntel::read_restart_settings(FILE *fp) {}
 
 /* ---------------------------------------------------------------------- */
 
-double PairNN::single(int i, int j, int itype, int jtype, double rsq,
-                         double factor_coul, double factor_lj,
-                         double &fforce)
+double PairNNIntel::single(int i, int j, int itype, int jtype, double rsq,
+    double factor_coul, double factor_lj,
+    double &fforce)
 {
   if (comm->me == 0) printf("single run\n");
   return factor_lj;
@@ -1142,9 +1142,9 @@ double PairNN::single(int i, int j, int itype, int jtype, double rsq,
 
 /* ----------------------------------------------------------------------
    free the Nets struct
-------------------------------------------------------------------------- */
+   ------------------------------------------------------------------------- */
 
-void PairNN::free_net(Net &net) {
+void PairNNIntel::free_net(Net &net) {
   delete [] net.nnode;
   net.nnode = NULL;
   delete [] net.actifuncs;
