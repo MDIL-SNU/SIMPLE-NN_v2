@@ -107,7 +107,7 @@ Install mpi4py:
 5. Intel SIMD acceleration (optional)
 -------------------------------
 
-The filename extension simd refers to Intel-accelerated version of simulating molecular dynamics in SIMPLE-NN. By utilizing Intel MKL's vector-matrix multiplication routines and vectorizing descriptor computation by SIMD, overall speed up would be x3 to x3.5 faster than the regular version.
+The filename extension simd refers to Intel-accelerated version of simulating molecular dynamics in SIMPLE-NN. By utilizing  vector-matrix multiplication routines in Intel MKL and vectorizing descriptor computation by SIMD, overall speed up would be x3 to x3.5 faster than the regular version.
 
 Requirements
 ------------
@@ -121,7 +121,7 @@ The accelerated version requires intel compiler. Therefore it is recommended to 
 
 https://docs.lammps.org/Speed_intel.html
 
-! The code use AVX related functions from intel intrinsic, MKL's BLAS routines, and vector math. So if older versions of MKL, intel compilers support that feature, there is no problem.
+! The code uses AVX-related functions from intel intrinsic,  BLAS routines of MKL, and vector math. So if older versions of MKL and intel compilers support these features, there is no problem for compiling.
 
 Installation
 ------------
@@ -138,7 +138,7 @@ Installation
 Requirements for potential file
 -------------------------------
 -  Symmetry function group refers to a group of vector components which have the same target atom specie(s). 
--  Vector components of the same symmetry function group must have same a cutoff radius.
+-  Vector components of the same symmetry function group must have the same cutoff radius.
 -  Vector components of the same symmetry function group must be contiguous in potential file.
 -  The zeta value must be an integer in the angular symmetry functions.
 
