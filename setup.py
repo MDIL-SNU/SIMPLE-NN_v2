@@ -30,7 +30,7 @@ with open('simple_nn/_version.py', 'w') as fp:
 install_requires = [
     'matplotlib<3.4.0,>=3.1.0',
     'scikit-learn<1.0',
-    'numpy',
+    'numpy>=1.22',
     'scipy<1.6.0',
     'ase==3.22.0',
     'pyyaml',
