@@ -107,7 +107,7 @@ Install mpi4py:
 5. Intel SIMD acceleration (optional)
 -------------------------------
 
-The filename extension simd refers to Intel-accelerated version of simulating molecular dynamics in SIMPLE-NN. By exploiting vector-matrix multiplication routines in SIMD and Intel MKL, overall speed up would be x3 to x3.5 times faster than the regular version.
+The filename extension simd refers to Intel-accelerated version of simulating molecular dynamics in SIMPLE-NN. By utilizing Intel MKL's vector-matrix multiplication routines and vectorizing descriptor computation by SIMD, overall speed up would be x3 to x3.5 faster than the regular version.
 
 Requirements
 ------------
@@ -117,11 +117,11 @@ Requirements
 -  IntelMKL ``2018.5.274`` or newer
 -  lammps ``23Jun2022-Update1(stable)`` tested
 
-The accelerated version requires intel compiler, so we recommend that you compile lammps source with intel compiler & intel mpi(mpiicpc). You can also check detailed installation guide for lammps intel pacakage below.
+The accelerated version requires intel compiler. Therefore it is recommended to compile the lammps source with intel compiler & intel mpi(mpiicpc) as well as this code. A detailed installation guide for the lammps intel pacakage can be found below.
 
 https://docs.lammps.org/Speed_intel.html
 
-! The code use AVX related functions from intel intrinsic, BLAS routine and vector mathematics from mkl. So older version of MKL, intel compiler support those feature would be ok. 
+! The code use AVX related functions from intel intrinsic, MKL's BLAS routines, and vector math. So if older versions of MKL, intel compilers support that feature, there is no problem.
 
 Installation
 ------------
@@ -131,19 +131,18 @@ Installation
     cp {simple_nn_path}/simple_nn/features/symmetry_function/SIMD/{pair_nn_simd.cpp, pair_nn_simd.h, pair_nn_simd_function.h} {lammps_source}/src/
     cd {lammps_source}/src
     make intel_cpu_intelmpi
-
-Please note that 'make intel_cpu_intelmpi' is an example of using Intel compiler for lammps.
-You may need to explicitly set some library path and optimization flags (such as -xAVX) if needed.
+    
+.. note::
+    'make intel_cpu_intelmpi' is an example of using the intel compiler for lammps. You may need to explicitly set some library path and optimization flags (such as -xAVX) if necessary.
 
 Requirements for potential file
 -------------------------------
 -  Symmetry function group refers to a group of vector components which have the same target atom specie(s). 
--  Vector components in the same symmetry function group should have same a cutoff radius.
--  Vector components in the same symmetry function group should be contiguous in potential file.
--  The value of zeta should be integer in angular symmetry functions.
+-  Vector components of the same symmetry function group must have same a cutoff radius.
+-  Vector components of the same symmetry function group must be contiguous in potential file.
+-  The zeta value must be an integer in the angular symmetry functions.
 
-For acceleration, there were some assumptions for a potential file. A potential file should comply with rules above.
-(Not requirement) For the best speed-up, the number of symmetry functions should be a multiple of "4" since AVX instruction sets support 256bit(total 4 double value) SIMD.
+Since some assumptions have been made about the potential files for acceleration, the potential file must follow the rules above.
 
 Usage
 -----
@@ -153,18 +152,7 @@ For the accelerated version, ``pair_style nn/intel`` should be invoked.
 Current Issue
 -------------
 
-‘clear’ command inside lammps input script could cause problem.
-
-Further Acceleration
---------------------
-
-If you cpu supports AVX512 instruction set, you can use AVX512 by adding
-
--D \__AVX512F_\_
-
-to your Makefile’s CCFLAGS. Besides its capacity, speed up respect to
-AVX is minor (< 1%). This is because the bottelneck of the accelerated
-code is not arithmetic but memory.
+The ‘clear’ command within lammps input script may cause some errors.
 
 .. _test_installation:
 
