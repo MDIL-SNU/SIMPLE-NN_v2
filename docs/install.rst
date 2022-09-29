@@ -113,13 +113,11 @@ Requirements
 ------------
 
 -  Intel CPU supporting AVX
--  IntelCompiler ``18.0.5`` or newer
--  IntelMKL ``2018.5.274`` or newer
--  lammps ``23Jun2022-Update1(stable)`` tested
+-  Compiler supporting AVX instruction set
+-  IntelMKL ``2018.5.274`` tested
+-  Lammps ``23Jun2022-Update1(stable)`` tested
 
-The accelerated version requires intel compiler. Therefore it is recommended to compile the lammps source with intel compiler & intel mpi(mpiicpc) as well as this code. A detailed installation guide for the lammps intel pacakage can be found below.
-
-https://docs.lammps.org/Speed_intel.html
+In our experience, the best performance is achieved when source compiled with intel compiler(icpc) and intel mpi (mpiicpc). Lammps provides default makefile for intel compiler, intel mpi and mkl library path setting. Therefore, we recommend to compile lammps source with intel compiler.
 
 ! The code uses AVX-related functions from intel intrinsic,  BLAS routines of MKL, and vector math. So if older versions of MKL and intel compilers support these features, there is no problem for compiling.
 
