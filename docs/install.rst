@@ -103,6 +103,50 @@ Install mpi4py:
 .. code-block:: text
 
     pip install mpi4py
+    
+5. Intel SIMD acceleration (optional)
+-------------------------------
+
+The filename extension simd refers to Intel-accelerated version of simulating molecular dynamics in SIMPLE-NN. By utilizing  vector-matrix multiplication routines in Intel MKL and vectorizing descriptor computation by SIMD, overall speed up would be x3 to x3.5 faster than the regular version.
+
+Requirements
+------------
+
+-  Intel CPU supporting AVX
+-  Compiler supporting AVX instruction set
+-  IntelMKL ``2018.5.274`` tested
+-  Lammps ``23Jun2022-Update1(stable)`` tested
+
+In our experience, the best performance is achieved when source compiled with intel compiler(icpc) and intel mpi (mpiicpc). Lammps provides default makefile for intel compiler, intel mpi and mkl library path setting. Therefore, we recommend to compile lammps source with intel compiler.
+
+! The code uses AVX-related functions from intel intrinsic,  BLAS routines of MKL, and vector math. So if older versions of MKL and intel compilers support these features, there is no problem for compiling.
+
+Installation
+------------
+
+.. code-block:: text
+
+    cp {simple_nn_path}/simple_nn/features/symmetry_function/SIMD/{pair_nn_simd.cpp, pair_nn_simd.h, pair_nn_simd_function.h} {lammps_source}/src/
+    cd {lammps_source}/src
+    make intel_cpu_intelmpi
+    
+.. note::
+    'make intel_cpu_intelmpi' is an example of using the intel compiler for lammps. Before using a makefile, you may need to explicitly set some library path and optimization flags (such as -xAVX) in the makefile if necessary.
+
+Requirements for potential file
+-------------------------------
+-  Symmetry function group refers to a group of vector components which have the same target atom specie(s). 
+-  Vector components of the same symmetry function group must have the same cutoff radius.
+-  Vector components of the same symmetry function group must be contiguous in potential file.
+-  The zeta value must be an integer in the angular symmetry functions.
+
+Since some assumptions have been made about the potential files for acceleration, the potential file must follow the rules above.
+
+Usage
+-----
+In youer LAMMPS script file, regular version uses ``pair_style nn``.
+For the accelerated version, ``pair_style nn/intel`` should be invoked.
+
 
 .. _test_installation:
 
@@ -136,3 +180,7 @@ pass or fail messages will be printed like:
 If you have a problem in installation, post a issues in here_. 
 
 .. _here: https://github.com/MDIL-SNU/SIMPLE-NN_v2/issues
+
+
+
+

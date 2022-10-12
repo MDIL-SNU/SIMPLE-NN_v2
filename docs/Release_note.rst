@@ -3,6 +3,14 @@
 Release note
 ============
 
+v2.1.0 (29 Sep 2022)
+-------------------
+Breaking changes:
+
+- Accelerated version of simulating molecular dynamics using SIMD and MKL.
+    - Main code developer (Yutack Park).
+    - Total 3x ~ 3.5x speed-up : :code:`pair_nn_simd.cpp`, :code:`pair_nn_simd.h` and :code:`pair_nn_simd_function.h`
+    
 v2.0.0 (3 Dec 2021)
 -------------------
 Breaking changes:
