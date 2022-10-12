@@ -6,7 +6,7 @@ scale_rho
 
 ----
     
-The usage of **scale_rho** is as below. Users can give **scale_rho** value as atomic density(# of atoms / volume) for each atom. The unit of **scale_rho** is :math:`\mathrm{\AA ^{-3}}` 
+The usage of **scale_rho** is as below. Users can give **scale_rho** value as atomic density(# of atoms / volume) for each atom. The unit of **scale_rho** is :math:`\mathrm{Å ^{-3}}` 
     
 .. code-block:: yaml
     
