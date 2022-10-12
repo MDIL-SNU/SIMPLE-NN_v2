@@ -114,7 +114,7 @@ Requirements
 
 -  Intel CPU supporting AVX
 -  Compiler supporting AVX instruction set
--  IntelMKL ``2018.5.274`` tested
+-  IntelMKL ``2018.5.274`` and ``2022.1.0`` tested
 -  Lammps ``23Jun2022-Update1(stable)`` tested
 
 In our experience, the best performance is achieved when source compiled with intel compiler(icpc) and intel mpi (mpiicpc). Lammps provides default makefile for intel compiler, intel mpi and mkl library path setting. Therefore, we recommend to compile lammps source with intel compiler.
