@@ -33,9 +33,9 @@ namespace NN_SIMD_NS {
     VecOne = tmpone;
     VecTwo = tmptwo;
   }
-  struct AlignedMultiArr {
+  struct alignas(ALIGN_NUM) AlignedMultiArr {
     int *idx_addr=nullptr;
-    double* v=nullptr;
+    double *v=nullptr;
     int max_idx;
     int true_size;
     AlignedMultiArr() {}
@@ -47,7 +47,8 @@ namespace NN_SIMD_NS {
         totalsize += size[i];
       }
       true_size = totalsize;
-      v = (double*)_mm_malloc(((totalsize*DATASIZE-1)/ALIGN_NUM+1)*ALIGN_NUM, ALIGN_NUM);
+      v = (double*)_mm_malloc(totalsize*DATASIZE, ALIGN_NUM);
+      //v = (double*)mkl_malloc(totalsize*DATASIZE, ALIGN_NUM);
     }
     //deep copy
     AlignedMultiArr(const AlignedMultiArr& copy) : max_idx(copy.max_idx) {
@@ -55,7 +56,8 @@ namespace NN_SIMD_NS {
       for (int i = 0; i<max_idx; i++) {
         idx_addr[i] = copy.idx_addr[i];
       }
-      v = (double*)_mm_malloc(((copy.true_size*DATASIZE-1)/ALIGN_NUM+1)*ALIGN_NUM, ALIGN_NUM);
+      v = (double*)_mm_malloc(copy.true_size*DATASIZE, ALIGN_NUM);
+      //v = (double*)mkl_malloc(copy.true_size*DATASIZE, ALIGN_NUM);
       for (int j=0; j<copy.true_size; j++) {
         v[j] = copy.v[j];
       }
@@ -72,7 +74,8 @@ namespace NN_SIMD_NS {
         totalsize += size[i];
       }
       true_size = totalsize;
-      v = (double*)_mm_malloc(((totalsize*DATASIZE-1)/ALIGN_NUM+1)*ALIGN_NUM, ALIGN_NUM);
+      v = (double*)_mm_malloc(totalsize*DATASIZE, ALIGN_NUM);
+      //v = (double*)mkl_malloc(totalsize*DATASIZE, ALIGN_NUM);
     }
 
     ~AlignedMultiArr() {
@@ -90,8 +93,9 @@ namespace NN_SIMD_NS {
   static inline void actifunc_linear_vectorized(double* nodes, double* deriv, const int size) {
     std::fill(deriv, deriv + size, 1.0);
   }
+
   static inline void actifunc_sigmoid_vectorized(double* nodes, double* deriv, const int size) {
-    double* tmp = (double*)_mm_malloc(((size*DATASIZE-1)/ALIGN_NUM+2)*ALIGN_NUM, ALIGN_NUM);
+    double* tmp = (double*)_mm_malloc(size*DATASIZE, ALIGN_NUM);
 
     vdExp(size, nodes, nodes); //exp(nodes)
     vdAdd(size, nodes, VecOne, nodes); // 1+exp(nodes)
@@ -120,11 +124,11 @@ namespace NN_SIMD_NS {
   }
 
   static inline void actifunc_relu_vectorized(double* nodes, double* deriv, const int size) {
-    double* tmp = (double*)_mm_malloc(((size*DATASIZE-1)/ALIGN_NUM+2)*ALIGN_NUM, ALIGN_NUM);
+    double* tmp = (double*)_mm_malloc(size*DATASIZE, ALIGN_NUM);
     cblas_dcopy(size, nodes, 1, tmp, 1); //tmp = nodes;
 
     //in intel API vdFmax(n, a, b, y) -> a, b are const double* but compiler says argument type is not match
-    //I think this is mkl's bug (maybe fixed in later version) or not, I'm looking wrong version of mkl API
+    //I think this is bug. or I'm looking wrong version of mkl docs
     vdFmax(size, nodes, VecZero, nodes); //nodes = ReLU(nodes)
     vdDiv(size, nodes, tmp, deriv);
 
@@ -156,8 +160,8 @@ namespace NN_SIMD_NS {
      return x*expl;
      */
 
-    double* tmp = (double*)_mm_malloc(((size*DATASIZE-1)/ALIGN_NUM+2)*ALIGN_NUM, ALIGN_NUM);
-    double* tmp2 = (double*)_mm_malloc(((size*DATASIZE-1)/ALIGN_NUM+2)*ALIGN_NUM, ALIGN_NUM);
+    double* tmp = (double*)_mm_malloc(size*DATASIZE, ALIGN_NUM);
+    double* tmp2 = (double*)_mm_malloc(size*DATASIZE, ALIGN_NUM);
 
     vdExp(size, nodes, tmp); //exp(nodes)
     vdAdd(size, tmp, VecOne, tmp); // 1+exp(nodes)
@@ -221,7 +225,7 @@ namespace NN_SIMD_NS {
   }
 
   //expo[0, 1, 2, 3] will be used
-  //this is SEQUENTIAL
+  //this is SEQUENTIAL. Use it carefully!!! assume double value inside expo is saft to convert to integer after abs!!
   inline SIMD_double SIMD_pow(const SIMD_double &base, const SIMD_double expo) {
     SIMD_double res = _mm256_set1_pd(1.0);
     for (int i=0; i<MM256_DOUBLE_LEN; i++) {
@@ -282,7 +286,8 @@ namespace NN_SIMD_NS {
   }
 
   //expo[0, 1, 2, 3] will be used
-  //this is SEQUENTIAL
+  //this is SEQUENTIAL. Use it carefully!!! assume double value inside expo is saft to convert to integer after abs!!
+  //this is really bad. should make integer version of expo
   inline SIMD_512_double SIMD_pow(const SIMD_512_double &base, const SIMD_512_double expo) {
     SIMD_512_double res = _mm512_set1_pd(1.0);
     for (int i=0; i<MM512_DOUBLE_LEN; i++) {
@@ -353,6 +358,6 @@ namespace NN_SIMD_NS {
     static const double H_PI = -M_PI*0.5;
     sincos(M_PI*dist/cutd, &sin, &cos);
     f = 0.5 * (1 + cos);
-  df = H_PI * sin / cutd;
+    df = H_PI * sin / cutd;
   }
 }

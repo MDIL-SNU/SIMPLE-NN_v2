@@ -36,18 +36,9 @@ namespace LAMMPS_NS {
         bool powint; //precalculated value of angular sym
         int inputVecNum;
       };
-      struct VectorizedSymc {
+      struct alignas(ALIGN_NUM) VectorizedSymc {
         VectorizedSymc() {}
-        ~VectorizedSymc() {
-          _mm_free(mask);
-          _mm_free(eta);
-          _mm_free(Rs);
-          _mm_free(lammda);
-          _mm_free(powtwo);
-
-          delete [] lammda_i;
-          delete [] zeta;
-        }
+        ~VectorizedSymc();
         int vector_len;
         int true_size;
         int tt_offset;
@@ -64,8 +55,11 @@ namespace LAMMPS_NS {
         int* zeta=nullptr;
       };
 
-      struct Net {
-        //determined by potential file
+      struct alignas(ALIGN_NUM) Net {
+		~Net();
+		
+		int nelements;
+
         int *nnode; // number of nodes in each layer
         int nlayer; // number of layers
 
@@ -104,7 +98,7 @@ namespace LAMMPS_NS {
       //init NN parameters from potential file called from coeff()
       void read_file(char *);
       //called from destructor & read_file
-      void free_net(Net &);
+      //void free_net(Net &);
       // calculate atomic energy & derivative of net called from compute()
       double evalNet(double *, double *, Net &);
 

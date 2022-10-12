@@ -55,7 +55,7 @@ PairNNIntel::~PairNNIntel()
 
   //for (int i=0; i<nelements; i++) free_net(nets[i]);
 
-  //delete [] nets;
+  delete [] nets;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -63,6 +63,7 @@ PairNNIntel::~PairNNIntel()
 inline void PairNNIntel::RadialVector_simd(const int ielem, const int jelem, const int ii_idx, const int jj_idx,const int stride_nsym, const double rRij, const double* vecij, double* symvec, double* tmpf)
 {
   VectorizedSymc* vsym = &nets[ielem].radialListsVec[jelem];
+  const int vector_size = vsym->vector_len;
 
   if (rRij > vsym->cutoffr) return;
 
@@ -72,7 +73,6 @@ inline void PairNNIntel::RadialVector_simd(const int ielem, const int jelem, con
   simd_v fc_v = SIMD_set(fc);
   simd_v dfdR_v = SIMD_set(dfdR);
 
-  const int vector_size = vsym->vector_len;
   const int tt_offset = vsym->tt_offset;
 
   simd_v rRij_v = SIMD_set(rRij);
@@ -81,6 +81,11 @@ inline void PairNNIntel::RadialVector_simd(const int ielem, const int jelem, con
     simd_v mask = SIMD_load_aligned(&vsym->mask[s]);
     simd_v eta_v = SIMD_load_aligned(&vsym->eta[s]);
     simd_v Rs_v = SIMD_load_aligned(&vsym->Rs[s]);
+	/*
+    simd_v mask = SIMD_load(&vsym->mask[s]);
+    simd_v eta_v = SIMD_load(&vsym->eta[s]);
+    simd_v Rs_v = SIMD_load(&vsym->Rs[s]);
+	*/
 
     simd_v tmp_v = rRij_v - Rs_v;
     simd_v eta_tmp_v = tmp_v * eta_v;
@@ -121,7 +126,7 @@ inline void PairNNIntel::AngularVector1_simd(const int ielem, const int jelem, c
   const int vector_size = vsym->vector_len;
   const int tt_offset = vsym->tt_offset;
 
-  if (rRij > cutr || rRjk > cutr || rRik > cutr) return;
+  if (vector_size == 0 || rRij > cutr || rRjk > cutr || rRik > cutr) return;
 
   double precal_cutf[6];
 
@@ -147,6 +152,14 @@ inline void PairNNIntel::AngularVector1_simd(const int ielem, const int jelem, c
     simd_v zeta_v = SIMD_load_aligned(&vsym->Rs[s]); //par[2]
     simd_v lammda_v = SIMD_load_aligned(&vsym->lammda[s]); //par[3]
     simd_v powtwo_v = SIMD_load_aligned(&vsym->powtwo[s]);
+	  /*
+    simd_v mask = SIMD_load(&vsym->mask[s]);
+    simd_v eta_v = SIMD_load(&vsym->eta[s]); //par[1]
+    simd_v zeta_v = SIMD_load(&vsym->Rs[s]); //par[2]
+    simd_v lammda_v = SIMD_load(&vsym->lammda[s]); //par[3]
+    simd_v powtwo_v = SIMD_load(&vsym->powtwo[s]);
+	*/
+
     simd_v cosv = lammda_v * precal_ang[1] + 1;
     simd_v powcos = SIMD_pow(cosv, zeta_v - 1);
 
@@ -206,7 +219,7 @@ inline void PairNNIntel::AngularVector2_simd(const int ielem, const int jelem, c
   const int vector_size = vsym->vector_len;
   const int tt_offset = vsym->tt_offset;
 
-  if (rRij > cutr || rRik > cutr) return;
+  if (vector_size == 0 || rRij > cutr || rRik > cutr) return;
 
   double precal_cutf[4];
 
@@ -228,6 +241,14 @@ inline void PairNNIntel::AngularVector2_simd(const int ielem, const int jelem, c
     simd_v zeta_v = SIMD_load_aligned(&vsym->Rs[s]); //par[2]
     simd_v lammda_v = SIMD_load_aligned(&vsym->lammda[s]); //par[3]
     simd_v powtwo_v = SIMD_load_aligned(&vsym->powtwo[s]);
+	/*
+    simd_v mask = SIMD_load(&vsym->mask[s]);
+    simd_v eta_v = SIMD_load(&vsym->eta[s]); //par[1]
+    simd_v zeta_v = SIMD_load(&vsym->Rs[s]); //par[2]
+    simd_v lammda_v = SIMD_load(&vsym->lammda[s]); //par[3]
+    simd_v powtwo_v = SIMD_load(&vsym->powtwo[s]);
+	*/
+
     simd_v cosv = lammda_v * precal_ang[1] + 1;
     simd_v powcos = SIMD_pow(cosv, zeta_v - 1);
 
@@ -376,16 +397,17 @@ void PairNNIntel::compute(int eflag, int vflag)
     const int ii_idx = stride_nsym*3*jnum;
 
     // +1 for safeguard ( above simd angualr part could violate boundary of tmpf ( although those values are necessarily zero ))
-    const int symvec_true_size = ((DATASIZE*stride_nsym*SIMD_V_LEN-1)/ALIGN_NUM + 2)* ALIGN_NUM;
-    const int tmpf_true_size = ((DATASIZE*(stride_nsym*SIMD_V_LEN*(jnum+1)*3)-1)/ALIGN_NUM + 2)* ALIGN_NUM;
+    const int symvec_true_size = DATASIZE*(stride_nsym*SIMD_V_LEN+SIMD_V_LEN);
+    const int tmpf_true_size = DATASIZE*(stride_nsym*SIMD_V_LEN*(jnum+1)*3+SIMD_V_LEN); 
+
     double * symvec = static_cast<double*>(_mm_malloc(symvec_true_size, ALIGN_NUM));
-    memset(symvec, 0, symvec_true_size);
+	std::fill(symvec, symvec+symvec_true_size/DATASIZE, 0.0);
 
     double * dsymvec = static_cast<double*>(_mm_malloc(symvec_true_size, ALIGN_NUM));
-    memset(dsymvec, 0, symvec_true_size);
+	std::fill(dsymvec, dsymvec+symvec_true_size/DATASIZE, 0.0);
 
     double * tmpf = static_cast<double*>(_mm_malloc(tmpf_true_size, ALIGN_NUM));
-    memset(tmpf, 0, tmpf_true_size);
+	std::fill(tmpf, tmpf+tmpf_true_size/DATASIZE, 0.0);
 
     // loop over i'th neighbor list
     for (int jj = 0; jj < jnum; jj++) {
@@ -544,7 +566,8 @@ void PairNNIntel::coeff(int narg, char **arg)
     }
   }
 
-  nets = new Net[nelements+1]; // extra one is used for reading irrelevant elements.
+  //nets = new Net[nelements+1]; // extra one is used for reading irrelevant elements.
+  nets = new Net[nelements]; // extra one is used for reading irrelevant elements.
 
   // read potential file and initialize potential parameters
   read_file(arg[2]);
@@ -559,6 +582,7 @@ void PairNNIntel::coeff(int narg, char **arg)
   int max_nl = 0;
   int max_nnode = 0;
   for (int i=0; i<nelements; ++i) {
+    nets[i].nelements = nelements;
     if(nets[i].nlayer > max_nl) {
       max_nl = nets[i].nlayer;
     }
@@ -658,7 +682,7 @@ void PairNNIntel::read_file(char *fname) {
 
       if (nnet == nelements) {
         if (valid) {
-          free_net(nets[nnet]); //error case should (already valid but not eof)
+          //free_net(nets[nnet]); //error case should (already valid but not eof)
         }
         valid = true;
       }
@@ -920,7 +944,7 @@ void PairNNIntel::read_file(char *fname) {
         stats = 6;
       }
       if (ilayer == nlayer) {
-        if (nnet == nelements) free_net(nets[nnet]); //error case(code can be removed)
+        //if (nnet == nelements) free_net(nets[nnet]); //error case(code can be removed)
         //look for next atom type
         stats = 1;
       }
@@ -972,7 +996,7 @@ void PairNNIntel::read_file(char *fname) {
     for (int j=0; j<nelements; j++) {
       const int radialLen = net->radialIndexer[j];
 
-      const int rad_true_size = ((radialLen*DATASIZE-1)/ALIGN_NUM+2)*ALIGN_NUM;
+      const int rad_true_size = (radialLen+SIMD_V_LEN)*DATASIZE;
 
       //pointer for alias (not array!)
       VectorizedSymc* radial = &nets[i].radialListsVec[j];
@@ -980,6 +1004,11 @@ void PairNNIntel::read_file(char *fname) {
       radial->eta = (double*)_mm_malloc(rad_true_size, ALIGN_NUM);
       radial->Rs = (double*)_mm_malloc(rad_true_size, ALIGN_NUM);
       radial->mask = (double*)_mm_malloc(rad_true_size, ALIGN_NUM);
+	  /*
+      radial->eta = new double[rad_true_size/DATASIZE];
+      radial->Rs = new double[rad_true_size/DATASIZE];
+      radial->mask = new double[rad_true_size/DATASIZE];
+	  */
 
       radial->vector_len = radialLen;
       radial->true_size = rad_true_size;
@@ -993,10 +1022,14 @@ void PairNNIntel::read_file(char *fname) {
 
         if(s%SIMD_V_LEN == 0) {
           for (int m=0; m<SIMD_V_LEN; m++) {
-            if (s+m < radialLen)
+            if (s+m < radialLen) {
               radial->mask[s + m] = 1;
-            else
+			}
+            else {
               radial->mask[s + m] = 0;
+			  radial->eta[s + m] = 0;
+			  radial->Rs[s + m] = 0;
+			}
           }
         }
       }
@@ -1004,80 +1037,112 @@ void PairNNIntel::read_file(char *fname) {
       for (int k=0; k<nelements; k++) {
         //same code above (just radial to angular) (refactoring required)
         const int angular1Len = net->angular1Indexer[j][k];
-        const int ang1_true_size = ((angular1Len*DATASIZE-1)/ALIGN_NUM+2)*ALIGN_NUM;
+        const int ang1_true_size = (angular1Len+SIMD_V_LEN)*DATASIZE;
         VectorizedSymc* angular1 = &nets[i].angularLists1Vec[j][k];
-
-        angular1->eta = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
-        angular1->Rs = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
-        angular1->lammda = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
-        angular1->powtwo = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
-        angular1->mask = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
-
-        angular1->lammda_i = new int[angular1Len];
-        angular1->zeta = new int[angular1Len];
-
         angular1->vector_len = angular1Len;
-        angular1->true_size = ang1_true_size;
 
-        angular1->tt_offset = nets[i].angularLists1[j][k][0].inputVecNum;
-        for (int s=0; s<angular1Len; s++) {
-          isG4 = true;
-          Symc sym = net->angularLists1[j][k][s];
-          angular1->cutoffr = sym.coefs[0];
-          angular1->eta[s] = -sym.coefs[1];
-          angular1->Rs[s] = sym.coefs[2];
-          angular1->lammda[s] = sym.coefs[3];
-          angular1->powtwo[s] = sym.powtwo;
+		if(angular1Len != 0) {
+			isG4 = true;
+		}
+		angular1->eta = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
+		angular1->Rs = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
+		angular1->lammda = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
+		angular1->powtwo = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
+		angular1->mask = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
+		/*
+		angular1->eta = new double[ang1_true_size/DATASIZE];
+		angular1->Rs = new double[ang1_true_size/DATASIZE];
+		angular1->lammda = new double[ang1_true_size/DATASIZE];
+		angular1->powtwo = new double[ang1_true_size/DATASIZE];
+		angular1->mask = new double[ang1_true_size/DATASIZE];
+		*/
 
-          angular1->lammda_i[s] = (int)sym.coefs[3];
-          angular1->zeta[s] = (int)sym.coefs[2];
-          if(s%SIMD_V_LEN == 0) {
-            for (int m=0; m<SIMD_V_LEN; m++) {
-              if (s+m < angular1Len)
-                angular1->mask[s + m] = 1;
-              else
-                angular1->mask[s + m] = 0;
-            }
-          }
-        }
+		angular1->lammda_i = new int[angular1Len];
+		angular1->zeta = new int[angular1Len];
+
+		angular1->true_size = ang1_true_size;
+
+		angular1->tt_offset = nets[i].angularLists1[j][k][0].inputVecNum;
+		for (int s=0; s<angular1Len; s++) {
+		  isG4 = true;
+		  Symc sym = net->angularLists1[j][k][s];
+		  angular1->cutoffr = sym.coefs[0];
+		  angular1->eta[s] = -sym.coefs[1];
+		  angular1->Rs[s] = sym.coefs[2];
+		  angular1->lammda[s] = sym.coefs[3];
+		  angular1->powtwo[s] = sym.powtwo;
+
+		  angular1->lammda_i[s] = (int)sym.coefs[3];
+		  angular1->zeta[s] = (int)sym.coefs[2];
+		  if(s%SIMD_V_LEN == 0) {
+			for (int m=0; m<SIMD_V_LEN; m++) {
+			  if (s+m < angular1Len) {
+				angular1->mask[s + m] = 1;
+			  }
+			  else {
+				angular1->mask[s + m] = 0;
+				angular1->eta[s + m] = 0;
+				angular1->Rs[s + m] = 0;
+				angular1->lammda[s + m] = 0;
+				angular1->powtwo[s + m] = 0;
+			  }
+			}
+		  }
+		}
 
         const int angular2Len = net->angular2Indexer[j][k];
-        const int ang2_true_size = ((angular2Len*DATASIZE-1)/ALIGN_NUM+2)*ALIGN_NUM;
-        VectorizedSymc* angular2 = &nets[i].angularLists2Vec[j][k];
+        const int ang2_true_size = (angular2Len+SIMD_V_LEN)*DATASIZE;
+		VectorizedSymc* angular2 = &nets[i].angularLists2Vec[j][k];
+		angular2->vector_len = angular2Len;
 
-        angular2->eta = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
-        angular2->Rs = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
-        angular2->lammda = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
-        angular2->powtwo = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
-        angular2->mask = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
+		if(angular2Len != 0) {
+			isG5 = true;
+		}
 
-        angular2->lammda_i = new int[angular2Len];
-        angular2->zeta = new int[angular2Len];
+		angular2->eta = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
+		angular2->Rs = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
+		angular2->lammda = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
+		angular2->powtwo = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
+		angular2->mask = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
 
-        angular2->vector_len = angular2Len;
-        angular2->true_size = ang2_true_size;
+		/*
+		angular2->eta = new double[ang2_true_size/DATASIZE];
+		angular2->Rs = new double[ang2_true_size/DATASIZE];
+		angular2->lammda = new double[ang2_true_size/DATASIZE];
+		angular2->powtwo = new double[ang2_true_size/DATASIZE];
+		angular2->mask = new double[ang2_true_size/DATASIZE];
+		*/
 
-        angular2->tt_offset = nets[i].angularLists2[j][k][0].inputVecNum;
-        for (int s=0; s<angular2Len; s++) {
-          isG5 = true;
-          Symc sym = net->angularLists2[j][k][s];
-          angular2->cutoffr = sym.coefs[0];
-          angular2->eta[s] = -sym.coefs[1];
-          angular2->Rs[s] = sym.coefs[2];
-          angular2->lammda[s] = sym.coefs[3];
-          angular2->powtwo[s] = sym.powtwo;
+		angular2->lammda_i = new int[angular2Len];
+		angular2->zeta = new int[angular2Len];
+		angular2->true_size = ang2_true_size;
 
-          angular2->lammda_i[s] = (int)sym.coefs[3];
-          angular2->zeta[s] = (int)sym.coefs[2];
-          if(s%SIMD_V_LEN == 0) {
-            for (int m=0; m<SIMD_V_LEN; m++) {
-              if (s+m < angular2Len)
-                angular2->mask[s + m] = 1;
-              else
-                angular2->mask[s + m] = 0;
-            }
-          }
-        } //ang2 for sym
+		angular2->tt_offset = nets[i].angularLists2[j][k][0].inputVecNum;
+		for (int s=0; s<angular2Len; s++) {
+		  Symc sym = net->angularLists2[j][k][s];
+		  angular2->cutoffr = sym.coefs[0];
+		  angular2->eta[s] = -sym.coefs[1];
+		  angular2->Rs[s] = sym.coefs[2];
+		  angular2->lammda[s] = sym.coefs[3];
+		  angular2->powtwo[s] = sym.powtwo;
+
+		  angular2->lammda_i[s] = (int)sym.coefs[3];
+		  angular2->zeta[s] = (int)sym.coefs[2];
+		  if(s%SIMD_V_LEN == 0) {
+			for (int m=0; m<SIMD_V_LEN; m++) {
+			  if (s+m < angular2Len) {
+				angular2->mask[s + m] = 1;
+			  }
+			  else {
+				angular2->mask[s + m] = 0;
+				angular2->eta[s + m] = 0;
+				angular2->Rs[s + m] = 0;
+				angular2->lammda[s + m] = 0;
+				angular2->powtwo[s + m] = 0;
+			  }
+			}
+		  }
+		} //ang2 for sym
       } //kk
     } //jj
   } //outer ii
@@ -1140,46 +1205,72 @@ double PairNNIntel::single(int i, int j, int itype, int jtype, double rsq,
   return factor_lj;
 }
 
-/* ----------------------------------------------------------------------
-   free the Nets struct
-   ------------------------------------------------------------------------- */
-
-void PairNNIntel::free_net(Net &net) {
-  delete [] net.nnode;
-  net.nnode = NULL;
-  delete [] net.actifuncs;
-  net.actifuncs = NULL;
+PairNNIntel::Net::~Net() {
+  delete [] nnode;
+  nnode = nullptr;
+  delete [] actifuncs;
+  actifuncs = nullptr;
 
   for (int i=0; i<nelements; i++) {
     for (int j=0; j<nelements; j++) {
-      delete [] net.angularLists1[i][j];
-      delete [] net.angularLists2[i][j];
+      delete [] angularLists1[i][j];
+      delete [] angularLists2[i][j];
     }
-    delete [] net.angularLists1[i];
-    delete [] net.angularLists2[i];
-    delete [] net.angular1Indexer[i];
-    delete [] net.angular2Indexer[i];
-    delete [] net.radialLists[i];
-
-    delete [] net.angularLists1Vec[i];
-    delete [] net.angularLists2Vec[i];
+    delete [] angular1Indexer[i];
+    delete [] angular2Indexer[i];
+	
+    delete [] angularLists1[i];
+    delete [] angularLists2[i];
+    delete [] radialLists[i];
+	
+    delete [] angularLists1Vec[i];
+    delete [] angularLists2Vec[i];
   }
-  delete [] net.angularLists1;
-  delete [] net.angularLists2;
-  delete [] net.angular1Indexer;
-  delete [] net.angular2Indexer;
+  delete [] angular1Indexer;
+  delete [] angular2Indexer;
+  delete [] radialIndexer;
 
-  delete [] net.angularLists1Vec;
-  delete [] net.angularLists2Vec;
+  delete [] angularLists1;
+  delete [] angularLists2;
 
-  delete [] net.radialLists;
-  delete [] net.radialIndexer;
-  delete [] net.radialListsVec;
+  delete [] angularLists1Vec;
+  delete [] angularLists2Vec;
 
-  _mm_free(net.scale1);
-  _mm_free(net.scale2);
+  delete [] radialLists;
+  delete [] radialListsVec;
+  _mm_free(scale1);
+  _mm_free(scale2);
 }
 
+PairNNIntel::VectorizedSymc::~VectorizedSymc() {
+  if(mask != nullptr) {
+    _mm_free(mask);
+	//delete [] mask;
+  }
+  if(eta != nullptr) {
+    _mm_free(eta);
+	//delete [] eta;
+  }
+  if(Rs != nullptr) {
+    _mm_free(Rs);
+	//delete [] Rs;
+  }
+  if(lammda != nullptr) {
+    _mm_free(lammda);
+	//delete [] lammda;
+  }
+  if(powtwo != nullptr) {
+    _mm_free(powtwo);
+	//delete [] powtwo;
+  }
+
+  if(lammda_i != nullptr) {
+    delete [] lammda_i;
+  }
+  if(zeta != nullptr) {
+    delete [] zeta;
+  }
+}
 
 /* ---------------------------------------------------------------------- */
 
