@@ -131,7 +131,7 @@ Installation
     make intel_cpu_intelmpi
     
 .. note::
-    'make intel_cpu_intelmpi' is an example of using the intel compiler for lammps. You may need to explicitly set some library path and optimization flags (such as -xAVX) if necessary.
+    'make intel_cpu_intelmpi' is an example of using the intel compiler for lammps. Before using a makefile, you may need to explicitly set some library path and optimization flags (such as -xAVX) in the makefile if necessary.
 
 Requirements for potential file
 -------------------------------
@@ -147,10 +147,6 @@ Usage
 In youer LAMMPS script file, regular version uses ``pair_style nn``.
 For the accelerated version, ``pair_style nn/intel`` should be invoked.
 
-Current Issue
--------------
-
-The ‘clear’ command within lammps input script may cause some errors.
 
 .. _test_installation:
 
