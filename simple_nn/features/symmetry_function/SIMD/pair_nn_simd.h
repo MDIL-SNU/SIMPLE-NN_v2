@@ -40,7 +40,6 @@ namespace LAMMPS_NS {
         VectorizedSymc() {}
         ~VectorizedSymc();
         int vector_len;
-        int true_size;
         int tt_offset;
         double cutoffr;
 
@@ -50,15 +49,20 @@ namespace LAMMPS_NS {
         double* lammda=nullptr; //coefs[3] 1 or -1
         double* powtwo=nullptr;
 
-        //initialized but not used yet (could be required for above angular sym ALGO)
-        int* lammda_i=nullptr; //coefs[3] 1 or -1
-        int* zeta=nullptr;
+        int uq_eta_size;
+        double* uq_eta=nullptr;
+        int* uq_eta_map=nullptr;
+
+        int max_zeta;
+        int* uq_zeta_lammda_map = nullptr;
+
+        void init_radial_vecSymc(Symc* target, const int len);
+        void init_angular_vecSymc(Symc* target, const int len);
       };
 
       struct alignas(ALIGN_NUM) Net {
-		~Net();
-		
-		int nelements;
+        ~Net();
+        int nelements;
 
         int *nnode; // number of nodes in each layer
         int nlayer; // number of layers
@@ -90,13 +94,18 @@ namespace LAMMPS_NS {
       int *map;  // mapping from atom types to elements
       Net *nets; // network parameters
       double cutmax; //not used
-      double max_rc_ang;
+      //double max_rc_ang;
+      double max_rc_ang_sq;
 
       bool isG4=false;
       bool isG5=false;
+      bool optimize_G4=true;
+      bool optimize_G5=true;
 
       //init NN parameters from potential file called from coeff()
       void read_file(char *);
+      void init_vectorizedSymc(Net& net, const int nelements);
+      //void init_AngularVecSymc(VectorizedSymc& 
       //called from destructor & read_file
       //void free_net(Net &);
       // calculate atomic energy & derivative of net called from compute()
@@ -104,12 +113,12 @@ namespace LAMMPS_NS {
 
       //G4
       void AngularVector1_simd(const int , const int , const int , const int , const int , const int ,const int, const double , const double , const double , const double* , const double* , const double* , const double* , double* , double* );
+      void AngularVector1_simd_AVX2(const int , const int , const int , const int , const int , const int ,const int, const double , const double , const double , const double* , const double* , const double* , const double* , double* , double* );
 
       void AngularVector2_simd(const int , const int , const int , const int , const int , const int ,const int, const double , const double , const double , const double* , const double* , const double* , const double* , double* , double* );
+      void AngularVector2_simd_AVX2(const int , const int , const int , const int , const int , const int ,const int, const double , const double , const double , const double* , const double* , const double* , const double* , double* , double* );
 
       void RadialVector_simd(const int , const int , const int , const int ,const int, const double , const double* , double* , double* );
-
-      void ForceAssign_simd(double** , const double* , double* , const int , const int , const int* , const int );
 
     public:
       PairNNIntel(class LAMMPS *);
