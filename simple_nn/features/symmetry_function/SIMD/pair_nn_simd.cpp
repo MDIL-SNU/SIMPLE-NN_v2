@@ -19,6 +19,7 @@ See the README file in the top-level LAMMPS directory.
 #include "atom.h"
 #include "domain.h"
 #include "comm.h"
+#include "fmt/core.h"
 #include "neighbor.h"
 #include "neigh_list.h"
 #include "neigh_request.h"
@@ -1174,12 +1175,12 @@ void PairNNIntel::read_file(char *fname) {
 
   //print optimize status
 #ifdef __AVX512F__
-  printf("AVX512 for descriptor calc on\n");
+  if (lmp->logfile) fputs("AVX512 for descriptor calc on\n", lmp->logfile);
 #else
-  printf("AVX512 for descriptor calc off\n");
+  if (lmp->logfile) fputs("AVX512 for descriptor calc off\n", lmp->logfile);
 #endif
-  printf("optimizing G4? : %s\n", optimize_G4 ? "true" : "false");
-  printf("optimizing G5? : %s\n", optimize_G5 ? "true" : "false");
+  if (lmp->logfile) fprintf(lmp->logfile, "optimizing G4? : %s\n", optimize_G4 ? "true" : "false");
+  if (lmp->logfile) fprintf(lmp->logfile, "optimizing G5? : %s\n", optimize_G5 ? "true" : "false");
 }
 
 void PairNNIntel::VectorizedSymc::init_radial_vecSymc(Symc* target, const int len) {
@@ -1296,6 +1297,9 @@ void PairNNIntel::init_vectorizedSymc(Net& net, const int nelements) {
       //하나라도 어기면 false
       if(net.angularLists1Vec[j][k].uq_eta_size > SIMD_V_LEN) optimize_G4 = false;
       if(net.angularLists2Vec[j][k].uq_eta_size > SIMD_V_LEN) optimize_G5 = false;
+
+      if(net.angularLists1Vec[j][k].max_zeta > 8) optimize_G4 = false;
+      if(net.angularLists1Vec[j][k].max_zeta > 8) optimize_G4 = false;
     } 
   } //jj
 }
