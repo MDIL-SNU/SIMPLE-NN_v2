@@ -153,14 +153,14 @@ Two additional accelerations are possible if the AVX2 or AVX512 instruction set 
 To enable these features, add "-xCORE-AVX2" or "-xCORE-AVX512" compile flag to your makefile, depending on your CPU.
 Since AVX512 is released after AVX2, turning on AVX512 automatically turns on AVX2 as well.
 
-The AVX2 version only computes unique values of symmetry function parameters to reduce computation.
-So AVX2 acceleration puts some requirements on ptential file.
+Further acceleration by AVX2 is possible by computing unique values of symmetry function parameters to reduce computation.
+So it puts some requirements on potential file.
  - The potential file must contain at least one G4 or G5 angular symmetry function.
  - The number of unique 'eta' value in same angular symmetry function group must be less than 4(AVX2) or 8(AVX512).
  - The zeta value must be less than 8.
-AVX2 version is about 25~35% faster than the original AVX version.
+This acceleration is about 25~35% faster than the primitive AVX version.
 
-AVX512 version doubles the maximum size of simd calculation. The speed up is around 10%.
+In addition, AVX512 doubles the maximum size of simd calculation, whose speed up is around 10%.
 
 You can check the log file of LAMMPS to see if the installation was successful and if the potential file conditions were met.
 After LAMMPS reads the potential file, you can see somthing like this :
