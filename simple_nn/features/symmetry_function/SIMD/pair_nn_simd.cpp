@@ -1174,13 +1174,13 @@ void PairNNIntel::read_file(char *fname) {
 #endif
 
   //print optimize status
+  if (lmp->logfile) fprintf(lmp->logfile, "AVX2 for angular descriptor G4 calc : %s\n", optimize_G4 ? "on" : "off");
+  if (lmp->logfile) fprintf(lmp->logfile, "AVX2 for angular descriptor G5 calc : %s\n", optimize_G5 ? "on" : "off");
 #ifdef __AVX512F__
-  if (lmp->logfile) fputs("AVX512 for descriptor calc on\n", lmp->logfile);
+  if (lmp->logfile) fputs("AVX512 for descriptor calc : on\n", lmp->logfile);
 #else
-  if (lmp->logfile) fputs("AVX512 for descriptor calc off\n", lmp->logfile);
+  if (lmp->logfile) fputs("AVX512 for descriptor calc : off\n", lmp->logfile);
 #endif
-  if (lmp->logfile) fprintf(lmp->logfile, "optimizing G4? : %s\n", optimize_G4 ? "true" : "false");
-  if (lmp->logfile) fprintf(lmp->logfile, "optimizing G5? : %s\n", optimize_G5 ? "true" : "false");
 }
 
 void PairNNIntel::VectorizedSymc::init_radial_vecSymc(Symc* target, const int len) {
