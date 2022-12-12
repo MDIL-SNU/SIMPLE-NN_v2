@@ -167,9 +167,9 @@ After LAMMPS reads the potential file, you can see somthing like this :
 
 .. code-block:: text
 
-    AVX512 for descriptor calc on/off
-    optimizing G4? : True/False
-    optimizing G5? : True/False
+    AVX2 for angular descriptor G4 calc : on/off
+    AVX2 for angular descriptor G5 calc : on/off
+    AVX512 for descriptor calc : on/off
 
 .. _test_installation:
 
