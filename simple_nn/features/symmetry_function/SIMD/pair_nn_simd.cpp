@@ -19,6 +19,7 @@ See the README file in the top-level LAMMPS directory.
 #include "atom.h"
 #include "domain.h"
 #include "comm.h"
+#include "fmt/core.h"
 #include "neighbor.h"
 #include "neigh_list.h"
 #include "neigh_request.h"
@@ -26,6 +27,8 @@ See the README file in the top-level LAMMPS directory.
 #include "error.h"
 #include "math_extra.h"
 #include "force.h"
+
+#include <set>
 
 #include <cstdio>
 #include <cstdlib>
@@ -53,8 +56,6 @@ PairNNIntel::~PairNNIntel()
     delete [] map;
   }
 
-  //for (int i=0; i<nelements; i++) free_net(nets[i]);
-
   delete [] nets;
 }
 
@@ -81,28 +82,15 @@ inline void PairNNIntel::RadialVector_simd(const int ielem, const int jelem, con
     simd_v mask = SIMD_load_aligned(&vsym->mask[s]);
     simd_v eta_v = SIMD_load_aligned(&vsym->eta[s]);
     simd_v Rs_v = SIMD_load_aligned(&vsym->Rs[s]);
-	/*
-    simd_v mask = SIMD_load(&vsym->mask[s]);
-    simd_v eta_v = SIMD_load(&vsym->eta[s]);
-    simd_v Rs_v = SIMD_load(&vsym->Rs[s]);
-	*/
 
     simd_v tmp_v = rRij_v - Rs_v;
     simd_v eta_tmp_v = tmp_v * eta_v;
 
-#ifdef __EXP_APPROXIMATE__
-    simd_v expld_v;
-    simd_v expl_v = SIMD_exp_approximate(eta_tmp_v*tmp_v, expld_v);
-    simd_v deriv_v = fmadd(eta_tmp_v*fc_v*2,expld_v,dfdR_v*expl_v) * mask;
-
-    simd_v G2_v = fc_v * expl_v * mask;
-#else
     //mask here!
     simd_v expl_v = SIMD_exp(eta_tmp_v*tmp_v)*mask;
     simd_v deriv_v = expl_v*(fmadd(eta_tmp_v,fc_v*2,dfdR_v));
 
     simd_v G2_v = fc_v * expl_v;
-#endif
     simd_v* symvec_v = (simd_v*)(&symvec[tt_offset+s]);
     symvec_v[0] = symvec_v[0] + G2_v;
 
@@ -117,7 +105,6 @@ inline void PairNNIntel::RadialVector_simd(const int ielem, const int jelem, con
     tmpf_simd[ii_idx + 2*stride_nsym] = tmpf_simd[ii_idx + 2*stride_nsym] - deriv_v * vecij[2];
   }
 }
-
 
 inline void PairNNIntel::AngularVector1_simd(const int ielem, const int jelem, const int kelem, const int ii_idx, const int jj_idx, const int kk_idx, const int stride_nsym, const double rRij, const double rRik, const double rRjk, const double* vecij, const double* vecik, const double* vecjk, const double* precal_ang, double* symvec, double* tmpf) {
 
@@ -152,28 +139,10 @@ inline void PairNNIntel::AngularVector1_simd(const int ielem, const int jelem, c
     simd_v zeta_v = SIMD_load_aligned(&vsym->Rs[s]); //par[2]
     simd_v lammda_v = SIMD_load_aligned(&vsym->lammda[s]); //par[3]
     simd_v powtwo_v = SIMD_load_aligned(&vsym->powtwo[s]);
-	  /*
-    simd_v mask = SIMD_load(&vsym->mask[s]);
-    simd_v eta_v = SIMD_load(&vsym->eta[s]); //par[1]
-    simd_v zeta_v = SIMD_load(&vsym->Rs[s]); //par[2]
-    simd_v lammda_v = SIMD_load(&vsym->lammda[s]); //par[3]
-    simd_v powtwo_v = SIMD_load(&vsym->powtwo[s]);
-	*/
-
+   
     simd_v cosv = lammda_v * precal_ang[1] + 1;
-    simd_v powcos = SIMD_pow(cosv, zeta_v - 1);
+    simd_v powcos = SIMD_pow(cosv, zeta_v-1);
 
-#ifdef __EXP_APPROXIMATE__
-    simd_v expld;
-    simd_v expl = SIMD_exp_approximate(eta_v*precal_ang[0], expld);
-    simd_v prefactor = mask*powcos*powtwo_v;
-
-    simd_v deriv_ij = prefactor*fcik*fcjk*(fmadd(fmadd(eta_v,fcij_rRij_2*expld,dfdRij*expl),cosv,lammda_v*zeta_v*fcij*precal_ang[2]*expl));
-    simd_v deriv_ik = prefactor*fcij*fcjk*(fmadd(fmadd(eta_v,fcik_rRik_2*expld,dfdRik*expl),cosv,lammda_v*zeta_v*fcik*precal_ang[3]*expl));
-    simd_v deriv_jk = prefactor*fcij*fcik*(fmadd(fmadd(eta_v,fcjk_rRjk_2*expld,dfdRjk*expl),cosv,lammda_v*zeta_v*fcjk*precal_ang[4]*expl));
-
-    simd_v G4_v = prefactor*cosv*fcij*fcik*fcjk*expl;
-#else
     simd_v expl = SIMD_exp(eta_v*precal_ang[0])*powtwo_v;
     simd_v expl_powcos = mask*expl*powcos;
 
@@ -182,7 +151,106 @@ inline void PairNNIntel::AngularVector1_simd(const int ielem, const int jelem, c
     simd_v deriv_jk = expl_powcos*fcij*fcik*(fmadd(fmadd(eta_v,fcjk_rRjk_2,dfdRjk),cosv,lammda_v*zeta_v*fcjk*precal_ang[4]));
 
     simd_v G4_v = expl_powcos*cosv*fcij*fcik*fcjk;
-#endif
+
+    simd_v* symvec_v = (simd_v*)(&symvec[tt_offset+s]);
+    symvec_v[0] = symvec_v[0] + G4_v;
+
+    simd_v tmpd_ij_x = deriv_ij*vecij[0];
+    simd_v tmpd_ij_y = deriv_ij*vecij[1];
+    simd_v tmpd_ij_z = deriv_ij*vecij[2];
+    simd_v tmpd_ik_x = deriv_ik*vecik[0];
+    simd_v tmpd_ik_y = deriv_ik*vecik[1];
+    simd_v tmpd_ik_z = deriv_ik*vecik[2];
+    simd_v tmpd_jk_x = deriv_jk*vecjk[0];
+    simd_v tmpd_jk_y = deriv_jk*vecjk[1];
+    simd_v tmpd_jk_z = deriv_jk*vecjk[2];
+
+    simd_v* tmpf_simd = (simd_v*)(&tmpf[tt_offset + s]);
+
+    tmpf_simd[jj_idx + 0*stride_nsym] = tmpf_simd[jj_idx + 0*stride_nsym] + tmpd_ij_x - tmpd_jk_x;
+    tmpf_simd[jj_idx + 1*stride_nsym] = tmpf_simd[jj_idx + 1*stride_nsym] + tmpd_ij_y - tmpd_jk_y;
+    tmpf_simd[jj_idx + 2*stride_nsym] = tmpf_simd[jj_idx + 2*stride_nsym] + tmpd_ij_z - tmpd_jk_z;
+
+    tmpf_simd[kk_idx + 0*stride_nsym] = tmpf_simd[kk_idx + 0*stride_nsym] + tmpd_ik_x + tmpd_jk_x;
+    tmpf_simd[kk_idx + 1*stride_nsym] = tmpf_simd[kk_idx + 1*stride_nsym] + tmpd_ik_y + tmpd_jk_y;
+    tmpf_simd[kk_idx + 2*stride_nsym] = tmpf_simd[kk_idx + 2*stride_nsym] + tmpd_ik_z + tmpd_jk_z;
+
+    tmpf_simd[ii_idx + 0*stride_nsym] = tmpf_simd[ii_idx + 0*stride_nsym] - tmpd_ij_x - tmpd_ik_x;
+    tmpf_simd[ii_idx + 1*stride_nsym] = tmpf_simd[ii_idx + 1*stride_nsym] - tmpd_ij_y - tmpd_ik_y;
+    tmpf_simd[ii_idx + 2*stride_nsym] = tmpf_simd[ii_idx + 2*stride_nsym] - tmpd_ij_z - tmpd_ik_z;
+  }
+}
+
+//Assume for every G4, uniquie eta <= 4
+inline void PairNNIntel::AngularVector1_simd_AVX2(const int ielem, const int jelem, const int kelem, const int ii_idx, const int jj_idx, const int kk_idx, const int stride_nsym, const double rRij, const double rRik, const double rRjk, const double* vecij, const double* vecik, const double* vecjk, const double* precal_ang, double* symvec, double* tmpf) {
+
+  VectorizedSymc* vsym = &nets[ielem].angularLists1Vec[jelem][kelem];
+  const double cutr = vsym->cutoffr;
+  const int vector_size = vsym->vector_len;
+  const int tt_offset = vsym->tt_offset;
+
+  if (vector_size == 0 || rRij > cutr || rRjk > cutr || rRik > cutr) return;
+
+  double precal_cutf[6];
+
+  cutf2_noslot(rRij, cutr, precal_cutf[0], precal_cutf[1]);
+  cutf2_noslot(rRik, cutr, precal_cutf[2], precal_cutf[3]);
+  cutf2_noslot(rRjk, cutr, precal_cutf[4], precal_cutf[5]);
+
+  const double fcij = precal_cutf[0];
+  const double fcik = precal_cutf[2];
+  const double fcjk = precal_cutf[4];
+
+  const double fcij_rRij_2 = rRij*fcij*2;
+  const double fcik_rRik_2 = rRik*fcik*2;
+  const double fcjk_rRjk_2 = rRjk*fcjk*2;
+
+  const double dfdRij = precal_cutf[1];
+  const double dfdRik = precal_cutf[3];
+  const double dfdRjk = precal_cutf[5];
+
+  //unique eta calc should be less than SIMD_V_LEN
+  simd_v tmp = SIMD_exp(SIMD_load_aligned(&vsym->uq_eta[0])*precal_ang[0]);
+  double* uq_expl = (double *)&tmp.v;
+
+  //unique zeta-lammda pair calc
+  const int max_zeta = vsym->max_zeta;
+  const double cosv_base_p = 1+precal_ang[1];
+  const double cosv_base_n = 1-precal_ang[1];
+  double pow_cosv_p = cosv_base_p;
+  double pow_cosv_n = cosv_base_n;
+  double uq_powcos[16];
+  uq_powcos[0] = 1;
+  uq_powcos[1] = 1;
+  uq_powcos[2] = cosv_base_p;
+  uq_powcos[3] = cosv_base_n;
+
+  //pow from 0 to max_zeta-1
+  for (int s=2; s<max_zeta; s++) {
+    pow_cosv_p *= cosv_base_p;
+    pow_cosv_n *= cosv_base_n;
+    uq_powcos[2*s] = pow_cosv_p;
+    uq_powcos[2*s+1] = pow_cosv_n;
+  }
+
+  for (int s=0; s < vector_size; s+=SIMD_V_LEN) {
+    simd_v mask = SIMD_load_aligned(&vsym->mask[s]);
+    simd_v eta_v = SIMD_load_aligned(&vsym->eta[s]); //par[1]
+    simd_v zeta_v = SIMD_load_aligned(&vsym->Rs[s]); //par[2]
+    simd_v lammda_v = SIMD_load_aligned(&vsym->lammda[s]); //par[3]
+    simd_v powtwo_v = SIMD_load_aligned(&vsym->powtwo[s]);
+    
+    simd_v cosv = lammda_v * precal_ang[1] + 1;
+    simd_v powcos = SIMD_gather(uq_powcos, &vsym->uq_zeta_lammda_map[s]);
+    simd_v expl = SIMD_gather(uq_expl, &vsym->uq_eta_map[s]);
+
+    simd_v expl_powcos = mask*expl*powcos*powtwo_v;
+
+    simd_v deriv_ij = expl_powcos*fcik*fcjk*(fmadd((eta_v*fcij_rRij_2+dfdRij),cosv,lammda_v*zeta_v*fcij*precal_ang[2]));
+    simd_v deriv_ik = expl_powcos*fcij*fcjk*(fmadd((eta_v*fcik_rRik_2+dfdRik),cosv,lammda_v*zeta_v*fcik*precal_ang[3]));
+    simd_v deriv_jk = expl_powcos*fcij*fcik*(fmadd((eta_v*fcjk_rRjk_2+dfdRjk),cosv,lammda_v*zeta_v*fcjk*precal_ang[4]));
+
+    simd_v G4_v = expl_powcos*cosv*fcij*fcik*fcjk;
 
     simd_v* symvec_v = (simd_v*)(&symvec[tt_offset+s]);
     symvec_v[0] = symvec_v[0] + G4_v;
@@ -241,28 +309,10 @@ inline void PairNNIntel::AngularVector2_simd(const int ielem, const int jelem, c
     simd_v zeta_v = SIMD_load_aligned(&vsym->Rs[s]); //par[2]
     simd_v lammda_v = SIMD_load_aligned(&vsym->lammda[s]); //par[3]
     simd_v powtwo_v = SIMD_load_aligned(&vsym->powtwo[s]);
-	/*
-    simd_v mask = SIMD_load(&vsym->mask[s]);
-    simd_v eta_v = SIMD_load(&vsym->eta[s]); //par[1]
-    simd_v zeta_v = SIMD_load(&vsym->Rs[s]); //par[2]
-    simd_v lammda_v = SIMD_load(&vsym->lammda[s]); //par[3]
-    simd_v powtwo_v = SIMD_load(&vsym->powtwo[s]);
-	*/
 
     simd_v cosv = lammda_v * precal_ang[1] + 1;
     simd_v powcos = SIMD_pow(cosv, zeta_v - 1);
 
-#ifdef __EXP_APPROXIMATE__
-    simd_v expld;
-    simd_v expl = SIMD_exp_approximate(eta_v*precal_ang[5], expld);
-    simd_v prefactor = mask*powcos*powtwo_v;
-
-    simd_v deriv_ij = prefactor*fcik*(fmadd(fmadd(eta_v,fcij_rRij_2*expld,dfdRij*expl),cosv,lammda_v*zeta_v*fcij*precal_ang[2]*expl));
-    simd_v deriv_ik = prefactor*fcij*(fmadd(fmadd(eta_v,fcik_rRik_2*expld,dfdRik*expl),cosv,lammda_v*zeta_v*fcik*precal_ang[3]*expl));
-    simd_v deriv_jk = prefactor*fcij*fcik*lammda_v*zeta_v*precal_ang[4]*expl;
-
-    simd_v G5_v = prefactor*cosv*fcij*fcik*expl;
-#else
     simd_v expl = SIMD_exp(eta_v*precal_ang[5])*powtwo_v;
     //mask here!
     simd_v expl_powcos = mask*expl*powcos;
@@ -272,7 +322,6 @@ inline void PairNNIntel::AngularVector2_simd(const int ielem, const int jelem, c
     simd_v deriv_jk = expl_powcos*fcij*fcik*lammda_v*zeta_v*precal_ang[4];
 
     simd_v G5_v = expl_powcos*cosv*fcij*fcik;
-#endif
 
     simd_v* symvec_v = (simd_v*)(&symvec[tt_offset+s]);
     symvec_v[0] = symvec_v[0] + G5_v;
@@ -300,10 +349,102 @@ inline void PairNNIntel::AngularVector2_simd(const int ielem, const int jelem, c
     tmpf_simd[ii_idx + 0*stride_nsym] = tmpf_simd[ii_idx + 0*stride_nsym] - tmpd_ij_x - tmpd_ik_x;
     tmpf_simd[ii_idx + 1*stride_nsym] = tmpf_simd[ii_idx + 1*stride_nsym] - tmpd_ij_y - tmpd_ik_y;
     tmpf_simd[ii_idx + 2*stride_nsym] = tmpf_simd[ii_idx + 2*stride_nsym] - tmpd_ij_z - tmpd_ik_z;
-
   }
 }
 
+inline void PairNNIntel::AngularVector2_simd_AVX2(const int ielem, const int jelem, const int kelem, const int ii_idx, const int jj_idx, const int kk_idx, const int stride_nsym, const double rRij, const double rRik, const double rRjk, const double* vecij, const double* vecik, const double* vecjk, const double* precal_ang, double* symvec, double* tmpf) {
+  VectorizedSymc* vsym = &nets[ielem].angularLists2Vec[jelem][kelem];
+  const double cutr = vsym->cutoffr;
+  const int vector_size = vsym->vector_len;
+  const int tt_offset = vsym->tt_offset;
+
+  if (vector_size == 0 || rRij > cutr || rRik > cutr) return;
+
+  double precal_cutf[4];
+
+  cutf2_noslot(rRij, cutr, precal_cutf[0], precal_cutf[1]);
+  cutf2_noslot(rRik, cutr, precal_cutf[2], precal_cutf[3]);
+
+  simd_v fcij_rRij_2 = SIMD_set(rRij*precal_cutf[0]*2);
+  simd_v fcik_rRik_2 = SIMD_set(rRik*precal_cutf[2]*2);
+
+  simd_v fcij = SIMD_set(precal_cutf[0]);
+  simd_v fcik = SIMD_set(precal_cutf[2]);
+
+  simd_v dfdRij = SIMD_set(precal_cutf[1]);
+  simd_v dfdRik = SIMD_set(precal_cutf[3]);
+
+  simd_v tmp = SIMD_exp(SIMD_load_aligned(&vsym->uq_eta[0])*precal_ang[5]);
+  double* uq_expl = (double *)&tmp.v;
+
+  //unique zeta-lammda pair calc
+  const int max_zeta = vsym->max_zeta;
+  const double cosv_base_p = 1+precal_ang[1];
+  const double cosv_base_n = 1-precal_ang[1];
+  double pow_cosv_p = cosv_base_p;
+  double pow_cosv_n = cosv_base_n;
+  double uq_powcos[16];
+  uq_powcos[0] = 1;
+  uq_powcos[1] = 1;
+  uq_powcos[2] = cosv_base_p;
+  uq_powcos[3] = cosv_base_n;
+
+  //pow from 0 to max_zeta-1
+  for (int s=2; s<max_zeta; s++) {
+    pow_cosv_p *= cosv_base_p;
+    pow_cosv_n *= cosv_base_n;
+    uq_powcos[2*s] = pow_cosv_p;
+    uq_powcos[2*s+1] = pow_cosv_n;
+  }
+
+  for (int s=0; s < vector_size; s+=SIMD_V_LEN) {
+    simd_v mask = SIMD_load_aligned(&vsym->mask[s]);
+    simd_v eta_v = SIMD_load_aligned(&vsym->eta[s]); //par[1]
+    simd_v zeta_v = SIMD_load_aligned(&vsym->Rs[s]); //par[2]
+    simd_v lammda_v = SIMD_load_aligned(&vsym->lammda[s]); //par[3]
+    simd_v powtwo_v = SIMD_load_aligned(&vsym->powtwo[s]);
+
+    simd_v cosv = lammda_v * precal_ang[1] + 1;
+    simd_v powcos = SIMD_gather(uq_powcos, &vsym->uq_zeta_lammda_map[s]);
+
+    simd_v expl = SIMD_gather(uq_expl, &vsym->uq_eta_map[s]);
+    //mask here!
+    simd_v expl_powcos = mask*expl*powcos*powtwo_v;
+
+    simd_v deriv_ij = expl_powcos*fcik*(fmadd(fmadd(eta_v,fcij_rRij_2,dfdRij),cosv,lammda_v*zeta_v*fcij*precal_ang[2]));
+    simd_v deriv_ik = expl_powcos*fcij*(fmadd(fmadd(eta_v,fcik_rRik_2,dfdRik),cosv,lammda_v*zeta_v*fcik*precal_ang[3]));
+    simd_v deriv_jk = expl_powcos*fcij*fcik*lammda_v*zeta_v*precal_ang[4];
+
+    simd_v G5_v = expl_powcos*cosv*fcij*fcik;
+
+    simd_v* symvec_v = (simd_v*)(&symvec[tt_offset+s]);
+    symvec_v[0] = symvec_v[0] + G5_v;
+
+    simd_v tmpd_ij_x = deriv_ij*vecij[0];
+    simd_v tmpd_ij_y = deriv_ij*vecij[1];
+    simd_v tmpd_ij_z = deriv_ij*vecij[2];
+    simd_v tmpd_ik_x = deriv_ik*vecik[0];
+    simd_v tmpd_ik_y = deriv_ik*vecik[1];
+    simd_v tmpd_ik_z = deriv_ik*vecik[2];
+    simd_v tmpd_jk_x = deriv_jk*vecjk[0];
+    simd_v tmpd_jk_y = deriv_jk*vecjk[1];
+    simd_v tmpd_jk_z = deriv_jk*vecjk[2];
+
+    simd_v* tmpf_simd = (simd_v*)(&tmpf[tt_offset + s]);
+
+    tmpf_simd[jj_idx + 0*stride_nsym] = tmpf_simd[jj_idx + 0*stride_nsym] + tmpd_ij_x - tmpd_jk_x;
+    tmpf_simd[jj_idx + 1*stride_nsym] = tmpf_simd[jj_idx + 1*stride_nsym] + tmpd_ij_y - tmpd_jk_y;
+    tmpf_simd[jj_idx + 2*stride_nsym] = tmpf_simd[jj_idx + 2*stride_nsym] + tmpd_ij_z - tmpd_jk_z;
+
+    tmpf_simd[kk_idx + 0*stride_nsym] = tmpf_simd[kk_idx + 0*stride_nsym] + tmpd_ik_x + tmpd_jk_x;
+    tmpf_simd[kk_idx + 1*stride_nsym] = tmpf_simd[kk_idx + 1*stride_nsym] + tmpd_ik_y + tmpd_jk_y;
+    tmpf_simd[kk_idx + 2*stride_nsym] = tmpf_simd[kk_idx + 2*stride_nsym] + tmpd_ik_z + tmpd_jk_z;
+
+    tmpf_simd[ii_idx + 0*stride_nsym] = tmpf_simd[ii_idx + 0*stride_nsym] - tmpd_ij_x - tmpd_ik_x;
+    tmpf_simd[ii_idx + 1*stride_nsym] = tmpf_simd[ii_idx + 1*stride_nsym] - tmpd_ij_y - tmpd_ik_y;
+    tmpf_simd[ii_idx + 2*stride_nsym] = tmpf_simd[ii_idx + 2*stride_nsym] - tmpd_ij_z - tmpd_ik_z;
+  }
+}
 
 double PairNNIntel::evalNet(double* inpv, double *outv, Net &net){
   int nl = net.nlayer;
@@ -362,13 +503,20 @@ double PairNNIntel::evalNet(double* inpv, double *outv, Net &net){
 
 void PairNNIntel::compute(int eflag, int vflag)
 {
-  //mkl_verbose(1); //manually check which instruction set used in evalNet
+  //Array of Struct
+  struct alignas(ALIGN_NUM) NeighInfo {
+    int jelem;
+    double R;
+    double delij[3];
+    NeighInfo() {}
+  };
 
   if (eflag || vflag) ev_setup(eflag,vflag);
   else evflag = vflag_fdotr = 0;
   if(vflag_atom) {
     error->all(FLERR,"vflag_atom related feature is not supported (atomic stress)");
   }
+
   double **x = atom->x;
   double **f = atom->f;
   //alias
@@ -392,60 +540,88 @@ void PairNNIntel::compute(int eflag, int vflag)
 
     const int nsym = nets[ielem].nnode[0];
 
-    //indexer for simd_v array
-    const int stride_nsym = ((nsym-1)/SIMD_V_LEN) + 1;
-    const int ii_idx = stride_nsym*3*jnum;
+    int ninfo_indexer = 0;
+    NeighInfo * ninfos = new NeighInfo[jnum];
 
-    // +1 for safeguard ( above simd angualr part could violate boundary of tmpf ( although those values are necessarily zero ))
-    const int symvec_true_size = DATASIZE*(stride_nsym*SIMD_V_LEN+SIMD_V_LEN);
-    const int tmpf_true_size = DATASIZE*(stride_nsym*SIMD_V_LEN*(jnum+1)*3+SIMD_V_LEN); 
+    int ang_ninfo_indexer = 0;
+    int rad_to_ang_indexer = 0;
+    int * ang_ninfo_indexes= new int[jnum]; // contain index of ninfos for angular symmetry function calc
+    
+    int * jj_used = new int[jnum];
 
-    double * symvec = static_cast<double*>(_mm_malloc(symvec_true_size, ALIGN_NUM));
-	std::fill(symvec, symvec+symvec_true_size/DATASIZE, 0.0);
-
-    double * dsymvec = static_cast<double*>(_mm_malloc(symvec_true_size, ALIGN_NUM));
-	std::fill(dsymvec, dsymvec+symvec_true_size/DATASIZE, 0.0);
-
-    double * tmpf = static_cast<double*>(_mm_malloc(tmpf_true_size, ALIGN_NUM));
-	std::fill(tmpf, tmpf+tmpf_true_size/DATASIZE, 0.0);
-
-    // loop over i'th neighbor list
     for (int jj = 0; jj < jnum; jj++) {
       int j = jlist[jj];
       j &= NEIGHMASK;
-      const int jj_idx = stride_nsym*3*jj;
       const int jtype = type[j];
-      const int jelem = map[jtype];
-      const double delij[3] = {x[j][0] - xtmp, x[j][1] - ytmp, x[j][2] - ztmp};
 
+      const double delij[3] = {x[j][0] - xtmp, x[j][1] - ytmp, x[j][2] - ztmp};
       const double Rij = delij[0]*delij[0] + delij[1]*delij[1] + delij[2]*delij[2];
 
-      if (Rij < MINR || Rij > cutsq[itype][jtype]) { continue; }
+      if (Rij > cutsq[itype][jtype]) { continue; }
+      else {
+        NeighInfo& a = ninfos[ninfo_indexer];
+        a.delij[0] = delij[0];
+        a.delij[1] = delij[1];
+        a.delij[2] = delij[2];
+        a.R = Rij;
+        a.jelem = map[jtype];
+        jj_used[ninfo_indexer] = jj;
+
+        if (Rij < max_rc_ang_sq) {
+          ang_ninfo_indexes[ang_ninfo_indexer] = ninfo_indexer;
+          ang_ninfo_indexer++;
+        }
+        ninfo_indexer++;
+      }
+    }
+    const int stride_nsym = ((nsym-1)/SIMD_V_LEN) + 1;
+    const int ii_idx = stride_nsym*3*ninfo_indexer;
+
+    const int symvec_true_size = DATASIZE*(stride_nsym*SIMD_V_LEN+SIMD_V_LEN);
+    const int tmpf_true_size = DATASIZE*(stride_nsym*SIMD_V_LEN*(ninfo_indexer+1)*3+SIMD_V_LEN); 
+
+    double * symvec = static_cast<double*>(_mm_malloc(symvec_true_size, ALIGN_NUM));
+    std::fill(symvec, symvec+symvec_true_size/DATASIZE, 0.0);
+
+    double * dsymvec = static_cast<double*>(_mm_malloc(symvec_true_size, ALIGN_NUM));
+    std::fill(dsymvec, dsymvec+symvec_true_size/DATASIZE, 0.0);
+
+    double * tmpf = static_cast<double*>(_mm_malloc(tmpf_true_size, ALIGN_NUM));
+    std::fill(tmpf, tmpf+tmpf_true_size/DATASIZE, 0.0);
+
+    // loop over i'th neighbor list
+    for (int jn = 0; jn < ninfo_indexer; jn++) {
+      NeighInfo& j_info = ninfos[jn];
+      const double delij[3] = {j_info.delij[0], j_info.delij[1], j_info.delij[2]};
+      const double Rij = j_info.R;
+      const double jelem = j_info.jelem;
+
+      const int jj_idx = stride_nsym*3*jn;
+
       const double rRij = sqrt(Rij);
       const double invRij = 1/rRij;
       const double vecij[3] = {delij[0]*invRij, delij[1]*invRij, delij[2]*invRij};
 
       RadialVector_simd(ielem, jelem, ii_idx, jj_idx, stride_nsym, rRij, vecij, symvec, tmpf);
+      if(ang_ninfo_indexes[rad_to_ang_indexer] != jn) { continue; }
 
-      if (rRij > max_rc_ang) continue;
-      //loop over neighbor's of neighbor (To calculate angular symmetry function)
-      for (int kk = jj+1; kk < jnum; kk++) {
-        const int k = jlist[kk];
-        const int kk_idx = stride_nsym*3*kk;
-        const double delik[3] = {x[k][0] - xtmp, x[k][1] - ytmp, x[k][2] - ztmp};
-        const double Rik = delik[0]*delik[0] + delik[1]*delik[1] + delik[2]*delik[2];
+      rad_to_ang_indexer++;
 
-        if (Rik < MINR) continue;
+      for (int akn = rad_to_ang_indexer; akn < ang_ninfo_indexer; akn++) {
+        const int kn = ang_ninfo_indexes[akn];
+        NeighInfo& k_info = ninfos[kn];
+        const double delik[3] = {k_info.delij[0], k_info.delij[1], k_info.delij[2]};
+        const double Rik = k_info.R;
+        const double kelem = k_info.jelem;
+
+        const int kk_idx = stride_nsym*3*kn;
+
         const double rRik = sqrt(Rik);
-        if (rRik > max_rc_ang) continue;
-        const double invRik = 1/rRik;
 
-        const int ktype = type[k];
-        const int kelem = map[ktype];
-        const double deljk[3] = {x[k][0] - x[j][0], x[k][1] - x[j][1], x[k][2] - x[j][2]};
+        const double invRik = 1/rRik;
+        const double deljk[3] = {delik[0] - delij[0], delik[1] - delij[1], delik[2] - delij[2]};
         const double Rjk = deljk[0]*deljk[0] + deljk[1]*deljk[1] + deljk[2]*deljk[2];
 
-        if (Rjk < MINR) continue;
         const double rRjk = sqrt(Rjk);
         const double invRjk = 1/rRjk;
 
@@ -458,10 +634,18 @@ void PairNNIntel::compute(int eflag, int vflag)
             -rRjk*invRij*invRik, Rij + Rik};
 
         if (isG4) {
-          AngularVector1_simd(ielem, jelem, kelem, ii_idx, jj_idx, kk_idx, stride_nsym, rRij, rRik, rRjk, vecij, vecik, vecjk, precal_ang, symvec, tmpf);
+          if (optimize_G4) {
+            AngularVector1_simd_AVX2(ielem, jelem, kelem, ii_idx, jj_idx, kk_idx, stride_nsym, rRij, rRik, rRjk, vecij, vecik, vecjk, precal_ang, symvec, tmpf);
+          } else {
+            AngularVector1_simd(ielem, jelem, kelem, ii_idx, jj_idx, kk_idx, stride_nsym, rRij, rRik, rRjk, vecij, vecik, vecjk, precal_ang, symvec, tmpf);
+          }
         }
         if (isG5) {
-          AngularVector2_simd(ielem, jelem, kelem, ii_idx, jj_idx, kk_idx, stride_nsym, rRij, rRik, rRjk, vecij, vecik, vecjk, precal_ang, symvec, tmpf);
+          if (optimize_G5) {
+            AngularVector2_simd_AVX2(ielem, jelem, kelem, ii_idx, jj_idx, kk_idx, stride_nsym, rRij, rRik, rRjk, vecij, vecik, vecjk, precal_ang, symvec, tmpf);
+          } else {
+            AngularVector2_simd(ielem, jelem, kelem, ii_idx, jj_idx, kk_idx, stride_nsym, rRij, rRik, rRjk, vecij, vecik, vecjk, precal_ang, symvec, tmpf);
+          }
         }
       } //k atom loop
     } //j atom loop
@@ -471,37 +655,37 @@ void PairNNIntel::compute(int eflag, int vflag)
     if (eflag_global) { eng_vdwl += tmpE; } // contribute to total energy
     if (eflag_atom) { eatom[i] += tmpE; }
 
-    ForceAssign_simd(f, tmpf, dsymvec, jnum, stride_nsym, jlist, i);
+    simd_v* dsym_v = (simd_v*)(dsymvec);
+    simd_v* tmpf_v = (simd_v*)(tmpf);
+
+    for (int p=0; p <= ninfo_indexer; p++) {
+      const int n = (p!=ninfo_indexer)? jlist[jj_used[p]] : i;
+
+      simd_v x_reduced = SIMD_set(0);
+      simd_v y_reduced = SIMD_set(0);
+      simd_v z_reduced = SIMD_set(0);
+      //loop over nsym through simd-index
+      for (int ts=0; ts<stride_nsym; ts++) {
+        x_reduced = fmadd(tmpf_v[p*3*stride_nsym + 0*stride_nsym + ts] , dsym_v[ts], x_reduced);
+        y_reduced = fmadd(tmpf_v[p*3*stride_nsym + 1*stride_nsym + ts] , dsym_v[ts], y_reduced);
+        z_reduced = fmadd(tmpf_v[p*3*stride_nsym + 2*stride_nsym + ts] , dsym_v[ts], z_reduced);
+      }
+      for (int l=0; l<SIMD_V_LEN; l++) {
+        f[n][0] -= x_reduced[l];
+        f[n][1] -= y_reduced[l];
+        f[n][2] -= z_reduced[l];
+      }
+    }
+
+    delete[] ninfos;
+    delete[] jj_used;
+    delete[] ang_ninfo_indexes;
 
     _mm_free(symvec);
     _mm_free(dsymvec);
     _mm_free(tmpf);
   }
   if (vflag_fdotr) virial_fdotr_compute();
-}
-
-void PairNNIntel::ForceAssign_simd(double** f, const double* tmpf, double* dsym, const int jnum, const int stride_nsym, const int* jlist, const int i)
-{
-  simd_v* dsym_v = (simd_v*)dsym;
-  simd_v* tmpf_v = (simd_v*)(tmpf);
-
-  for (int nn=0; nn<jnum+1; nn++) {
-    const int n = (nn!=jnum)? jlist[nn] : i;
-    simd_v x_reduced = SIMD_set(0);
-    simd_v y_reduced = SIMD_set(0);
-    simd_v z_reduced = SIMD_set(0);
-    //loop over nsym through simd-index
-    for (int ts=0; ts<stride_nsym; ts++) {
-      x_reduced = fmadd(tmpf_v[nn*3*stride_nsym + 0*stride_nsym + ts] , dsym_v[ts], x_reduced);
-      y_reduced = fmadd(tmpf_v[nn*3*stride_nsym + 1*stride_nsym + ts] , dsym_v[ts], y_reduced);
-      z_reduced = fmadd(tmpf_v[nn*3*stride_nsym + 2*stride_nsym + ts] , dsym_v[ts], z_reduced);
-    }
-    for (int l=0; l<SIMD_V_LEN; l++) {
-      f[n][0] -= x_reduced[l];
-      f[n][1] -= y_reduced[l];
-      f[n][2] -= z_reduced[l];
-    }
-  }
 }
 
 /* ----------------------------------------------------------------------
@@ -641,7 +825,7 @@ void PairNNIntel::read_file(char *fname) {
   int tempAtype2 = 0;
   Symc sym_target = Symc();
   cutmax = 0;
-  max_rc_ang = 0.0;
+  double max_rc_ang = 0.0;
 
   while (1) {
     if (comm->me == 0) {
@@ -874,11 +1058,6 @@ void PairNNIntel::read_file(char *fname) {
         b_size[i] = nets[nnet].nnode[i+1];
       }
 
-      /* Never do this again
-         nets[nnet].weights = AlignedMultiArr(w_size, nlayer);
-         nets[nnet].weights_T = AlignedMultiArr(w_size, nlayer);
-         nets[nnet].bias = AlignedMultiArr(b_size, nlayer);
-         */
       nets[nnet].weights.init(w_size, nlayer);
       nets[nnet].weights_T.init(w_size, nlayer);
       nets[nnet].bias.init(b_size, nlayer);
@@ -956,22 +1135,12 @@ void PairNNIntel::read_file(char *fname) {
   //loop through nets & all elemental pair of angular lists, pre calc powtwo
   for (int i=0; i<nelements; i++) {
     for (int j=0; j<nelements; j++) {
-      for (int l=0; l<nets[i].radialIndexer[j]; l++) {
-        //nets[i].radialCutoffHomo[j] = (nets[i].radialLists[j][l].coefs[0] == nets[i].radialLists[j][0].coefs[0]);
-      }
       for (int k=0; k<nelements; k++) {
         for (int t=0; t<nets[i].angular1Indexer[j][k]; t++) {
           nets[i].angularLists1[j][k][t].powtwo = pow(2, 1-nets[i].angularLists1[j][k][t].coefs[2]);
-          nets[i].angularLists1[j][k][t].powint = \
-                              (nets[i].angularLists1[j][k][t].coefs[2] - int(nets[i].angularLists1[j][k][t].coefs[2])) < 1e-6;
-          //nets[i].angular1CutoffHomo[j][k] = (nets[i].angularLists1[j][k][t].coefs[0] == nets[i].angularLists1[j][k][0].coefs[0]);
         }
-
         for (int t=0; t<nets[i].angular2Indexer[j][k]; t++) {
           nets[i].angularLists2[j][k][t].powtwo = pow(2, 1-nets[i].angularLists2[j][k][t].coefs[2]);
-          nets[i].angularLists2[j][k][t].powint = \
-                              (nets[i].angularLists2[j][k][t].coefs[2] - int(nets[i].angularLists2[j][k][t].coefs[2])) < 1e-6;
-          //nets[i].angular2CutoffHomo[j][k] = (nets[i].angularLists2[j][k][t].coefs[0] == nets[i].angularLists2[j][k][0].coefs[0]);
         }
       }
     }
@@ -988,165 +1157,154 @@ void PairNNIntel::read_file(char *fname) {
     }
   }
 
+  max_rc_ang_sq = max_rc_ang*max_rc_ang;
+
   //copy assgined radial, angular lists info to vectorized version
   //loop over nets
   for (int i=0; i<nelements; i++) {
-    Net* net = &nets[i];
-    //loop over element
-    for (int j=0; j<nelements; j++) {
-      const int radialLen = net->radialIndexer[j];
+    init_vectorizedSymc(nets[i], nelements);
+  }
 
-      const int rad_true_size = (radialLen+SIMD_V_LEN)*DATASIZE;
+  //cannot optimize if AVX2 is not availible
+#ifndef __AVX2__
+  //if (_may_i_use_cpu_feature(_FEATURE_AVX2) == false) {
+  optimize_G4 = false;
+  optimize_G5 = false;
+  //}
+#endif
 
-      //pointer for alias (not array!)
-      VectorizedSymc* radial = &nets[i].radialListsVec[j];
+  //print optimize status
+  if (lmp->logfile) fprintf(lmp->logfile, "AVX2 for angular descriptor G4 calc : %s\n", optimize_G4 ? "on" : "off");
+  if (lmp->logfile) fprintf(lmp->logfile, "AVX2 for angular descriptor G5 calc : %s\n", optimize_G5 ? "on" : "off");
+#ifdef __AVX512F__
+  if (lmp->logfile) fputs("AVX512 for descriptor calc : on\n", lmp->logfile);
+#else
+  if (lmp->logfile) fputs("AVX512 for descriptor calc : off\n", lmp->logfile);
+#endif
+}
 
-      radial->eta = (double*)_mm_malloc(rad_true_size, ALIGN_NUM);
-      radial->Rs = (double*)_mm_malloc(rad_true_size, ALIGN_NUM);
-      radial->mask = (double*)_mm_malloc(rad_true_size, ALIGN_NUM);
-	  /*
-      radial->eta = new double[rad_true_size/DATASIZE];
-      radial->Rs = new double[rad_true_size/DATASIZE];
-      radial->mask = new double[rad_true_size/DATASIZE];
-	  */
+void PairNNIntel::VectorizedSymc::init_radial_vecSymc(Symc* target, const int len) {
+  const int pad_plus_size = len + SIMD_V_LEN;
+  const int rad_true_size = (pad_plus_size)*DATASIZE;
 
-      radial->vector_len = radialLen;
-      radial->true_size = rad_true_size;
-      radial->tt_offset = nets[i].radialLists[j][0].inputVecNum;
+  eta = (double*)_mm_malloc(rad_true_size, ALIGN_NUM);
+  Rs = (double*)_mm_malloc(rad_true_size, ALIGN_NUM);
+  mask = (double*)_mm_malloc(rad_true_size, ALIGN_NUM);
 
-      for (int s=0; s<radialLen; s++) {
-        Symc sym = net->radialLists[j][s];
-        radial->cutoffr = sym.coefs[0];
-        radial->eta[s] = -sym.coefs[1];
-        radial->Rs[s] = sym.coefs[2];
+  vector_len = len;
+  tt_offset = target[0].inputVecNum;
 
-        if(s%SIMD_V_LEN == 0) {
-          for (int m=0; m<SIMD_V_LEN; m++) {
-            if (s+m < radialLen) {
-              radial->mask[s + m] = 1;
-			}
-            else {
-              radial->mask[s + m] = 0;
-			  radial->eta[s + m] = 0;
-			  radial->Rs[s + m] = 0;
-			}
-          }
-        }
-      }
+  for (int s=0; s<len; s++) {
+    Symc sym = target[s];
+    cutoffr = sym.coefs[0];
+    eta[s] = -sym.coefs[1];
+    Rs[s] = sym.coefs[2];
+    mask[s] = 1;
+  }
+  for (int s=len; s<pad_plus_size; s++) {
+    eta[s] = 0;
+    Rs[s] = 0;
+    mask[s] = 0;
+  }
+}
 
-      for (int k=0; k<nelements; k++) {
-        //same code above (just radial to angular) (refactoring required)
-        const int angular1Len = net->angular1Indexer[j][k];
-        const int ang1_true_size = (angular1Len+SIMD_V_LEN)*DATASIZE;
-        VectorizedSymc* angular1 = &nets[i].angularLists1Vec[j][k];
-        angular1->vector_len = angular1Len;
+void PairNNIntel::VectorizedSymc::init_angular_vecSymc(Symc* target, const int len) {
+  const int pad_plus_size = len + SIMD_V_LEN;
+  const int ang1_true_size = (pad_plus_size)*DATASIZE;
+  vector_len = len;
 
-		if(angular1Len != 0) {
-			isG4 = true;
-		}
-		angular1->eta = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
-		angular1->Rs = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
-		angular1->lammda = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
-		angular1->powtwo = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
-		angular1->mask = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
-		/*
-		angular1->eta = new double[ang1_true_size/DATASIZE];
-		angular1->Rs = new double[ang1_true_size/DATASIZE];
-		angular1->lammda = new double[ang1_true_size/DATASIZE];
-		angular1->powtwo = new double[ang1_true_size/DATASIZE];
-		angular1->mask = new double[ang1_true_size/DATASIZE];
-		*/
+  eta = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
+  Rs = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
+  lammda = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
+  powtwo = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
+  mask = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
 
-		angular1->lammda_i = new int[angular1Len];
-		angular1->zeta = new int[angular1Len];
+  int * lammda_i = new int[len];
+  int * zeta = new int[len];
 
-		angular1->true_size = ang1_true_size;
+  //uq_eta_map = new int[pad_plus_size];
+  uq_eta_map = (int*)_mm_malloc(pad_plus_size*sizeof(int), ALIGN_NUM);
+  uq_zeta_lammda_map = (int*)_mm_malloc(pad_plus_size*sizeof(int), ALIGN_NUM);
+  
+  tt_offset = target[0].inputVecNum;
 
-		angular1->tt_offset = nets[i].angularLists1[j][k][0].inputVecNum;
-		for (int s=0; s<angular1Len; s++) {
-		  isG4 = true;
-		  Symc sym = net->angularLists1[j][k][s];
-		  angular1->cutoffr = sym.coefs[0];
-		  angular1->eta[s] = -sym.coefs[1];
-		  angular1->Rs[s] = sym.coefs[2];
-		  angular1->lammda[s] = sym.coefs[3];
-		  angular1->powtwo[s] = sym.powtwo;
+  for (int s=0; s<len; s++) {
+    Symc sym = target[s];
+    cutoffr = sym.coefs[0];
+    eta[s] = -sym.coefs[1];
+    Rs[s] = sym.coefs[2];
+    lammda[s] = sym.coefs[3];
+    powtwo[s] = sym.powtwo;
+    mask[s] = 1;
 
-		  angular1->lammda_i[s] = (int)sym.coefs[3];
-		  angular1->zeta[s] = (int)sym.coefs[2];
-		  if(s%SIMD_V_LEN == 0) {
-			for (int m=0; m<SIMD_V_LEN; m++) {
-			  if (s+m < angular1Len) {
-				angular1->mask[s + m] = 1;
-			  }
-			  else {
-				angular1->mask[s + m] = 0;
-				angular1->eta[s + m] = 0;
-				angular1->Rs[s + m] = 0;
-				angular1->lammda[s + m] = 0;
-				angular1->powtwo[s + m] = 0;
-			  }
-			}
-		  }
-		}
+    lammda_i[s] = (int)sym.coefs[3];
+    zeta[s] = (int)sym.coefs[2];
+  }
 
-        const int angular2Len = net->angular2Indexer[j][k];
-        const int ang2_true_size = (angular2Len+SIMD_V_LEN)*DATASIZE;
-		VectorizedSymc* angular2 = &nets[i].angularLists2Vec[j][k];
-		angular2->vector_len = angular2Len;
+  std::set<double> eta_set(eta, eta + len);
+  uq_eta_size = eta_set.size();
+  uq_eta = (double*)_mm_malloc((uq_eta_size+SIMD_V_LEN)*DATASIZE, ALIGN_NUM);
+  std::copy(eta_set.begin(), eta_set.end(), uq_eta);
 
-		if(angular2Len != 0) {
-			isG5 = true;
-		}
+  for(int s=0; s<len; s++) for(int m=0; m<uq_eta_size; m++) {
+    if(eta[s] == uq_eta[m]) {
+      uq_eta_map[s] = m;
+      break;
+    }
+  }
+  //set padding elements of uq_eta to 0
+  for (int s=uq_eta_size; s<uq_eta_size+SIMD_V_LEN; s++) {
+    uq_eta[s] = 0;
+  }
 
-		angular2->eta = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
-		angular2->Rs = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
-		angular2->lammda = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
-		angular2->powtwo = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
-		angular2->mask = (double*)_mm_malloc(ang2_true_size, ALIGN_NUM);
+  max_zeta = *std::max_element(zeta, zeta+len);
+  for (int s=0; s<len; s++) {
+    if(lammda_i[s] == 1) {
+      uq_zeta_lammda_map[s] = 2*(zeta[s] - 1);
+    } else {
+      uq_zeta_lammda_map[s] = 2*(zeta[s] - 1) + 1;
+    }
+  }
 
-		/*
-		angular2->eta = new double[ang2_true_size/DATASIZE];
-		angular2->Rs = new double[ang2_true_size/DATASIZE];
-		angular2->lammda = new double[ang2_true_size/DATASIZE];
-		angular2->powtwo = new double[ang2_true_size/DATASIZE];
-		angular2->mask = new double[ang2_true_size/DATASIZE];
-		*/
+  //set padding elements value to 0
+  for (int s=len; s<pad_plus_size; s++) {
+    eta[s] = 0;
+    Rs[s] = 0;
+    lammda[s] = 0;
+    powtwo[s] = 0;
+    uq_eta_map[s] = 0;
+    uq_zeta_lammda_map[s] = 0;
+    mask[s] = 0;
+  }
+  delete[] lammda_i;
+  delete[] zeta;
+}
 
-		angular2->lammda_i = new int[angular2Len];
-		angular2->zeta = new int[angular2Len];
-		angular2->true_size = ang2_true_size;
+void PairNNIntel::init_vectorizedSymc(Net& net, const int nelements) {
+  //loop over element
+  for (int j=0; j<nelements; j++) {
+    net.radialListsVec[j].init_radial_vecSymc(net.radialLists[j], net.radialIndexer[j]);
 
-		angular2->tt_offset = nets[i].angularLists2[j][k][0].inputVecNum;
-		for (int s=0; s<angular2Len; s++) {
-		  Symc sym = net->angularLists2[j][k][s];
-		  angular2->cutoffr = sym.coefs[0];
-		  angular2->eta[s] = -sym.coefs[1];
-		  angular2->Rs[s] = sym.coefs[2];
-		  angular2->lammda[s] = sym.coefs[3];
-		  angular2->powtwo[s] = sym.powtwo;
+    for (int k=0; k<nelements; k++) {
+      //same code above (just radial to angular) (refactoring required)
+      net.angularLists1Vec[j][k].init_angular_vecSymc(net.angularLists1[j][k], net.angular1Indexer[j][k]);
+      net.angularLists2Vec[j][k].init_angular_vecSymc(net.angularLists2[j][k], net.angular2Indexer[j][k]);
 
-		  angular2->lammda_i[s] = (int)sym.coefs[3];
-		  angular2->zeta[s] = (int)sym.coefs[2];
-		  if(s%SIMD_V_LEN == 0) {
-			for (int m=0; m<SIMD_V_LEN; m++) {
-			  if (s+m < angular2Len) {
-				angular2->mask[s + m] = 1;
-			  }
-			  else {
-				angular2->mask[s + m] = 0;
-				angular2->eta[s + m] = 0;
-				angular2->Rs[s + m] = 0;
-				angular2->lammda[s + m] = 0;
-				angular2->powtwo[s + m] = 0;
-			  }
-			}
-		  }
-		} //ang2 for sym
-      } //kk
-    } //jj
-  } //outer ii
+      //하나만 만족되어도 true
+      if(net.angular1Indexer[j][k] > 0) isG4 = true;
+      if(net.angular2Indexer[j][k] > 0) isG5 = true;
 
+      //하나라도 어기면 false
+      if(net.angularLists1Vec[j][k].uq_eta_size > SIMD_V_LEN) optimize_G4 = false;
+      if(net.angularLists2Vec[j][k].uq_eta_size > SIMD_V_LEN) optimize_G5 = false;
+
+      if(net.angularLists1Vec[j][k].max_zeta > 8) optimize_G4 = false;
+      if(net.angularLists1Vec[j][k].max_zeta > 8) optimize_G5 = false;
+    } 
+  } //jj
+   
+  if (isG4 == false) optimize_G4 = false;
+  if (isG5 == false) optimize_G5 = false;
 }
 
 /* ----------------------------------------------------------------------
@@ -1207,9 +1365,7 @@ double PairNNIntel::single(int i, int j, int itype, int jtype, double rsq,
 
 PairNNIntel::Net::~Net() {
   delete [] nnode;
-  nnode = nullptr;
   delete [] actifuncs;
-  actifuncs = nullptr;
 
   for (int i=0; i<nelements; i++) {
     for (int j=0; j<nelements; j++) {
@@ -1218,11 +1374,11 @@ PairNNIntel::Net::~Net() {
     }
     delete [] angular1Indexer[i];
     delete [] angular2Indexer[i];
-	
+  
     delete [] angularLists1[i];
     delete [] angularLists2[i];
     delete [] radialLists[i];
-	
+  
     delete [] angularLists1Vec[i];
     delete [] angularLists2Vec[i];
   }
@@ -1245,31 +1401,22 @@ PairNNIntel::Net::~Net() {
 PairNNIntel::VectorizedSymc::~VectorizedSymc() {
   if(mask != nullptr) {
     _mm_free(mask);
-	//delete [] mask;
   }
   if(eta != nullptr) {
     _mm_free(eta);
-	//delete [] eta;
   }
   if(Rs != nullptr) {
     _mm_free(Rs);
-	//delete [] Rs;
   }
   if(lammda != nullptr) {
     _mm_free(lammda);
-	//delete [] lammda;
   }
   if(powtwo != nullptr) {
     _mm_free(powtwo);
-	//delete [] powtwo;
   }
-
-  if(lammda_i != nullptr) {
-    delete [] lammda_i;
-  }
-  if(zeta != nullptr) {
-    delete [] zeta;
-  }
+  _mm_free(uq_eta);
+  _mm_free(uq_eta_map);
+  _mm_free(uq_zeta_lammda_map);
 }
 
 /* ---------------------------------------------------------------------- */

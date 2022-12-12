@@ -337,6 +337,32 @@ namespace NN_SIMD_NS {
     return _mm256_set1_pd(v);
 #endif
   }
+  inline simd_v SIMD_set_two(const double v1, const double v2) {
+#ifdef __AVX512F__ 
+    return _mm512_set_pd(v1, v2, 0, 0, 0, 0, 0, 0);
+#else
+    return _mm256_set_pd(0, 0, 0, 0);
+#endif
+  }
+  inline simd_v SIMD_gather(double const * base, const int* vindex) {
+#ifdef __AVX512F__ 
+    return _mm512_i32gather_pd(_mm256_loadu_epi32(vindex),base, 8);
+#else
+#ifdef __AVX2__
+    return _mm256_i32gather_pd(base, _mm_loadu_si128((__m128i*)vindex), 8);
+#else
+    return; //code should not reach here
+#endif
+#endif
+  }
+
+  
+
+  /*
+  inline void SIMD_store(double * to, simd_v from) {
+    _mm256_store_pd(to, from);
+  }
+  */
 
   inline simd_v SIMD_exp_approximate(const simd_v val, simd_v& deriv) {
     static const simd_v ef = SIMD_set(1.0/257.0);
