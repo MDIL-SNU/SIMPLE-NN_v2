@@ -115,7 +115,7 @@ def generate(inputs, logfile, comm):
                     elif errno == 2:
                         err = "Zeta in G4/G5 must be greater or equal to 1.0."
                         if comm.rank == 0:
-                            logfie.write("\nError: {:}\n".format(err))
+                            logfile.write("\nError: {:}\n".format(err))
                         raise ValueError(err)
                     else:
                         assert errno == 0, "Unexpected error occred"
