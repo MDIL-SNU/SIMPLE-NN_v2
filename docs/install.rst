@@ -109,20 +109,20 @@ Install mpi4py:
 
 The filename extension simd refers to Intel-accelerated version of simulating molecular dynamics in SIMPLE-NN. By utilizing  vector-matrix multiplication routines in Intel MKL and vectorizing descriptor computation by SIMD, overall speed up would be x3 to x3.5 faster than the regular version.
 
-Requirements
-------------
+5.1 Requirements
+================
 
 -  Intel CPU supporting AVX
 -  Compiler supporting AVX instruction set
 -  IntelMKL ``2018.5.274`` tested
--  Lammps ``23Jun2022-Update1(stable)`` tested
+-  LAMMPS ``23Jun2022-Update1(stable)`` tested
 
-In our experience, the best performance is achieved when source compiled with intel compiler(icpc) and intel mpi (mpiicpc). Lammps provides default makefile for intel compiler, intel mpi and mkl library path setting. Therefore, we recommend to compile lammps source with intel compiler.
+In our experience, the best performance is achieved when source compiled with intel compiler(icpc) and intel mpi (mpiicpc). LAMMPS provides default makefile for intel compiler, intel mpi and mkl library path setting. Therefore, we recommend to compile lammps source with intel compiler.
 
-! The code uses AVX-related functions from intel intrinsic,  BLAS routines of MKL, and vector math. So if older versions of MKL and intel compilers support these features, there is no problem for compiling.
+The code uses AVX-related functions from intel intrinsic,  BLAS routines of MKL, and vector math. So if older versions of MKL and intel compilers support these features, there is no problem for compiling.
 
-Installation
-------------
+5.2 Installation
+================
 
 .. code-block:: text
 
@@ -133,8 +133,8 @@ Installation
 .. note::
     'make intel_cpu_intelmpi' is an example of using the intel compiler for lammps. Before using a makefile, you may need to explicitly set some library path and optimization flags (such as -xAVX) in the makefile if necessary.
 
-Requirements for potential file
--------------------------------
+5.3 Requirements for potential file
+===================================
 -  Symmetry function group refers to a group of vector components which have the same target atom specie(s). 
 -  Vector components of the same symmetry function group must have the same cutoff radius.
 -  Vector components of the same symmetry function group must be contiguous in potential file.
@@ -142,11 +142,34 @@ Requirements for potential file
 
 Since some assumptions have been made about the potential files for acceleration, the potential file must follow the rules above.
 
-Usage
------
+5.4 Usage
+=========
 In youer LAMMPS script file, regular version uses ``pair_style nn``.
 For the accelerated version, ``pair_style nn/intel`` should be invoked.
 
+5.5 Further Acceleration
+========================
+Two additional accelerations are possible if the AVX2 or AVX512 instruction set is available.
+To enable these features, add "-xCORE-AVX2" or "-xCORE-AVX512" compile flag to your makefile, depending on your CPU.
+Since AVX512 is released after AVX2, turning on AVX512 automatically turns on AVX2 as well.
+
+The AVX2 version only computes unique values of symmetry function parameters to reduce computation.
+So AVX2 acceleration puts some requirements on ptential file.
+ - The potential file must contain at least one G4 or G5 angular symmetry function.
+ - The number of unique 'eta' value in same angular symmetry function group must be less than 4(AVX2) or 8(AVX512).
+ - The zeta value must be less than 8.
+AVX2 version is about 25~35% faster than the original AVX version.
+
+AVX512 version doubles the maximum size of simd calculation. The speed up is around 10%.
+
+You can check the log file of LAMMPS to see if the installation was successful and if the potential file conditions were met.
+After LAMMPS reads the potential file, you can see somthing like this :
+
+.. code-block:: text
+
+    AVX512 for descriptor calc on/off
+    optimizing G4? : True/False
+    optimizing G5? : True/False
 
 .. _test_installation:
 
