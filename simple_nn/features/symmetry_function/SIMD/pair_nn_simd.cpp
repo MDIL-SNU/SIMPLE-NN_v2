@@ -1299,9 +1299,12 @@ void PairNNIntel::init_vectorizedSymc(Net& net, const int nelements) {
       if(net.angularLists2Vec[j][k].uq_eta_size > SIMD_V_LEN) optimize_G5 = false;
 
       if(net.angularLists1Vec[j][k].max_zeta > 8) optimize_G4 = false;
-      if(net.angularLists1Vec[j][k].max_zeta > 8) optimize_G4 = false;
+      if(net.angularLists1Vec[j][k].max_zeta > 8) optimize_G5 = false;
     } 
   } //jj
+   
+  if (isG4 == false) optimize_G4 = false;
+  if (isG5 == false) optimize_G5 = false;
 }
 
 /* ----------------------------------------------------------------------
