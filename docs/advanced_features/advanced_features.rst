@@ -126,8 +126,8 @@ To estimatet the uncertainty of atomic configuration, the atomic energies extrac
         add_NNP_ref: True
         ref_list: 'ref_list'
         train_atomic_E: False
-        scale: True
-        pca: True
+        use_scale: True
+        use_pca: True
         continue: checkpoint_bestmodel.pth.tar
     
 ``ref_list`` contains the dataset list to be evaluated to atomic energy. Reference NNP is written in ``continue``.
