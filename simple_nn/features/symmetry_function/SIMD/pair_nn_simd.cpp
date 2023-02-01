@@ -504,7 +504,7 @@ double PairNNIntel::evalNet(double* inpv, double *outv, Net &net){
 void PairNNIntel::compute(int eflag, int vflag)
 {
   //Array of Struct
-  struct alignas(ALIGN_NUM) NeighInfo {
+  struct NeighInfo {
     int jelem;
     double R;
     double delij[3];
