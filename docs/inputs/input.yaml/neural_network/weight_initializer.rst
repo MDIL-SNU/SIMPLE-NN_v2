@@ -2,7 +2,7 @@
 weight_initializer
 ==================
 
-- type: ``xavier noraml`` (default) / ``xavier uniform``, ``normal``, ``constant``, ``kaiming noraml``, ``kaiming uniform``, ``he normal``, ``he uniform``, ``orthogonal``, ``sparse``
+- type: ``xavier normal`` (default) / ``xavier uniform``, ``normal``, ``constant``, ``kaiming normal``, ``kaiming uniform``, ``he normal``, ``he uniform``, ``orthogonal``, ``sparse``
 
 ----
 
@@ -13,5 +13,5 @@ Weight initialization is used to define the initial values for the parameters in
     # input.yaml
     neural_network:
         weight_initializer:
-            type: xavier noraml
+            type: xavier normal
             params: 
