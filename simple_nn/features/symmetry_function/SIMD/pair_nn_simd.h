@@ -36,7 +36,7 @@ namespace LAMMPS_NS {
         bool powint; //precalculated value of angular sym
         int inputVecNum;
       };
-      struct alignas(ALIGN_NUM) VectorizedSymc {
+      struct VectorizedSymc {
         VectorizedSymc() {}
         ~VectorizedSymc();
         int vector_len;
@@ -60,7 +60,7 @@ namespace LAMMPS_NS {
         void init_angular_vecSymc(Symc* target, const int len);
       };
 
-      struct alignas(ALIGN_NUM) Net {
+      struct Net {
         ~Net();
         int nelements;
 

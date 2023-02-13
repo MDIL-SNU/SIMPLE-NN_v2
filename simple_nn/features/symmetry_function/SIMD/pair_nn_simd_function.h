@@ -33,7 +33,7 @@ namespace NN_SIMD_NS {
     VecOne = tmpone;
     VecTwo = tmptwo;
   }
-  struct alignas(ALIGN_NUM) AlignedMultiArr {
+  struct AlignedMultiArr {
     int *idx_addr=nullptr;
     double *v=nullptr;
     int max_idx;

@@ -504,7 +504,7 @@ double PairNNIntel::evalNet(double* inpv, double *outv, Net &net){
 void PairNNIntel::compute(int eflag, int vflag)
 {
   //Array of Struct
-  struct alignas(ALIGN_NUM) NeighInfo {
+  struct NeighInfo {
     int jelem;
     double R;
     double delij[3];
@@ -545,7 +545,7 @@ void PairNNIntel::compute(int eflag, int vflag)
 
     int ang_ninfo_indexer = 0;
     int rad_to_ang_indexer = 0;
-    int * ang_ninfo_indexes= new int[jnum]; // contain index of ninfos for angular symmetry function calc
+    int * ang_ninfo_indexes= new int[jnum]{0}; // contain index of ninfos for angular symmetry function calc, init with 0
     
     int * jj_used = new int[jnum];
 
@@ -1194,6 +1194,8 @@ void PairNNIntel::VectorizedSymc::init_radial_vecSymc(Symc* target, const int le
   vector_len = len;
   tt_offset = target[0].inputVecNum;
 
+  if(len == 0) return;
+
   for (int s=0; s<len; s++) {
     Symc sym = target[s];
     cutoffr = sym.coefs[0];
@@ -1212,6 +1214,8 @@ void PairNNIntel::VectorizedSymc::init_angular_vecSymc(Symc* target, const int l
   const int pad_plus_size = len + SIMD_V_LEN;
   const int ang1_true_size = (pad_plus_size)*DATASIZE;
   vector_len = len;
+
+  if(len == 0) return;
 
   eta = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
   Rs = (double*)_mm_malloc(ang1_true_size, ALIGN_NUM);
@@ -1286,20 +1290,20 @@ void PairNNIntel::init_vectorizedSymc(Net& net, const int nelements) {
     net.radialListsVec[j].init_radial_vecSymc(net.radialLists[j], net.radialIndexer[j]);
 
     for (int k=0; k<nelements; k++) {
-      //same code above (just radial to angular) (refactoring required)
+      // unless # of vec is 0, have to initialize some trivial values
       net.angularLists1Vec[j][k].init_angular_vecSymc(net.angularLists1[j][k], net.angular1Indexer[j][k]);
       net.angularLists2Vec[j][k].init_angular_vecSymc(net.angularLists2[j][k], net.angular2Indexer[j][k]);
 
-      //하나만 만족되어도 true
-      if(net.angular1Indexer[j][k] > 0) isG4 = true;
-      if(net.angular2Indexer[j][k] > 0) isG5 = true;
-
-      //하나라도 어기면 false
-      if(net.angularLists1Vec[j][k].uq_eta_size > SIMD_V_LEN) optimize_G4 = false;
-      if(net.angularLists2Vec[j][k].uq_eta_size > SIMD_V_LEN) optimize_G5 = false;
-
-      if(net.angularLists1Vec[j][k].max_zeta > 8) optimize_G4 = false;
-      if(net.angularLists1Vec[j][k].max_zeta > 8) optimize_G5 = false;
+      if(net.angular1Indexer[j][k] > 0) {
+          isG4 = true;
+          if(net.angularLists1Vec[j][k].uq_eta_size > SIMD_V_LEN) optimize_G4 = false;
+          if(net.angularLists1Vec[j][k].max_zeta > 8) optimize_G4 = false;
+      }
+      if(net.angular2Indexer[j][k] > 0) {
+          isG5 = true;
+          if(net.angularLists2Vec[j][k].uq_eta_size > SIMD_V_LEN) optimize_G5 = false;
+          if(net.angularLists2Vec[j][k].max_zeta > 8) optimize_G5 = false;
+      }
     } 
   } //jj
    
