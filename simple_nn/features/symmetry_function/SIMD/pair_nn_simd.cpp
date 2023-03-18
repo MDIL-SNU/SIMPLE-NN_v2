@@ -44,6 +44,7 @@ using namespace LAMMPS_NS;
 PairNNIntel::PairNNIntel(LAMMPS *lmp) : Pair(lmp) {
   map = nullptr;
   nets = nullptr;
+  init_simd();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -55,8 +56,8 @@ PairNNIntel::~PairNNIntel()
     memory->destroy(cutsq);
     delete [] map;
   }
-
   delete [] nets;
+  fin_simd();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -789,10 +790,6 @@ void PairNNIntel::coeff(int narg, char **arg)
       }
     }
   }
-
-  ////////////init_simd call////////////////
-  init_simd();
-  ////////////init_simd call////////////////
 
   if (count == 0) error->all(FLERR,"Incorrect args for pair coefficients");
 }

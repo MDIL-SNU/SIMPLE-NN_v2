@@ -17,8 +17,8 @@ namespace NN_SIMD_NS {
 
   //static const double* VecZero;
   static double* VecZero; //this should be const double see ReLU function
-  static const double* VecOne;
-  static const double* VecTwo;
+  static double* VecOne;
+  static double* VecTwo;
 
   static void init_simd() {
     double* tmpzero = (double*)_mm_malloc(400 * DATASIZE, ALIGN_NUM);
@@ -33,6 +33,13 @@ namespace NN_SIMD_NS {
     VecOne = tmpone;
     VecTwo = tmptwo;
   }
+
+  static void fin_simd() {
+    _mm_free(VecZero);
+    _mm_free(VecOne);
+    _mm_free(VecTwo);
+  }
+
   struct AlignedMultiArr {
     int *idx_addr=nullptr;
     double *v=nullptr;
