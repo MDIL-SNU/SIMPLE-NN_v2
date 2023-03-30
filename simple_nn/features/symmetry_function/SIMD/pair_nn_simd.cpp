@@ -527,6 +527,11 @@ void PairNNIntel::compute(int eflag, int vflag)
   int* numneigh = list->numneigh;
   int** firstneigh = list->firstneigh;
 
+  int neigh_vec_size = numneigh[ilist[0]];
+  std::vector<NeighInfo> ninfos(neigh_vec_size);
+  std::vector<int> ang_ninfo_indexes(neigh_vec_size);
+  std::vector<int> jj_used(neigh_vec_size);
+
   // loop over center atoms (MAIN loop)
   for (int ii = 0; ii < inum; ii++) {
     int i = ilist[ii];
@@ -539,16 +544,23 @@ void PairNNIntel::compute(int eflag, int vflag)
     const int* jlist = firstneigh[i];
     const int jnum = numneigh[i];
 
+    if(jnum > neigh_vec_size){
+      ninfos.resize(jnum);
+      ang_ninfo_indexes.resize(jnum, 0);
+      jj_used.resize(jnum);
+      neigh_vec_size = jnum;
+    }
+
     const int nsym = nets[ielem].nnode[0];
 
     int ninfo_indexer = 0;
-    NeighInfo * ninfos = new NeighInfo[jnum];
+    //NeighInfo * ninfos = new NeighInfo[jnum];
 
     int ang_ninfo_indexer = 0;
     int rad_to_ang_indexer = 0;
-    int * ang_ninfo_indexes= new int[jnum]{0}; // contain index of ninfos for angular symmetry function calc, init with 0
+    //int * ang_ninfo_indexes= new int[jnum]{0}; // contain index of ninfos for angular symmetry function calc, init with 0
     
-    int * jj_used = new int[jnum];
+    //int * jj_used = new int[jnum];
 
     for (int jj = 0; jj < jnum; jj++) {
       int j = jlist[jj];
@@ -584,6 +596,8 @@ void PairNNIntel::compute(int eflag, int vflag)
     double * symvec = static_cast<double*>(_mm_malloc(symvec_true_size, ALIGN_NUM));
     std::fill(symvec, symvec+symvec_true_size/DATASIZE, 0.0);
 
+    // TODO: create inside evalNet and return pointer, delete after use. (for data locality)
+    // is std::fill necessary?
     double * dsymvec = static_cast<double*>(_mm_malloc(symvec_true_size, ALIGN_NUM));
     std::fill(dsymvec, dsymvec+symvec_true_size/DATASIZE, 0.0);
 
@@ -678,9 +692,9 @@ void PairNNIntel::compute(int eflag, int vflag)
       }
     }
 
-    delete[] ninfos;
-    delete[] jj_used;
-    delete[] ang_ninfo_indexes;
+    //delete[] ninfos;
+    //delete[] jj_used;
+    //delete[] ang_ninfo_indexes;
 
     _mm_free(symvec);
     _mm_free(dsymvec);
