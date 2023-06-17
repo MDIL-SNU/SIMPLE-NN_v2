@@ -106,8 +106,8 @@ To train the NNP with the preprocessed dataset, you need to prepare the ``input.
             method: Adam
         total_epoch: 100
         learning_rate: 0.001
-        scale: True
-        pca: True
+        use_scale: True
+        use_pca: True
 
 With this input file, SIMPLE-NN optimizes the neural network (``train_model``).
 The paths of training/validation dataset should be written in ``train_list`` and ``valid_list``, respectively. 
