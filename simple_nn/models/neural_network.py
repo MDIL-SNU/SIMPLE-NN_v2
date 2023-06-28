@@ -53,11 +53,11 @@ class FCNDict(torch.nn.Module):
                 with open(inputs['params'][item], 'r') as f:
                     tmp = f.readlines()
                 input_dim = len(tmp) #open params read input number of symmetry functions
-                FIL.write('scale1 {}\n'.format(' '.join(np.zeros(input_dim).astype(np.str))))
-                FIL.write('scale2 {}\n'.format(' '.join(np.ones(input_dim).astype(np.str))))
+                FIL.write('scale1 {}\n'.format(' '.join(np.zeros(input_dim).astype(str))))
+                FIL.write('scale2 {}\n'.format(' '.join(np.ones(input_dim).astype(str))))
             else:
-                FIL.write('scale1 {}\n'.format(' '.join(scale_factor[item][0].cpu().numpy().astype(np.str))))
-                FIL.write('scale2 {}\n'.format(' '.join(scale_factor[item][1].cpu().numpy().astype(np.str))))
+                FIL.write('scale1 {}\n'.format(' '.join(scale_factor[item][0].cpu().numpy().astype(str))))
+                FIL.write('scale2 {}\n'.format(' '.join(scale_factor[item][1].cpu().numpy().astype(str))))
 
             # An extra linear layer is used for PCA transformation.
             nodes   = list()
@@ -86,7 +86,7 @@ class FCNDict(torch.nn.Module):
                     pca_mean /= pca[item][1].cpu().numpy()
 
                 for k in range(pca[item][0].cpu().numpy().shape[1]):
-                    FIL.write('w{} {}\n'.format(k, ' '.join(pca_mat[:,k].astype(np.str))))
+                    FIL.write('w{} {}\n'.format(k, ' '.join(pca_mat[:,k].astype(str))))
                     FIL.write('b{} {}\n'.format(k, -pca_mean[k]))
 
             for j in range(nlayers):
@@ -99,7 +99,7 @@ class FCNDict(torch.nn.Module):
                 FIL.write('LAYER {} {}\n'.format(j+joffset, acti))
 
                 for k in range(nodes[j + joffset]):
-                    FIL.write('w{} {}\n'.format(k, ' '.join(weights[j][k,:].astype(np.str))))
+                    FIL.write('w{} {}\n'.format(k, ' '.join(weights[j][k,:].astype(str))))
                     FIL.write('b{} {}\n'.format(k, biases[j][k]))
 
             FIL.write('\n')

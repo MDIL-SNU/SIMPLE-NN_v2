@@ -48,7 +48,7 @@ def uniform_gas(inputs, feature_list, atom_type, comm):
     recvbuf = np.zeros(inp_size)
 
     count = comm.allgather(count)
-    displ = np.zeros(comm.size, dtype=np.int)
+    displ = np.zeros(comm.size, dtype=int)
     for i in range(1, comm.size):
         displ[i] = displ[i - 1] + count[i - 1]
 

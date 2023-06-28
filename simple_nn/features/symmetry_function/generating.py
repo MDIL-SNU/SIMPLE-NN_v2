@@ -287,7 +287,10 @@ def _extract_EFS(inputs, structure, logfile, comm):
     # TODO: other formats
     else:
         if structure.calc is not None:
-            E = structure.get_potential_energy(force_consistent=True)
+            try:
+                E = structure.get_potential_energy(force_consistent=True)
+            except:
+                E = structure.get_potential_energy()
 
         if inputs['data']['read_force'] is True:
             try:
