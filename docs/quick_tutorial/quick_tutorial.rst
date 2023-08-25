@@ -81,6 +81,9 @@ If you want to see which data are saved in ``.pt`` file, use the following comma
 
 ``result`` provides the information of input features as dictionary format.
 
+.. warning::
+    It is recommended to turn on the ``calc_pca`` and ``calc_scale`` options in the ``preprocess``, without which the root-mean-square-error (RMSE) can be high in the ``training``.
+
 .. _training:
 
 Training
@@ -115,6 +118,9 @@ The 70-30-30-1 network is optimized by Adam optimizer with the 0.001 of learning
 The input feature vectors whose size is 70 are converted by ``scale_factor``, following PCA matrix transformation by ``pca``
 The execution log and energy, force, and stress root-mean-squared-error (RMSE) are stored in ``LOG``. 
 Input files introduced in this section can be found in ``SIMPLE-NN/tutorials/Training``.
+
+
+  
 
 .. _evaluation:
 
