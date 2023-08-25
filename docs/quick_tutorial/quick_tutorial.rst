@@ -82,7 +82,7 @@ If you want to see which data are saved in ``.pt`` file, use the following comma
 ``result`` provides the information of input features as dictionary format.
 
 .. warning::
-    It is recommended to turn on the ``calc_pca`` and ``calc_scale`` options in the ``preprocess``, without which the root-mean-square-error (RMSE) can be high in the ``training``.
+    We strongly recommend turning on the ``calc_pca`` and ``calc_scale`` options in the ``preprocess``. They significantly reduce the root-mean-square-error (RMSE) in the ``training``.
 
 .. _training:
 
