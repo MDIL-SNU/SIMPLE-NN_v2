@@ -219,7 +219,7 @@ def _check_error(errnos, logfile):
 # Set resulatant Dictionary
 def _set_calculated_result(inputs, result, x, dx, da, type_num, element, symf_params_set, atom_num, comm):
     if type_num[element] != 0:
-        result['x'][element] = np.array(comm.gather(x, root=0))
+        result['x'][element] = comm.gather(x, root=0)
         if comm.rank == 0:
             result['x'][element] = np.concatenate(result['x'][element], axis=0).\
                             reshape([type_num[element], symf_params_set[element]['num']])

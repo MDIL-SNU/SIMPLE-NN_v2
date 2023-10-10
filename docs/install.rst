@@ -156,9 +156,9 @@ Since AVX512 is released after AVX2, turning on AVX512 automatically turns on AV
 
 Further acceleration by AVX2 is possible by computing unique values of symmetry function parameters to reduce computation.
 So it puts some requirements on potential file.
- - The potential file must contain at least one G4 or G5 angular symmetry function.
- - The number of unique 'eta' value in same angular symmetry function group must be less than 4(AVX2) or 8(AVX512).
- - The zeta value must be less than 8.
+- The potential file must contain at least one G4 or G5 angular symmetry function.
+- The number of unique 'eta' value in same angular symmetry function group must be less than 4(AVX2) or 8(AVX512).
+- The zeta value must be less than 8.
 This acceleration is about 25~35% faster than the primitive AVX version.
 
 In addition, AVX512 doubles the maximum size of simd calculation, whose speed up is around 10%.
