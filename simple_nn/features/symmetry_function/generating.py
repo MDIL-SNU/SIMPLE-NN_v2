@@ -61,83 +61,88 @@ def generate(inputs, logfile, comm):
     for structure_file, structure_slicing, tag_idx in zip(structure_file_list, structure_slicing_list, structure_tag_idx):
         structures = data_generator.load_structures(inputs, structure_file, structure_slicing, logfile, comm)
 
-        for structure in structures:
-            # atom_type_idx(int list): list of type index for each atoms(start from 1)      ex) [1,1,2,2,2,2]
-            # atoms_per_type(int dic): number of atoms for each types                             ex) {'Si': 2, 'O': 4}
-            # atom_idx_per_type(int list dic): list of atoms index for each atom types     ex) {'Si': [0,1], 'O': [2,3,4,5]}
-            cell, scale, cart = _get_structure_coordination_info(structure)
-            atom_num, atom_type_idx, atoms_per_type, atom_idx_per_type = _get_atom_types_info(structure, atom_types)
+        if len(structures) == 0:
+            if comm.rank == 0:
+                err = "Errors occur when reading {}.\n".format(structure_file)
+            raise ValueError(err)
+        else:
+            for structure in structures:
+                # atom_type_idx(int list): list of type index for each atoms(start from 1)      ex) [1,1,2,2,2,2]
+                # atoms_per_type(int dic): number of atoms for each types                             ex) {'Si': 2, 'O': 4}
+                # atom_idx_per_type(int list dic): list of atoms index for each atom types     ex) {'Si': [0,1], 'O': [2,3,4,5]}
+                cell, scale, cart = _get_structure_coordination_info(structure)
+                atom_num, atom_type_idx, atoms_per_type, atom_idx_per_type = _get_atom_types_info(structure, atom_types)
 
-            # Convert values into C type data
-            atom_type_idx_p = ffi.cast('int *', atom_type_idx.ctypes.data)
-            cart_p  = _gen_2Darray_for_ffi(cart, ffi)
-            scale_p = _gen_2Darray_for_ffi(scale, ffi)
-            cell_p  = _gen_2Darray_for_ffi(cell, ffi)
+                # Convert values into C type data
+                atom_type_idx_p = ffi.cast('int *', atom_type_idx.ctypes.data)
+                cart_p  = _gen_2Darray_for_ffi(cart, ffi)
+                scale_p = _gen_2Darray_for_ffi(scale, ffi)
+                cell_p  = _gen_2Darray_for_ffi(cell, ffi)
 
-            result = _initialize_result(atoms_per_type, structure_tags, structure_weights, tag_idx, atom_type_idx)
+                result = _initialize_result(atoms_per_type, structure_tags, structure_weights, tag_idx, atom_type_idx)
 
-            for idx, element in enumerate(atom_types):
-                #MPI part
-                mpi_quotient  = atoms_per_type[element] // comm.size
-                mpi_remainder = atoms_per_type[element] %  comm.size
-                #MPI index     
-                begin_idx = comm.rank * mpi_quotient + min(comm.rank, mpi_remainder)
-                end_idx = begin_idx + mpi_quotient
-                #Distribute mpi_remainder to mpi 
-                if mpi_remainder > comm.rank:
-                    end_idx += 1
+                for idx, element in enumerate(atom_types):
+                    #MPI part
+                    mpi_quotient  = atoms_per_type[element] // comm.size
+                    mpi_remainder = atoms_per_type[element] %  comm.size
+                    #MPI index
+                    begin_idx = comm.rank * mpi_quotient + min(comm.rank, mpi_remainder)
+                    end_idx = begin_idx + mpi_quotient
+                    #Distribute mpi_remainder to mpi
+                    if mpi_remainder > comm.rank:
+                        end_idx += 1
 
-                # cal_atom_idx(int list): atom index for calculation    ex) [2,3,4]
-                # cal_atom_num(int): atom numbers for calculation       ex) 3
-                cal_atom_idx, cal_atom_num, x, dx, da = _initialize_symmetry_function_variables(atom_idx_per_type,\
-                    element, symf_params_set, atom_num, mpi_range=(begin_idx, end_idx))
+                    # cal_atom_idx(int list): atom index for calculation    ex) [2,3,4]
+                    # cal_atom_num(int): atom numbers for calculation       ex) 3
+                    cal_atom_idx, cal_atom_num, x, dx, da = _initialize_symmetry_function_variables(atom_idx_per_type,\
+                        element, symf_params_set, atom_num, mpi_range=(begin_idx, end_idx))
 
-                # Convert cal_atom_idx, x, dx, da into C type data
-                cal_atom_idx_p = ffi.cast('int *', cal_atom_idx.ctypes.data)
-                x_p  = _gen_2Darray_for_ffi(x, ffi)
-                dx_p = _gen_2Darray_for_ffi(dx, ffi)
-                da_p = _gen_2Darray_for_ffi(da, ffi)
+                    # Convert cal_atom_idx, x, dx, da into C type data
+                    cal_atom_idx_p = ffi.cast('int *', cal_atom_idx.ctypes.data)
+                    x_p  = _gen_2Darray_for_ffi(x, ffi)
+                    dx_p = _gen_2Darray_for_ffi(dx, ffi)
+                    da_p = _gen_2Darray_for_ffi(da, ffi)
 
-                # 5. Calculate symmetry functon using C type data
-                errno = lib.calculate_sf(cell_p, cart_p, scale_p, \
-                            atom_type_idx_p, atom_num, cal_atom_idx_p, cal_atom_num, \
-                            symf_params_set[element]['int_p'], symf_params_set[element]['double_p'], \
-                            symf_params_set[element]['num'], x_p, dx_p, da_p)
-                comm.barrier()
-                errnos = comm.gather(errno) #List of error number
-                errnos = comm.bcast(errnos)
-                for errno in errnos:
-                    if errno == 1:
-                        err = "Not implemented symmetry function type."
-                        if comm.rank == 0:
-                            logfie.write("\nError: {:}\n".format(err))
-                        raise NotImplementedError(err)
-                    elif errno == 2:
-                        err = "Zeta in G4/G5 must be greater or equal to 1.0."
-                        if comm.rank == 0:
-                            logfile.write("\nError: {:}\n".format(err))
-                        raise ValueError(err)
-                    else:
-                        assert errno == 0, "Unexpected error occred"
+                    # 5. Calculate symmetry functon using C type data
+                    errno = lib.calculate_sf(cell_p, cart_p, scale_p, \
+                                atom_type_idx_p, atom_num, cal_atom_idx_p, cal_atom_num, \
+                                symf_params_set[element]['int_p'], symf_params_set[element]['double_p'], \
+                                symf_params_set[element]['num'], x_p, dx_p, da_p)
+                    comm.barrier()
+                    errnos = comm.gather(errno) #List of error number
+                    errnos = comm.bcast(errnos)
+                    for errno in errnos:
+                        if errno == 1:
+                            err = "Not implemented symmetry function type."
+                            if comm.rank == 0:
+                                logfie.write("\nError: {:}\n".format(err))
+                            raise NotImplementedError(err)
+                        elif errno == 2:
+                            err = "Zeta in G4/G5 must be greater or equal to 1.0."
+                            if comm.rank == 0:
+                                logfile.write("\nError: {:}\n".format(err))
+                            raise ValueError(err)
+                        else:
+                            assert errno == 0, "Unexpected error occred"
 
-                _set_calculated_result(inputs, result, x, dx, da, atoms_per_type, element, symf_params_set, atom_num, comm)
+                    _set_calculated_result(inputs, result, x, dx, da, atoms_per_type, element, symf_params_set, atom_num, comm)
 
-            E, F, S = _extract_EFS(inputs, structure, logfile, comm)
-            if E is not None:
-                result['E'] = torch.tensor(E)
-            if inputs['data']['read_force'] is True:
-                result['F'] = torch.tensor(F)
-            if inputs['data']['read_stress'] is True:
-                result['S'] = torch.tensor(S)
+                E, F, S = _extract_EFS(inputs, structure, logfile, comm)
+                if E is not None:
+                    result['E'] = torch.tensor(E)
+                if inputs['data']['read_force'] is True:
+                    result['F'] = torch.tensor(F)
+                if inputs['data']['read_stress'] is True:
+                    result['S'] = torch.tensor(S)
+
+                if comm.rank == 0:
+                    tmp_filename = data_generator.save_to_datafile(inputs, result, data_idx, logfile)
+                    data_list_fil.write("{}:{}\n".format(tag_idx, tmp_filename))
+                    data_idx += 1
 
             if comm.rank == 0:
-                tmp_filename = data_generator.save_to_datafile(inputs, result, data_idx, logfile)
-                data_list_fil.write("{}:{}\n".format(tag_idx, tmp_filename))
-                data_idx += 1
-
-        if comm.rank == 0:
-            logfile.write(" ~ {}/data{}.pt\n".format(inputs['data']['save_directory'], data_idx-1))
-            logfile.flush()
+                logfile.write(" ~ {}/data{}.pt\n".format(inputs['data']['save_directory'], data_idx-1))
+                logfile.flush()
 
     if comm.rank == 0:
         data_list_fil.close()
