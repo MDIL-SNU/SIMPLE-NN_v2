@@ -1,5 +1,13 @@
 #define _USE_MATH_DEFINES
+#ifdef _WIN32
+#include <cmath>
+inline void sincos(double x, double* sinx, double* cosx){
+    *sinx = sin(x);
+    *cosx = cos(x);   
+}
+#else
 #include <math.h>
+#endif
 /*
  Code for calculate symmetry function.
  This code is used for both Python and LAMMPS code

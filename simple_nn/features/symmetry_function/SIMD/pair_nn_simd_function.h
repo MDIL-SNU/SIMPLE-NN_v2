@@ -1,6 +1,14 @@
 #include <immintrin.h>
 #include <algorithm>
+#ifdef _WIN32
+#include <cmath>
+inline void sincos(double x, double* sinx, double* cosx){
+    *sinx = sin(x);
+    *cosx = cos(x);   
+}
+#else
 #include <math.h>
+#endif
 #include "mkl.h"
 #include <assert.h>
 
